@@ -9,7 +9,7 @@ A small collection of free, single-file web apps by Ardalorn. No installs, no ac
 ### ArPlan
 A weekly planner covering itinerary, meal planning, and pantry tracking.
 
-**→ https://ardalorn.github.io/ArTools/arplan/**
+**→ https://ardalorn.github.io/ArTools/ArPlan/**
 
 ### ArCast
 A calm, accessible UK weather dashboard — postcode or device location, live hourly forecast, and daily moon phase.
