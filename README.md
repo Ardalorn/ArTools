@@ -24,6 +24,14 @@ ArCanvas
 A distraction-free drawing experience for children.
 
 → https://ardalorn.github.io/ArTools/ArCanvas/
+
+
+ArHar
+
+A network log (HAR file) inspector.
+
+→ https://ardalorn.github.io/ArTools/ArHar/
+
 ## How it works
 
 - Open the link, use the app. That's it.
