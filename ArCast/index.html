@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="ArCast — a calm, accessible weather dashboard">
+    <meta name="theme-color" content="#16161a">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://api.open-meteo.com https://api.postcodes.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com;">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://api.open-meteo.com">
+    <link rel="preconnect" href="https://api.postcodes.io">
+    <title>ArCast</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌤️</text></svg>">
+    <link rel="canonical" href="https://ardalorn.github.io/ArTools/ArCast/">
+    <meta property="og:title" content="ArCast">
+    <meta property="og:description" content="A calm, accessible weather dashboard.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://ardalorn.github.io/ArTools/ArCast/">
+    <meta property="og:image" content="https://ardalorn.github.io/ArTools/ArCast/og-image.png">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="ArCast">
+    <meta name="twitter:description" content="A calm, accessible weather dashboard.">
+
+    <style>
+        :root {
+            --bg: #16161a;
+            --surface: #1f1f2e;
+            --surface-soft: rgba(255, 255, 255, 0.03);
+            --border-chill: rgba(255, 255, 255, 0.06);
+            --text: #f0f0f5;
+            --text-secondary: #c5c5d2;
+            --text-muted: #9ca3af;
+            --primary: #a5b4fc;
+            --primary-glow: rgba(165, 180, 252, 0.15);
+            --night-glow: rgba(96, 165, 250, 0.08);
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+            .skeleton { animation: none !important; background: var(--surface) !important; }
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html {
+            -webkit-text-size-adjust: 100%;
+            touch-action: manipulation;
+        }
+        body {
+            font-family: 'Source Sans 3', 'Noto Sans', 'Open Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 24px 16px;
+            min-height: 100dvh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            letter-spacing: 0.01em;
+            word-spacing: 0.02em;
+            line-height: 1.6;
+        }
+        h1 {
+            font-family: 'Lato', 'Source Sans 3', sans-serif;
+            letter-spacing: +0.02em;
+        }
+        .hero-temp {
+            font-family: 'Lato', 'Source Sans 3', sans-serif;
+        }
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            contain: layout style paint;
+        }
+        header {
+            margin-bottom: 32px;
+            text-align: center;
+        }
+        .header-title h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0 0 8px 0;
+            letter-spacing: -0.02em;
+        }
+        .header-title p {
+            color: var(--text-secondary);
+            margin: 0 0 20px 0;
+            font-size: 16px;
+        }
+        .status-message {
+            padding: 12px 20px;
+            border-radius: 20px;
+            margin: 16px 0;
+            display: none;
+            font-size: 14px;
+            text-align: center;
+            will-change: opacity;
+            transition: opacity 0.3s ease;
+        }
+        .status-loading { background: var(--surface-soft); color: var(--primary); }
+        .status-error { background: rgba(241, 76, 76, 0.1); color: #f14c4c; }
+        .status-offline { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+        .show { display: block; }
+        .controls-wrapper {
+            display: flex;
+            gap: 10px;
+            max-width: 520px;
+            margin: 0 auto 24px auto;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border-chill);
+            color: var(--text);
+            padding: 14px 22px;
+            border-radius: 24px;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+        .search-input:focus {
+            border-color: var(--primary);
+            background: var(--surface);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+        .btn {
+            background: var(--surface-soft);
+            color: var(--text);
+            border: 1px solid var(--border-chill);
+            padding: 14px 24px;
+            border-radius: 24px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            white-space: nowrap;
+            will-change: transform, box-shadow;
+        }
+        .btn-primary {
+            background: var(--primary);
+            color: #16161a;
+            border-color: var(--primary);
+        }
+        .btn:hover:not(:disabled) { background: rgba(255,255,255,0.06); }
+        .btn-primary:hover:not(:disabled) { opacity: 0.9; background: var(--primary); box-shadow: 0 4px 12px var(--primary-glow); }
+        .btn:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .spinner {
+            display: none;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,.2);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+            will-change: transform;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        #emptyState {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--surface-soft);
+            border-radius: 24px;
+            margin-top: 20px;
+        }
+        #tabsContainer { display: none; }
+        #tabsHeader {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 28px;
+            overflow-x: auto;
+            padding: 4px 0;
+            scrollbar-width: none;
+            justify-content: flex-start;
+            touch-action: pan-x;
+        }
+        #tabsHeader::-webkit-scrollbar { display: none; }
+        .tab-button {
+            padding: 10px 18px;
+            background: var(--surface-soft);
+            border: 1px solid var(--border-chill);
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 500;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            will-change: transform, box-shadow;
+        }
+        .tab-button.active {
+            background: var(--primary);
+            color: #16161a;
+            border-color: var(--primary);
+            font-weight: 600;
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+        .tab-button:hover:not(.active) { background: rgba(255,255,255,0.06); }
+        .tab-button:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .skeleton {
+            background: linear-gradient(90deg, var(--surface) 25%, rgba(255,255,255,0.08) 50%, var(--surface) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 8px;
+            color: transparent !important;
+            border: none !important;
+        }
+        .skeleton * { visibility: hidden; }
+        @keyframes shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
+        }
+        .cozy-view {
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        .cozy-view.is-visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        /* ── Content Blocks (Nothing.tech methodology, original styling) ── */
+        .block {
+            padding: 28px 0;
+            border-bottom: 1px solid var(--border-chill);
+        }
+        .block:last-child {
+            border-bottom: none;
+        }
+        .block-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 16px;
+            font-weight: 600;
+        }
+        /* Hero Block */
+        .hero-temp {
+            font-size: 72px;
+            font-weight: 700;
+            line-height: 1;
+            letter-spacing: -0.03em;
+            margin-bottom: 6px;
+            color: var(--text);
+        }
+        .hero-meta {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        .hero-meta .divider {
+            color: var(--text-muted);
+            margin: 0 8px;
+        }
+        /* Data Rows Block */
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-chill);
+        }
+        .data-row:last-child {
+            border-bottom: none;
+        }
+        .data-row .label {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        .data-row .value {
+            font-size: 14px;
+            color: var(--text);
+            font-weight: 600;
+        }
+        .data-row .value .at {
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+        /* Hourly Block */
+        .scroll-track {
+            display: flex;
+            gap: 0;
+            overflow-x: auto;
+            scrollbar-width: none;
+            padding-bottom: 8px;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-x;
+            scroll-behavior: smooth;
+            scroll-snap-type: x mandatory;
+            cursor: grab;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .scroll-track.dragging {
+            cursor: grabbing;
+            scroll-snap-type: none;
+            scroll-behavior: auto;
+        }
+        .scroll-track::-webkit-scrollbar { display: none; }
+        .hourly-item {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 18px;
+            text-align: center;
+            transition: background-color 0.2s ease;
+            scroll-snap-align: start;
+            border-right: 1px solid var(--border-chill);
+            min-width: 76px;
+        }
+        .hourly-item:last-child {
+            border-right: none;
+        }
+        .hourly-item:hover {
+            background: rgba(255,255,255,0.03);
+        }
+        .hourly-item.is-current {
+            background: var(--primary-glow);
+        }
+        .hourly-item .time {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+        .hourly-item .icon {
+            font-size: 24px;
+            margin-bottom: 10px;
+            line-height: 1;
+        }
+        .hourly-item .pop {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            min-height: 14px;
+        }
+        .hourly-item .pop.wet { color: #60a5fa; }
+        .hourly-item .temp {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+        @media (max-width: 480px) {
+            .controls-wrapper { flex-direction: column; align-items: stretch; }
+            .hero-temp { font-size: 56px; }
+        }
+
+        /* ── TV / 32-bit Google TV ── */
+        html.is-tv { font-size: 18px; }
+        html.is-tv body {
+            padding: 48px 5%;
+            line-height: 1.7;
+        }
+        html.is-tv .container { max-width: 960px; }
+        html.is-tv header { margin-bottom: 48px; }
+        html.is-tv .header-title h1 { font-size: 48px; }
+        html.is-tv .header-title p { font-size: 20px; }
+        html.is-tv .controls-wrapper { gap: 16px; max-width: 640px; }
+        html.is-tv .search-input,
+        html.is-tv .btn {
+            padding: 18px 28px;
+            font-size: 18px;
+            border-radius: 28px;
+        }
+        html.is-tv .status-message { font-size: 18px; padding: 16px 28px; border-radius: 24px; }
+        html.is-tv #emptyState { padding: 80px 24px; }
+        html.is-tv #emptyState p { font-size: 20px; }
+        html.is-tv #tabsHeader { gap: 16px; margin-bottom: 40px; }
+        html.is-tv .tab-button {
+            padding: 14px 24px;
+            font-size: 18px;
+            border-radius: 24px;
+        }
+        html.is-tv .block { padding: 36px 0; }
+        html.is-tv .block-label { font-size: 14px; margin-bottom: 20px; }
+        html.is-tv .hero-temp { font-size: 120px; }
+        html.is-tv .hero-meta { font-size: 18px; }
+        html.is-tv .data-row { padding: 14px 0; }
+        html.is-tv .data-row .label,
+        html.is-tv .data-row .value { font-size: 18px; }
+        html.is-tv .hourly-item {
+            min-width: 110px;
+            padding: 22px 24px;
+        }
+        html.is-tv .hourly-item .time { font-size: 16px; margin-bottom: 14px; }
+        html.is-tv .hourly-item .icon { font-size: 32px; margin-bottom: 14px; }
+        html.is-tv .hourly-item .pop { font-size: 14px; min-height: 18px; }
+        html.is-tv .hourly-item .temp { font-size: 20px; }
+        html.is-tv .scroll-track {
+            cursor: default;
+            touch-action: auto;
+            scroll-snap-type: none;
+        }
+        html.is-tv .moon-visual { width: 96px; height: 96px; }
+        html.is-tv .moon-phase-name { font-size: 22px; }
+        html.is-tv .moon-illumination,
+        html.is-tv .moon-age { font-size: 16px; }
+        html.is-tv :focus-visible {
+            outline: 4px solid var(--primary);
+            outline-offset: 6px;
+            box-shadow: 0 0 0 10px var(--primary-glow);
+            border-radius: 8px;
+        }
+        html.is-tv .tab-button:focus-visible { border-radius: 24px; }
+        html.is-tv .hourly-item:focus-visible { border-radius: 12px; }
+        html.is-tv .btn:focus-visible,
+        html.is-tv .search-input:focus-visible { border-radius: 28px; }
+
+        /* ── Lunar Block ── */
+        .moon-block {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        .moon-visual {
+            flex-shrink: 0;
+            width: 72px;
+            height: 72px;
+            position: relative;
+        }
+        .moon-visual svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+            filter: drop-shadow(0 0 10px rgba(240, 240, 245, 0.08));
+        }
+        .moon-info {
+            flex: 1;
+        }
+        .moon-phase-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 4px;
+        }
+        .moon-illumination {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .moon-age {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+    </style>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "ArCast",
+      "url": "https://ardalorn.github.io/ArTools/ArCast/",
+      "description": "ArCast is a calm, accessible weather dashboard for the UK. Search by postcode or device location for a live hourly forecast (temperature, precipitation chance, wind speed, sky conditions) sourced from Open-Meteo, alongside a daily moon phase and illumination reading calculated client-side.",
+      "applicationCategory": "WeatherApplication",
+      "operatingSystem": "Any modern web browser",
+      "browserRequirements": "Requires JavaScript",
+      "isAccessibleForFree": true,
+      "author": {
+        "@type": "Person",
+        "name": "Ardalorn"
+      }
+    }
+    </script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-title">
+                <h1>ArCast</h1>
+                <p>Let's take a look at how the weather is shaping up.</p>
+            </div>
+            <div class="controls-wrapper">
+                <input type="text" id="locationInput" class="search-input" placeholder="Optional UK postcode..." aria-label="Enter UK postcode" autocomplete="postal-code">
+                <button class="btn btn-primary" id="searchBtn" onclick="window.handleSearch()" aria-label="Search weather by postcode">
+                    <span id="searchBtnText">Check weather</span>
+                    <span id="searchSpinner" class="spinner" aria-hidden="true"></span>
+                </button>
+                <button class="btn" id="geoBtn" onclick="window.handleGeolocation()" aria-label="Use my current location" title="Use my current location">
+                    <span id="geoBtnText">📍 Near Me</span>
+                    <span id="geoSpinner" class="spinner" aria-hidden="true"></span>
+                </button>
+            </div>
+            <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
+        </header>
+        <main id="mainScreen">
+            <noscript>
+                <div style="padding:40px 20px;max-width:600px;margin:0 auto;color:var(--text-secondary);line-height:1.7;">
+                    <h2 style="color:var(--text);font-size:22px;margin-bottom:16px;">About ArCast</h2>
+                    <p style="margin-bottom:12px;">ArCast is a calm, accessible weather dashboard built for the UK. Enter a UK postcode, or share your location, and it pulls a live hourly forecast — temperature, precipitation chance, wind speed, and sky conditions — from the Open-Meteo weather API, with postcode lookups handled by postcodes.io.</p>
+                    <p style="margin-bottom:12px;">Alongside the forecast, ArCast shows the current moon phase and illumination percentage for each day, calculated locally without any extra API calls.</p>
+                    <p style="margin-bottom:12px;">The dashboard automatically adapts for TV and Google TV browsers, with larger touch targets and remote-friendly keyboard navigation.</p>
+                    <p style="font-size:20px;color:var(--text);margin-top:24px;">⚠️ This page requires JavaScript to fetch and display live forecast data. Please enable JavaScript in your browser settings to use ArCast.</p>
+                </div>
+            </noscript>
+
+            <div id="emptyState">
+                <p style="color: var(--text-muted); margin: 0;">Enter a postcode or tap "Near Me" to grab the forecast.</p>
+            </div>
+            <div id="tabsContainer">
+                <nav id="tabsHeader" role="tablist" aria-label="Daily weather tabs"></nav>
+                <div id="tabsContent"></div>
+            </div>
+        </main>
+    </div>
+    <script>
+        (function() {
+            'use strict';
+            const CONFIG = {
+                CACHE_KEY: 'arcast_cache_v1',
+                APP_VERSION: '3.0.0',
+                CACHE_EXPIRY_MS: 3600000,
+                DEFAULT_LAT: 51.5,
+                DEFAULT_LON: -2.0,
+                MAX_RETRIES: 3,
+                RETRY_BASE_DELAY_MS: 500,
+                GEO_TIMEOUT_MS: 10000,
+                GEO_MAX_AGE_MS: 60000,
+                COORD_MATCH_THRESHOLD: 0.01,
+                WIND_CONVERSION_FACTOR: 0.621371
+            };
+            function detectTV() {
+                const ua = navigator.userAgent.toLowerCase();
+                const isTVUA = /android.*tv|crkey|smart-tv|googletv|appletv|hbbtv|tizen|webos.+tv|tv\s+build|vidaa|netcast|playstation|xbox/.test(ua);
+                const isCoarsePointer = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
+                const isNoPointer = window.matchMedia && window.matchMedia('(pointer: none)').matches;
+                const isLargeScreen = window.screen && (window.screen.width >= 1280 || window.screen.height >= 720);
+                const noTouch = !('ontouchstart' in window);
+                return isTVUA || (isLargeScreen && noTouch && (isCoarsePointer || isNoPointer));
+            }
+
+            function initTVMode() {
+                if (!detectTV()) return;
+                document.documentElement.classList.add('is-tv');
+                const geoBtn = getElement('geoBtn');
+                if (geoBtn) geoBtn.style.display = 'none';
+            }
+
+            function handleTVKeys(e) {
+                if (!document.documentElement.classList.contains('is-tv')) return;
+                const active = document.activeElement;
+                if (!active) return;
+
+                if (e.key === 'ArrowRight' && active.classList.contains('hourly-item')) {
+                    e.preventDefault();
+                    const next = active.nextElementSibling;
+                    if (next && next.classList.contains('hourly-item')) {
+                        next.focus();
+                        next.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                    }
+                }
+                if (e.key === 'ArrowLeft' && active.classList.contains('hourly-item')) {
+                    e.preventDefault();
+                    const prev = active.previousElementSibling;
+                    if (prev && prev.classList.contains('hourly-item')) {
+                        prev.focus();
+                        prev.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                    }
+                }
+                if (e.key === 'Backspace' || e.key === 'BrowserBack' || e.keyCode === 8 || e.keyCode === 461) {
+                    if (active.classList.contains('hourly-item') || active.classList.contains('tab-button')) {
+                        e.preventDefault();
+                        getElement('locationInput').focus();
+                    }
+                }
+            }
+
+            document.addEventListener('keydown', handleTVKeys);
+
+            const userLocale = navigator.language || 'en-GB';
+            const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const appState = {
+                weatherData: null,
+                allDays: [],
+                currentDay: null,
+                isLoading: false,
+                intersectionObserver: null,
+                lastCoords: null,
+                asyncUpdateToken: 0
+            };
+            const getElement = function(id) { return document.getElementById(id); };
+            const searchBtn = getElement('searchBtn');
+            const searchBtnText = getElement('searchBtnText');
+            const searchSpinner = getElement('searchSpinner');
+            const geoBtn = getElement('geoBtn');
+            const geoBtnText = getElement('geoBtnText');
+            const geoSpinner = getElement('geoSpinner');
+            const statusEl = getElement('statusMessage');
+            const emptyState = getElement('emptyState');
+            const tabsContainer = getElement('tabsContainer');
+            const tabsHeader = getElement('tabsHeader');
+            const tabsContent = getElement('tabsContent');
+            function showStatus(msg, type) {
+                statusEl.textContent = msg;
+                statusEl.className = 'status-message show status-' + type;
+            }
+            function clearStatus() {
+                statusEl.classList.remove('show');
+                statusEl.textContent = '';
+            }
+            function setLoading(loading, type) {
+                appState.isLoading = loading;
+                if (type === 'search' || type === 'both') {
+                    searchBtn.disabled = loading;
+                    searchSpinner.style.display = loading ? 'inline-block' : 'none';
+                    searchBtnText.textContent = loading ? 'Searching...' : 'Check weather';
+                }
+                if (type === 'geo' || type === 'both') {
+                    geoBtn.disabled = loading;
+                    geoSpinner.style.display = loading ? 'inline-block' : 'none';
+                    geoBtnText.textContent = loading ? 'Locating...' : '📍 Near Me';
+                }
+            }
+            function sanitizeInput(str) {
+                return str.replace(/[^a-zA-Z0-9 ]/g, '').trim().toUpperCase();
+            }
+            function formatTime(timeStr, tz) {
+                return new Date(timeStr).toLocaleTimeString(userLocale, {
+                    timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false
+                });
+            }
+            function getIconForCode(code) {
+                if (code === 0) return '☀️';
+                if (code === 1 || code === 2) return '🌤️';
+                if (code === 3 || code === 45 || code === 48 || (code >= 51 && code <= 57)) return '☁️';
+                if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return '🌧️';
+                if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) return '❄️';
+                if (code >= 95) return '⛈️';
+                return '🌤️';
+            }
+            function getNameForCode(code) {
+                if (code === 0) return 'Crisp & Clear';
+                if (code === 1 || code === 2) return 'A Few Clouds';
+                if (code === 3) return 'Gloomy Skies';
+                if (code === 45 || code === 48) return 'Super Foggy';
+                if (code >= 51 && code <= 57) return 'Light Drizzle';
+                if (code >= 61 && code <= 67) return 'Rainy Day';
+                if (code >= 71 && code <= 77) return 'Snowy Mix';
+                if (code >= 80 && code <= 82) return 'Passing Showers';
+                if (code >= 95) return 'Stormy Outlook';
+                return 'Fair Weather';
+            }
+            function saveToCache(data, coordsPayload) {
+                try {
+                    localStorage.setItem(CONFIG.CACHE_KEY, JSON.stringify({
+                        version: CONFIG.APP_VERSION,
+                        timestamp: Date.now(),
+                        data: data,
+                        coords: coordsPayload
+                    }));
+                } catch (ignore) {}
+            }
+            function loadFromCache() {
+                try {
+                    const raw = localStorage.getItem(CONFIG.CACHE_KEY);
+                    if (!raw) return null;
+                    const parsed = JSON.parse(raw);
+                    if (parsed.version !== CONFIG.APP_VERSION) {
+                        localStorage.removeItem(CONFIG.CACHE_KEY);
+                        return null;
+                    }
+                    if (Date.now() - parsed.timestamp > CONFIG.CACHE_EXPIRY_MS) {
+                        localStorage.removeItem(CONFIG.CACHE_KEY);
+                        return null;
+                    }
+                    return parsed;
+                } catch (ignore) { return null; }
+            }
+            function coordsMatch(a, b) {
+                if (!a || !b) return false;
+                return Math.abs(a.lat - b.lat) < CONFIG.COORD_MATCH_THRESHOLD &&
+                       Math.abs(a.lon - b.lon) < CONFIG.COORD_MATCH_THRESHOLD;
+            }
+            async function fetchWithRetry(url, options, retries) {
+                const fetchOptions = options || {};
+                const retryCount = retries || 0;
+                const localAbortCtrl = new AbortController();
+                try {
+                    const res = await fetch(url, Object.assign({}, fetchOptions, { signal: localAbortCtrl.signal }));
+                    if (!res.ok) throw new Error('HTTP ' + res.status);
+                    return await res.json();
+                } catch (err) {
+                    if (retryCount < CONFIG.MAX_RETRIES - 1 && err.name !== 'AbortError') {
+                        await new Promise(function(resolve) {
+                            setTimeout(resolve, CONFIG.RETRY_BASE_DELAY_MS * (retryCount + 1));
+                        });
+                        return fetchWithRetry(url, fetchOptions, retryCount + 1);
+                    }
+                    throw err;
+                }
+            }
+            function renderSkeletonState() {
+                emptyState.style.display = 'none';
+                tabsContainer.style.display = 'block';
+                tabsHeader.innerHTML =
+                    '<div class="tab-button skeleton" style="width:80px;height:40px;"></div>' +
+                    '<div class="tab-button skeleton" style="width:80px;height:40px;"></div>' +
+                    '<div class="tab-button skeleton" style="width:80px;height:40px;"></div>';
+                tabsContent.innerHTML =
+                    '<div class="cozy-view is-visible">' +
+                        '<div class="block skeleton" style="height:140px;"></div>' +
+                        '<div class="block">' +
+                            '<div class="skeleton" style="height:110px;"></div>' +
+                        '</div>' +
+                        '<div class="block">' +
+                            '<div class="scroll-track">' +
+                                '<div class="hourly-item skeleton" style="height:110px;width:76px;"></div>' +
+                                '<div class="hourly-item skeleton" style="height:110px;width:76px;"></div>' +
+                                '<div class="hourly-item skeleton" style="height:110px;width:76px;"></div>' +
+                                '<div class="hourly-item skeleton" style="height:110px;width:76px;"></div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+            }
+            function organizeDaysByDate() {
+                const hourly = appState.weatherData.hourly;
+                const times = hourly.time;
+                const dayMap = Object.create(null);
+                const tz = appState.weatherData.timezone || userTimezone;
+                times.forEach(function(time, idx) {
+                    const targetDate = new Date(time).toLocaleDateString('en-CA', { timeZone: tz });
+                    if (!dayMap[targetDate]) dayMap[targetDate] = [];
+                    dayMap[targetDate].push({
+                        rawTime: time,
+                        hourOnly: formatTime(time, tz),
+                        is_day: hourly.is_day ? hourly.is_day[idx] : 1,
+                        weather_code: hourly.weather_code ? hourly.weather_code[idx] : 0,
+                        precipitation_probability: hourly.precipitation_probability ? hourly.precipitation_probability[idx] : 0,
+                        temperature_2m: hourly.temperature_2m ? hourly.temperature_2m[idx] : 0,
+                        windspeed_10m: hourly.windspeed_10m ? hourly.windspeed_10m[idx] : 0
+                    });
+                });
+                appState.allDays.length = 0;
+                Object.entries(dayMap).forEach(function(entry) {
+                    appState.allDays.push({ date: entry[0], hours: entry[1] });
+                });
+            }
+            function processAndRenderData() {
+                requestAnimationFrame(function() {
+                    clearStatus();
+                    emptyState.style.display = 'none';
+                    tabsContainer.style.display = 'block';
+                    organizeDaysByDate();
+                    renderTabs();
+                });
+            }
+            function attemptStaleFallback() {
+                const cachedInstance = loadFromCache();
+                if (cachedInstance) {
+                    appState.weatherData = cachedInstance.data;
+                    appState.lastCoords = cachedInstance.coords;
+                    processAndRenderData();
+                    showStatus('Showing cached data instead.', 'offline');
+                } else {
+                    emptyState.style.display = 'block';
+                    tabsContainer.style.display = 'none';
+                }
+            }
+            async function fetchForecastData(coords) {
+                appState.lastCoords = coords;
+                const cachedInstance = loadFromCache();
+                if (cachedInstance && coordsMatch(cachedInstance.coords, coords)) {
+                    appState.weatherData = cachedInstance.data;
+                    processAndRenderData();
+                    showStatus('Showing cached forecast.', 'loading');
+                    setTimeout(clearStatus, 2000);
+                    return;
+                }
+                renderSkeletonState();
+                const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + coords.lat + '&longitude=' + coords.lon + '&hourly=temperature_2m,precipitation_probability,weather_code,windspeed_10m,is_day&timezone=' + encodeURIComponent(userTimezone);
+                appState.weatherData = await fetchWithRetry(url, null, 0);
+                if (!appState.weatherData.hourly || !appState.weatherData.hourly.time) {
+                    throw new Error('Data structure looks tangled.');
+                }
+                saveToCache(appState.weatherData, coords);
+                processAndRenderData();
+            }
+            async function handleSearch() {
+                if (appState.isLoading) return;
+                const currentToken = ++appState.asyncUpdateToken;
+                const raw = getElement('locationInput').value;
+                const postcodeVal = sanitizeInput(raw);
+                if (!postcodeVal) {
+                    if (raw.trim().length > 0) {
+                        showStatus('That doesn\'t look like a valid postcode.', 'error');
+                        return;
+                    }
+                    setLoading(true, 'search');
+                    showStatus('Using default location...', 'loading');
+                    try {
+                        await fetchForecastData({ lat: CONFIG.DEFAULT_LAT, lon: CONFIG.DEFAULT_LON });
+                    } catch (ignore) {
+                        if (currentToken === appState.asyncUpdateToken) attemptStaleFallback();
+                    } finally {
+                        if (currentToken === appState.asyncUpdateToken) setLoading(false, 'search');
+                    }
+                    return;
+                }
+                setLoading(true, 'search');
+                showStatus('Looking up postcode...', 'loading');
+                try {
+                    const geoData = await fetchWithRetry('https://api.postcodes.io/postcodes/' + encodeURIComponent(postcodeVal), null, 0);
+                    if (currentToken !== appState.asyncUpdateToken) return;
+                    if (geoData.status !== 200) throw new Error('Could not find that postcode.');
+                    const targetCoords = { lat: geoData.result.latitude, lon: geoData.result.longitude };
+                    await fetchForecastData(targetCoords);
+                } catch (err) {
+                    if (currentToken !== appState.asyncUpdateToken) return;
+                    if (err.name === 'AbortError') {
+                        showStatus('Search cancelled', 'error');
+                    } else {
+                        showStatus('Bummer: ' + err.message, 'error');
+                    }
+                    attemptStaleFallback();
+                } finally {
+                    if (currentToken === appState.asyncUpdateToken) setLoading(false, 'search');
+                }
+            }
+            async function handleGeolocation() {
+                if (appState.isLoading) return;
+                const currentToken = ++appState.asyncUpdateToken;
+                if (!navigator.geolocation) {
+                    showStatus('Geolocation not supported', 'error');
+                    return;
+                }
+                setLoading(true, 'geo');
+                showStatus('Locating you...', 'loading');
+                navigator.geolocation.getCurrentPosition(
+                    async function(pos) {
+                        if (currentToken !== appState.asyncUpdateToken) return;
+                        getElement('locationInput').value = '';
+                        const targetCoords = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+                        try {
+                            await fetchForecastData(targetCoords);
+                        } catch (ignore) {
+                            attemptStaleFallback();
+                        } finally {
+                            if (currentToken === appState.asyncUpdateToken) setLoading(false, 'geo');
+                        }
+                    },
+                    function(errorInstance) {
+                        if (currentToken !== appState.asyncUpdateToken) return;
+                        showStatus('Location access denied: ' + errorInstance.message, 'error');
+                        setLoading(false, 'geo');
+                        if (!navigator.onLine) attemptStaleFallback();
+                    },
+                    { timeout: CONFIG.GEO_TIMEOUT_MS, maximumAge: CONFIG.GEO_MAX_AGE_MS }
+                );
+            }
+            function handleTabKeyboard(e) {
+                const buttons = Array.from(tabsHeader.querySelectorAll('.tab-button'));
+                const activeIdx = buttons.findIndex(function(b) { return b.getAttribute('aria-selected') === 'true'; });
+                let nextIdx = activeIdx;
+                if (e.key === 'ArrowRight') nextIdx = (activeIdx + 1) % buttons.length;
+                else if (e.key === 'ArrowLeft') nextIdx = (activeIdx - 1 + buttons.length) % buttons.length;
+                else if (e.key === 'Home') nextIdx = 0;
+                else if (e.key === 'End') nextIdx = buttons.length - 1;
+                else return;
+                e.preventDefault();
+                buttons[nextIdx].focus();
+                switchTab(nextIdx);
+            }
+            function switchTab(index) {
+                const buttons = tabsHeader.querySelectorAll('.tab-button');
+                const panels = tabsContent.querySelectorAll('.tab-content');
+                buttons.forEach(function(btn, idx) {
+                    const active = idx === index;
+                    btn.classList.toggle('active', active);
+                    btn.setAttribute('aria-selected', active ? 'true' : 'false');
+                    btn.setAttribute('tabindex', active ? '0' : '-1');
+                });
+                panels.forEach(function(panel, idx) {
+                    const active = idx === index;
+                    panel.classList.toggle('active', active);
+                    if (active) {
+                        appState.currentDay = appState.allDays[idx].date;
+                        renderDaySnapshot(panel, appState.allDays[idx], idx === 0);
+                    }
+                });
+            }
+            function handleTabClick(e) {
+                const index = parseInt(e.currentTarget.getAttribute('data-index'), 10);
+                switchTab(index);
+            }
+            function renderTabs() {
+                tabsHeader.innerHTML = '';
+                tabsContent.innerHTML = '';
+                if (appState.intersectionObserver) {
+                    appState.intersectionObserver.disconnect();
+                    appState.intersectionObserver = null;
+                }
+                appState.intersectionObserver = new IntersectionObserver(function(entries) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) entry.target.classList.add('is-visible');
+                    });
+                }, { threshold: 0.1 });
+                allDaysForEachContainer();
+                if (appState.allDays.length > 0) {
+                    appState.currentDay = appState.allDays[0].date;
+                    renderDaySnapshot(tabsContent.firstElementChild, appState.allDays[0], true);
+                }
+                tabsHeader.removeEventListener('keydown', handleTabKeyboard);
+                tabsHeader.addEventListener('keydown', handleTabKeyboard);
+                tabsHeader.scrollLeft = 0;
+            }
+            function allDaysForEachContainer() {
+                appState.allDays.forEach(function(day, index) {
+                    const btn = document.createElement('button');
+                    btn.className = 'tab-button' + (index === 0 ? ' active' : '');
+                    btn.setAttribute('role', 'tab');
+                    btn.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
+                    btn.setAttribute('aria-controls', 'tabpanel-' + index);
+                    btn.setAttribute('tabindex', index === 0 ? '0' : '-1');
+                    btn.id = 'tab-' + index;
+                    btn.setAttribute('data-index', index);
+                    let label = new Date(day.date + 'T12:00:00').toLocaleDateString(userLocale, { weekday: 'short', day: 'numeric' });
+                    if (index === 0) label = 'Today';
+                    btn.textContent = label;
+                    btn.onclick = handleTabClick;
+                    tabsHeader.appendChild(btn);
+                    const panel = document.createElement('div');
+                    panel.className = 'tab-content' + (index === 0 ? ' active' : '');
+                    panel.id = 'tabpanel-' + index;
+                    panel.setAttribute('role', 'tabpanel');
+                    panel.setAttribute('aria-labelledby', 'tab-' + index);
+                    tabsContent.appendChild(panel);
+                });
+            }
+            function getCurrentTemperatureInfo(hours) {
+                if (!hours || hours.length === 0) return null;
+                const now = Date.now();
+                let closest = hours[0];
+                let minDiff = Infinity;
+                hours.forEach(function(h) {
+                    const diff = Math.abs(now - new Date(h.rawTime).getTime());
+                    if (diff < minDiff) {
+                        minDiff = diff;
+                        closest = h;
+                    }
+                });
+                return closest;
+            }
+            function getModeWeatherCode(hours) {
+                if (!hours || hours.length === 0) return 0;
+                const counts = Object.create(null);
+                let modeCode = hours[0].weather_code;
+                let maxCount = 0;
+                hours.forEach(function(h) {
+                    if (h.weather_code !== undefined) {
+                        counts[h.weather_code] = (counts[h.weather_code] || 0) + 1;
+                        if (counts[h.weather_code] > maxCount) {
+                            maxCount = counts[h.weather_code];
+                            modeCode = h.weather_code;
+                        }
+                    }
+                });
+                return modeCode;
+            }
+            function getAverageTemperature(hours) {
+                if (!hours || hours.length === 0) return 0;
+                let sum = 0;
+                let count = 0;
+                hours.forEach(function(h) {
+                    if (h.temperature_2m !== undefined) {
+                        sum += h.temperature_2m;
+                        count += 1;
+                    }
+                });
+                return count > 0 ? sum / count : 0;
+            }
+            function autoScrollTimeline(container) {
+                const track = container.querySelector('.scroll-track');
+                const target = track ? track.querySelector('.hourly-item.is-current') : null;
+                if (track && target) {
+                    requestAnimationFrame(function() {
+                        track.scrollLeft = target.offsetLeft - (track.clientWidth / 2) + (target.clientWidth / 2);
+                    });
+                }
+            }
+            function compileExtremes(hours) {
+                let maxTempH = hours[0], minTempH = hours[0], maxWindH = hours[0];
+                hours.forEach(function(h) {
+                    if (h.temperature_2m !== undefined && h.temperature_2m > maxTempH.temperature_2m) maxTempH = h;
+                    if (h.temperature_2m !== undefined && h.temperature_2m < minTempH.temperature_2m) minTempH = h;
+                    if (h.windspeed_10m !== undefined && h.windspeed_10m > maxWindH.windspeed_10m) maxWindH = h;
+                });
+                return { max: maxTempH, min: minTempH, wind: maxWindH };
+            }
+            function buildHeroHtml(day, hours, isToday, liveMatch) {
+                if (isToday) {
+                    const liveTemp = liveMatch && liveMatch.temperature_2m !== undefined ? liveMatch.temperature_2m.toFixed(1) + '°' : '--°';
+                    const liveIcon = liveMatch ? getIconForCode(liveMatch.weather_code) : '🌤️';
+                    const liveCond = liveMatch ? getNameForCode(liveMatch.weather_code) : 'Fair';
+                    return (
+                        '<div class="block">' +
+                            '<div class="hero-temp" aria-label="' + liveTemp + ' Celsius">' + liveTemp + '</div>' +
+                            '<div class="hero-meta">' +
+                                '<span>' + liveIcon + ' ' + liveCond + '</span>' +
+                                '<span class="divider">/</span>' +
+                                '<span>Right now</span>' +
+                            '</div>' +
+                        '</div>'
+                    );
+                }
+                const avgCode = getModeWeatherCode(hours);
+                const avgTempStr = getAverageTemperature(hours).toFixed(1) + '°C';
+                return (
+                    '<div class="block">' +
+                        '<div class="hero-temp" aria-label="Average ' + avgTempStr + '">' + avgTempStr + '</div>' +
+                        '<div class="hero-meta">' +
+                            '<span>' + getIconForCode(avgCode) + ' ' + getNameForCode(avgCode) + '</span>' +
+                            '<span class="divider">/</span>' +
+                            '<span>Average</span>' +
+                        '</div>' +
+                    '</div>'
+                );
+            }
+            function buildTimelineTrackHtml(hours, isToday, liveHour) {
+                let trackHtml = '';
+                hours.forEach(function(h) {
+                    const temp = h.temperature_2m !== undefined ? h.temperature_2m.toFixed(0) : '--';
+                    const icon = getIconForCode(h.weather_code);
+                    const rain = h.precipitation_probability !== undefined ? Math.round(h.precipitation_probability) : 0;
+                    const rainClass = rain > 0 ? 'wet' : '';
+                    const rainStr = rain > 0 ? rain + '%' : '•';
+                    const hVal = new Date(h.rawTime).getHours();
+                    const isCurrent = isToday && hVal === liveHour;
+                    const currentClass = isCurrent ? 'is-current' : '';
+                    trackHtml += (
+                        '<div class="hourly-item ' + currentClass + '" tabindex="0"' +
+                             ' aria-label="' + h.hourOnly + ', ' + temp + ' degrees, ' + rain + '% chance of rain">' +
+                            '<div class="time" aria-hidden="true">' + h.hourOnly + '</div>' +
+                            '<div class="icon" aria-hidden="true">' + icon + '</div>' +
+                            '<div class="pop ' + rainClass + '" aria-hidden="true">' + rainStr + '</div>' +
+                            '<div class="temp" aria-hidden="true">' + temp + '°</div>' +
+                        '</div>'
+                    );
+                });
+                return trackHtml;
+            }
+            const SYNODIC_MONTH = 29.53058867;
+            const NEW_MOON_2000 = new Date('2000-01-06T18:14:00Z');
+            function getMoonPhase(dateStr) {
+                const date = new Date(dateStr + 'T12:00:00Z');
+                const diffMs = date - NEW_MOON_2000;
+                const diffDays = diffMs / (1000 * 60 * 60 * 24);
+                let phase = (diffDays % SYNODIC_MONTH) / SYNODIC_MONTH;
+                if (phase < 0) phase += 1;
+                return phase;
+            }
+            function getMoonPhaseName(phase) {
+                if (phase < 0.03 || phase > 0.97) return 'New Moon';
+                if (phase < 0.22) return 'Waxing Crescent';
+                if (phase < 0.28) return 'First Quarter';
+                if (phase < 0.47) return 'Waxing Gibbous';
+                if (phase < 0.53) return 'Full Moon';
+                if (phase < 0.72) return 'Waning Gibbous';
+                if (phase < 0.78) return 'Last Quarter';
+                return 'Waning Crescent';
+            }
+            function getMoonIllumination(phase) {
+                return ((1 - Math.cos(phase * 2 * Math.PI)) / 2 * 100).toFixed(1);
+            }
+            function getMoonAge(phase) {
+                return (phase * SYNODIC_MONTH).toFixed(1);
+            }
+            function getMoonPhaseSVG(phase, size) {
+                const s = size || 72;
+                const cx = s / 2;
+                const cy = s / 2;
+                const r = s * 0.38;
+                const darkColor = '#2a2a3a';
+                const lightColor = '#e8e8ee';
+                if (phase < 0.02 || phase > 0.98) {
+                    return (
+                        '<svg viewBox="0 0 ' + s + ' ' + s + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+                            '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + darkColor + '" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>' +
+                        '</svg>'
+                    );
+                }
+                if (Math.abs(phase - 0.5) < 0.02) {
+                    return (
+                        '<svg viewBox="0 0 ' + s + ' ' + s + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+                            '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + lightColor + '" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>' +
+                        '</svg>'
+                    );
+                }
+                const isWaxing = phase < 0.5;
+                const isCrescent = phase < 0.25 || phase > 0.75;
+                const rx = Math.abs(r * Math.cos(phase * 2 * Math.PI));
+                const outerSweep = isWaxing ? 0 : 1;
+                const innerSweep = isCrescent ? 1 : 0;
+                const path = 'M ' + cx + ',' + (cy - r) +
+                             ' A ' + r + ',' + r + ' 0 0,' + outerSweep + ' ' + cx + ',' + (cy + r) +
+                             ' A ' + rx + ',' + r + ' 0 0,' + innerSweep + ' ' + cx + ',' + (cy - r) + ' Z';
+                return (
+                    '<svg viewBox="0 0 ' + s + ' ' + s + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
+                        '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + lightColor + '" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>' +
+                        '<path d="' + path + '" fill="' + darkColor + '"/>' +
+                    '</svg>'
+                );
+            }
+            function buildMoonHtml(day) {
+                const phase = getMoonPhase(day.date);
+                const name = getMoonPhaseName(phase);
+                const illumination = getMoonIllumination(phase);
+                const age = getMoonAge(phase);
+                const svg = getMoonPhaseSVG(phase, 72);
+                return (
+                    '<div class="block">' +
+                        '<div class="block-label">Lunar</div>' +
+                        '<div class="moon-block">' +
+                            '<div class="moon-visual">' + svg + '</div>' +
+                            '<div class="moon-info">' +
+                                '<div class="moon-phase-name">' + name + '</div>' +
+                                '<div class="moon-illumination">' + illumination + '% illuminated</div>' +
+                                '<div class="moon-age">Day ' + age + ' of ' + SYNODIC_MONTH.toFixed(1) + '</div>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>'
+                );
+            }
+            function enableDragScroll(track) {
+                let isDown = false;
+                let startX;
+                let startScrollLeft;
+
+                track.addEventListener('mousedown', function(e) {
+                    isDown = true;
+                    track.classList.add('dragging');
+                    startX = e.pageX - track.offsetLeft;
+                    startScrollLeft = track.scrollLeft;
+                });
+
+                track.addEventListener('mouseleave', function() {
+                    isDown = false;
+                    track.classList.remove('dragging');
+                });
+
+                track.addEventListener('mouseup', function() {
+                    isDown = false;
+                    track.classList.remove('dragging');
+                });
+
+                track.addEventListener('mousemove', function(e) {
+                    if (!isDown) return;
+                    e.preventDefault();
+                    const x = e.pageX - track.offsetLeft;
+                    const walk = (x - startX) * 1.2;
+                    track.scrollLeft = startScrollLeft - walk;
+                });
+            }
+
+            function renderDaySnapshot(container, day, isToday) {
+                container.innerHTML = '';
+                const hours = day.hours;
+                if (!hours || hours.length === 0) return;
+                const extremes = compileExtremes(hours);
+                const maxTemp = extremes.max.temperature_2m !== undefined ? extremes.max.temperature_2m.toFixed(1) : '--';
+                const minTemp = extremes.min.temperature_2m !== undefined ? extremes.min.temperature_2m.toFixed(1) : '--';
+                const maxWind = extremes.wind.windspeed_10m !== undefined ? (extremes.wind.windspeed_10m * CONFIG.WIND_CONVERSION_FACTOR).toFixed(1) : '--';
+                const liveMatch = getCurrentTemperatureInfo(hours);
+                const liveHour = liveMatch ? new Date(liveMatch.rawTime).getHours() : -1;
+                const heroHtml = buildHeroHtml(day, hours, isToday, liveMatch);
+                const trackHtml = buildTimelineTrackHtml(hours, isToday, liveHour);
+                const view = document.createElement('div');
+                view.className = 'cozy-view';
+                view.innerHTML = (
+                    heroHtml +
+                    '<div class="block">' +
+                        '<div class="block-label">Summary</div>' +
+                        '<div class="data-row">' +
+                            '<span class="label">Warmest hour</span>' +
+                            '<span class="value">' + maxTemp + '°C <span class="at">at ' + extremes.max.hourOnly + '</span></span>' +
+                        '</div>' +
+                        '<div class="data-row">' +
+                            '<span class="label">Chilliest hour</span>' +
+                            '<span class="value">' + minTemp + '°C <span class="at">at ' + extremes.min.hourOnly + '</span></span>' +
+                        '</div>' +
+                        '<div class="data-row">' +
+                            '<span class="label">Peak breeze</span>' +
+                            '<span class="value">' + maxWind + ' mph <span class="at">at ' + extremes.wind.hourOnly + '</span></span>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="block">' +
+                        '<div class="block-label">Hourly snapshot</div>' +
+                        '<div class="scroll-track" role="region" aria-label="Hourly timeline">' +
+                            trackHtml +
+                        '</div>' +
+                    '</div>' +
+                    buildMoonHtml(day)
+                );
+                container.appendChild(view);
+                if (appState.intersectionObserver) appState.intersectionObserver.observe(view);
+                autoScrollTimeline(view);
+                const track = view.querySelector('.scroll-track');
+                if (track) enableDragScroll(track);
+            }
+            window.addEventListener('offline', function() {
+                showStatus('You are offline. Showing cached data if available.', 'offline');
+                attemptStaleFallback();
+            });
+            window.addEventListener('online', function() {
+                clearStatus();
+                if (!appState.weatherData) showStatus('Back online!', 'loading');
+            });
+            document.addEventListener('visibilitychange', function() {
+                if (document.visibilityState === 'visible' && appState.lastCoords) {
+                    const cachedInstance = loadFromCache();
+                    if (!cachedInstance || Date.now() - cachedInstance.timestamp > CONFIG.CACHE_EXPIRY_MS) {
+                        fetchForecastData(appState.lastCoords).catch(function() {});
+                    }
+                }
+            });
+            initTVMode();
+
+                        const initialCached = loadFromCache();
+            if (initialCached) {
+                appState.weatherData = initialCached.data;
+                appState.lastCoords = initialCached.coords;
+                processAndRenderData();
+                searchBtnText.textContent = 'Refresh forecast';
+            }
+            if (!navigator.onLine) {
+                showStatus('You are offline. Showing cached data if available.', 'offline');
+                attemptStaleFallback();
+            }
+            window.handleSearch = handleSearch;
+            window.handleGeolocation = handleGeolocation;
+        })();
+    </script>
+</body>
+</html>
