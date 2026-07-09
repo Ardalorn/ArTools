@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1c1815">
+<meta name="description" content="Tools by Ardalorn.">
+<meta name="author" content="Ardalorn">
+<title>Ardalorn — Tools</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Code+Pro:wght@400;600&display=swap');
+  :root{
+    --charcoal-950:#14110e;
+    --charcoal-900:#1c1815;
+    --charcoal-800:#26211c;
+    --charcoal-700:#322c25;
+    --parchment:#f0e6d4;
+    --parchment-dim:#a89b85;
+    --brass:#d49e5a;
+    --brass-bright:#e8b97a;
+    --line:#3a332b;
+    --radius:14px;
+    --serif: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --mono: "Source Code Pro", "JetBrains Mono", "SF Mono", Consolas, Menlo, monospace;
+    --sans: "Source Sans 3", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;}
+  body{
+    background:var(--charcoal-950);color:var(--parchment);font-family:var(--sans);
+    font-size:16px;line-height:1.5;min-height:100dvh;-webkit-font-smoothing:antialiased;
+    padding-bottom:env(safe-area-inset-bottom,0);
+  }
+  ::selection{background:var(--brass);color:var(--charcoal-950);}
+  a{color:inherit;}
+  main{max-width:680px;margin:0 auto;padding:56px 20px 64px;}
+
+  .eyebrow{
+    font-family:var(--mono);letter-spacing:.14em;text-transform:uppercase;font-size:11px;
+    color:var(--brass);border-bottom:1px solid var(--line);padding-bottom:12px;margin-bottom:20px;
+  }
+  h1{
+    font-family:var(--serif);font-style:italic;font-weight:400;
+    font-size:clamp(32px,7vw,44px);line-height:1.15;margin:0 0 8px;color:var(--parchment);
+  }
+  .lede{color:var(--parchment-dim);font-size:15px;margin:0 0 40px;max-width:52ch;}
+
+  .shelf{list-style:none;display:flex;flex-direction:column;gap:12px;}
+  .tool{
+    display:block;background:var(--charcoal-900);border:1px solid var(--line);border-radius:var(--radius);
+    padding:18px 20px;text-decoration:none;transition:border-color .15s ease, transform .15s ease;
+  }
+  .tool:hover, .tool:focus-visible{border-color:var(--brass);transform:translateX(2px);}
+  .tool:focus-visible{outline:2px solid var(--brass);outline-offset:2px;}
+  .tool-name{
+    font-family:var(--serif);font-size:20px;color:var(--parchment);display:flex;
+    align-items:baseline;justify-content:space-between;gap:12px;
+  }
+  .tool-name .arrow{font-family:var(--mono);color:var(--brass);font-size:15px;flex:none;}
+  .tool-desc{font-family:var(--sans);font-size:13.5px;color:var(--parchment-dim);margin-top:4px;}
+
+  footer{
+    max-width:680px;margin:0 auto;padding:0 20px 40px;
+    font-family:var(--mono);font-size:11px;color:var(--parchment-dim);
+    letter-spacing:.04em;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .tool{transition:none;}
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">Ardalorn</div>
+  <h1>Tools, kept in one place</h1>
+  <p class="lede">A shelf of single-file apps. Each one runs entirely in your browser, no accounts, no tracking.</p>
+
+  <ul class="shelf">
+    <li>
+      <a class="tool" href="arplan/">
+        <span class="tool-name">ArPlan <span class="arrow">→</span></span>
+        <div class="tool-desc">Weekly itinerary, meal planning, and pantry tracker.</div>
+      </a>
+    </li>
+    <!-- Add further tools here, one <li> per entry, folder path as href -->
+  </ul>
+</main>
+<footer>Ardalorn · built with plain HTML, CSS, and JS</footer>
+</body>
+</html>
