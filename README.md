@@ -11,6 +11,11 @@ A weekly planner covering itinerary, meal planning, and pantry tracking.
 
 **→ https://ardalorn.github.io/ArTools/arplan/**
 
+### ArCast
+A calm, accessible UK weather dashboard — postcode or device location, live hourly forecast, and daily moon phase.
+
+**→ https://ardalorn.github.io/ArTools/ArCast/**
+
 ## How it works
 
 - Open the link, use the app. That's it.
