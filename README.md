@@ -18,6 +18,12 @@ A calm, accessible UK weather dashboard — postcode or device location, live ho
 
 **→ https://ardalorn.github.io/ArTools/ArCast/**
 
+
+ArCanvas
+
+A distraction-free drawing experience for children.
+
+→ https://ardalorn.github.io/ArTools/ArCanvas/
 ## How it works
 
 - Open the link, use the app. That's it.
