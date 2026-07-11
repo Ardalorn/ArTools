@@ -1,0 +1,2069 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="description" content="ArCom | Zero-dependency, single-file comic reader and library manager. Runs entirely in your browser.">
+<title>ArCom | Comic Library & Reader</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+  :root {
+    --bg: #050002;
+    --surface: #050300;
+    --surface-2: #000503;
+    --surface-3: #000205;
+    --text: #fff0f0;
+    --text-muted: #fff;
+    --accent: #ff4d4d;
+    --accent-2: #ff6767;
+    --progress-1: #fff9f0;
+    --progress-2: #ffe9c9;
+    --progress-3: #ffd28e;
+    --progress-4: #ffba53;
+    --progress-5: #ffab2c;
+    --progress-complete: #ff9b05;
+    --danger: #dc2626;
+    --success: #16a34a;
+
+    /* Spacing scale — 4px base unit */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 32px;
+    --space-8: 40px;
+
+    /* Radius scale */
+    --radius-sm: 10px;
+    --radius: 16px;
+    --radius-lg: 22px;
+    --radius-full: 999px;
+
+    --shadow: 0 4px 24px rgba(0,0,0,0.6);
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100dvh;
+    width: 100vw;
+    display: flex;
+    flex-direction: column;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    overscroll-behavior: none;
+  }
+
+  /* Header / Nav */
+  .header {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface);
+    border-bottom: 1px solid var(--surface-2);
+    z-index: 10;
+    transition: transform 0.35s ease, opacity 0.35s ease;
+  }
+  .header.hidden-ui {
+    transform: translateY(-100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .header h1 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+    color: var(--accent);
+    cursor: pointer;
+  }
+  .nav {
+    display: flex;
+    gap: var(--space-1);
+  }
+  .nav-btn {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .nav-btn:hover { background: var(--surface-2); color: var(--text); }
+  .nav-btn.active { background: var(--surface-2); color: var(--accent); }
+
+  /* Main & Views */
+  .main {
+    flex: 1 1 auto;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .view {
+    display: none;
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-5) var(--space-4);
+    gap: var(--space-5);
+    flex-direction: column;
+  }
+  .view.active { display: flex; }
+  #view-reader.view {
+    padding: 0;
+    gap: 0;
+    overflow: hidden;
+  }
+
+  /* Landing View */
+  .landing-hero {
+    text-align: center;
+    padding: var(--space-5);
+  }
+  .landing-hero p {
+    color: var(--text-muted);
+    font-size: 15px;
+    max-width: 420px;
+    margin: 0 auto;
+    line-height: 1.5;
+  }
+  .section-title {
+    font-size: 16px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-1);
+  }
+  .section-title .count {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: var(--surface-2);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-full);
+  }
+  .comic-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: var(--space-4);
+  }
+  .comic-card {
+    background: var(--surface);
+    border-radius: var(--radius);
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    position: relative;
+    border: 1px solid var(--surface-2);
+  }
+  .comic-card:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow);
+    border-color: var(--surface-3);
+  }
+  .comic-card .thumb {
+    width: 100%;
+    aspect-ratio: 2/3;
+    background: var(--surface-2);
+    object-fit: cover;
+    display: block;
+  }
+  .comic-card .thumb-placeholder {
+    width: 100%;
+    aspect-ratio: 2/3;
+    background: var(--surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--surface-3);
+  }
+  .comic-card .info {
+    padding: var(--space-3);
+  }
+  .comic-card .name {
+    font-size: 13px;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .comic-card .meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: var(--space-1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .progress-bar {
+    width: min(320px, 80vw);
+    height: 6px;
+    background: var(--surface-2);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    position: relative;
+  }
+  .progress-bar .fill,
+  .comic-card .progress-bar .fill {
+    height: 100%;
+    background-image: linear-gradient(
+      90deg,
+      var(--progress-1) 0%,
+      var(--progress-2) 20%,
+      var(--progress-3) 40%,
+      var(--progress-4) 60%,
+      var(--progress-5) 80%,
+      var(--progress-complete) 100%
+    );
+    /* background-size is in the track's own fixed width (not a %), so the
+       gradient's 0–100% span always maps to the track's true full width —
+       independent of how wide the fill currently is. This keeps the colour
+       at any point in sync with real overall progress, and keeps the
+       reader's loading bar and every comic-card bar visually consistent. */
+    background-size: min(320px, 80vw) 100%;
+    background-repeat: no-repeat;
+    border-radius: var(--radius-full);
+    transition: width 0.25s ease;
+    width: 0%;
+  }
+
+  .comic-card .progress-bar {
+    width: 100%;
+    height: 3px;
+    background: var(--surface-2);
+    border-radius: var(--radius-full);
+    margin-top: var(--space-2);
+    overflow: hidden;
+    position: relative;
+  }
+  .comic-card .progress-bar .fill {
+    background-size: 100% 100%;
+    transition: width 0.3s ease;
+  }
+  .comic-card .fav-btn {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: color 0.15s, transform 0.1s;
+  }
+  .comic-card .fav-btn:hover { transform: scale(1.1); }
+  .comic-card .fav-btn.is-fav { color: #f59e0b; }
+
+  /* Empty state */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    padding: var(--space-8) var(--space-5);
+    text-align: center;
+    color: var(--text-muted);
+  }
+  .empty-state .icon {
+    width: 72px;
+    height: 72px;
+    border: 2px dashed var(--surface-2);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .empty-state h3 {
+    color: var(--text);
+    font-size: 18px;
+  }
+  .empty-state p {
+    font-size: 14px;
+    max-width: 320px;
+    line-height: 1.5;
+  }
+  .empty-state .btn-primary {
+    margin-top: var(--space-2);
+  }
+
+  /* Upload View */
+  .upload-zone {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-5);
+    padding: var(--space-6);
+    text-align: center;
+    border: 2px dashed var(--surface-2);
+    border-radius: var(--radius-lg);
+    margin: var(--space-5) var(--space-4);
+    transition: background 0.2s, border-color 0.2s;
+  }
+  .upload-zone.drag-over {
+    background: rgba(217, 119, 6, 0.06);
+    border-color: var(--accent);
+  }
+  .upload-zone .icon {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--radius);
+    background: var(--surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: var(--text-muted);
+  }
+  .upload-zone h2 { font-size: 20px; font-weight: 600; }
+  .upload-zone p { font-size: 14px; color: var(--text-muted); max-width: 320px; line-height: 1.5; }
+  .upload-zone .hint { font-size: 12px; color: var(--text-muted); opacity: 0.7; }
+  .upload-zone .exact-toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    user-select: none;
+    max-width: 320px;
+    text-align: left;
+  }
+  .upload-zone .exact-toggle input {
+    accent-color: var(--accent);
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .upload-zone .exact-toggle .note {
+    font-size: 11px;
+    opacity: 0.7;
+    line-height: 1.4;
+  }
+
+  /* Collection View */
+  .collection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+  .collection-filters {
+    display: flex;
+    gap: var(--space-2);
+  }
+  .filter-btn {
+    appearance: none;
+    border: none;
+    background: var(--surface-2);
+    color: var(--text-muted);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .filter-btn:hover { background: var(--surface-3); color: var(--text); }
+  .filter-btn.active { background: var(--accent); color: #fff; }
+
+  /* Reader View */
+  #readerView {
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+    background: var(--bg);
+  }
+  #readerView .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    width: 100%;
+    min-height: 0;
+  }
+  .canvas-wrapper {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  #viewportCanvas {
+    display: none;
+    touch-action: pan-y;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  #viewportCanvas.active {
+    display: block;
+  }
+
+  /* Progress overlay */
+  .progress-overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: rgba(13,13,13,0.9);
+    backdrop-filter: blur(4px);
+    z-index: 20;
+  }
+  .progress-overlay.active { display: flex; }
+  .progress-text {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .progress-tier {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* Reader Toolbar */
+  .reader-toolbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    background: var(--surface);
+    border-top: 1px solid var(--surface-2);
+    z-index: 10;
+    transition: transform 0.35s ease, opacity 0.35s ease;
+  }
+  .reader-toolbar.hidden-ui {
+    transform: translateY(100%);
+    opacity: 0;
+    pointer-events: none;
+  }
+  .toolbar-group {
+    display: flex;
+    gap: var(--space-2);
+    align-items: center;
+  }
+  .btn {
+    appearance: none;
+    border: none;
+    background: var(--surface-2);
+    color: var(--text);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn:hover { background: #333; }
+  .btn.primary { background: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent-2); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+  }
+  .comic-card .thumb-placeholder svg {
+    fill: currentColor;
+  }
+  .empty-state .icon svg {
+    fill: currentColor;
+  }
+  .btn-text { display: inline; }
+  
+  .correction-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+  }
+  .corr-btn {
+    appearance: none;
+    border: 1px solid var(--surface-3);
+    background: var(--surface-2);
+    color: var(--text-muted);
+    padding: var(--space-2) 0;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .corr-btn:hover {
+    background: var(--surface-3);
+    color: var(--text);
+  }
+  .corr-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent-2);
+  }
+
+  @media (max-width: 640px) {
+    .btn-text { display: none; }
+    .reader-toolbar .btn { padding: 8px; min-width: 36px; justify-content: center; }
+    .reader-toolbar .page-indicator { font-size: 11px; min-width: auto; padding: 0 4px; }
+  }
+  .page-indicator {
+    font-size: 13px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted);
+    min-width: 80px;
+    text-align: center;
+  }
+  .cache-stats {
+    font-size: 11px;
+    color: var(--text-muted);
+    opacity: 0.6;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Settings popover */
+  .settings-popover {
+    position: absolute;
+    bottom: 56px;
+    right: var(--space-3);
+    background: var(--surface);
+    border: 1px solid var(--surface-2);
+    border-radius: var(--radius);
+    padding: var(--space-4);
+    min-width: 220px;
+    box-shadow: var(--shadow);
+    display: none;
+    z-index: 25;
+    gap: var(--space-3);
+    flex-direction: column;
+  }
+  .settings-popover.open { display: flex; }
+  .settings-popover label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .settings-popover select,
+  .settings-popover input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+  .settings-popover select {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid #333;
+    border-radius: var(--radius-sm);
+    padding: var(--space-2);
+    font-size: 13px;
+  }
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+  .settings-row span { font-size: 13px; }
+
+  /* Focus island */
+  .island-wrapper {
+    position: fixed;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 30;
+    transition: top 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: none;
+  }
+  .island-wrapper.visible {
+    top: max(56px, calc(env(safe-area-inset-top, 0px) + 50px));
+    pointer-events: auto;
+  }
+  .island-btn {
+    background: rgba(38, 38, 38, 0.92);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.06);
+    color: var(--text);
+    padding: var(--space-2) var(--space-5);
+    border-radius: var(--radius-full);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    transition: box-shadow 0.3s;
+    white-space: nowrap;
+  }
+  .island-btn:hover { box-shadow: 0 6px 24px rgba(0,0,0,0.5); }
+  .island-btn.session-pulse {
+    animation: islandPulse 2s ease-in-out infinite;
+  }
+  @keyframes islandPulse {
+    0%, 100% { box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+    50% { box-shadow: 0 4px 24px rgba(217,119,6,0.25); }
+  }
+
+  /* Fullscreen notice */
+  #fullscreenNotice {
+    position: fixed;
+    top: max(56px, calc(env(safe-area-inset-top, 0px) + 50px));
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    z-index: 30;
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius);
+    background: rgba(26, 26, 26, 0.92);
+    color: #f4f1ea;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    white-space: nowrap;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: max(80px, calc(env(safe-area-inset-bottom, 0px) + 70px));
+    left: 50%;
+    transform: translateX(-50%) translateY(8px);
+    background: var(--surface);
+    border: 1px solid var(--surface-2);
+    color: var(--text);
+    padding: var(--space-3) var(--space-4);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 500;
+    box-shadow: var(--shadow);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s;
+    z-index: 40;
+    max-width: 80vw;
+    text-align: center;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* Tap zones for page turn */
+  .tap-zone {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 25%;
+    z-index: 8;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tap-zone.left { left: 0; }
+  .tap-zone.right { right: 0; }
+
+  @media (max-width: 640px) {
+    .tap-zone { width: 35%; }
+  }
+
+  /* Delete confirmation modal */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 50;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-backdrop.active { display: flex; }
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--surface-2);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    min-width: 280px;
+    max-width: 90vw;
+    box-shadow: var(--shadow);
+  }
+  .modal h3 { font-size: 16px; margin-bottom: var(--space-2); }
+  .modal p { font-size: 13px; color: var(--text-muted); margin-bottom: var(--space-4); line-height: 1.4; }
+  .modal-actions {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: flex-end;
+  }
+
+  @media (max-width: 640px) {
+    .header h1 { font-size: 16px; }
+    .nav-btn { padding: var(--space-1) var(--space-2); font-size: 12px; }
+    .comic-grid { grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: var(--space-3); }
+    .btn { padding: var(--space-2); font-size: 12px; min-height: 36px; }
+    .page-indicator { font-size: 11px; min-width: auto; padding: 0 var(--space-1); }
+    .cache-stats { display: none; }
+    .reader-toolbar { padding: 6px 8px; min-height: 44px; gap: 2px; }
+    .reader-toolbar .btn { padding: 6px 8px; font-size: 11px; }
+    .correction-grid { gap: var(--space-1); }
+    .corr-btn { padding: var(--space-2) 0; font-size: 12px; }
+    .reader-toolbar .toolbar-group { gap: 2px; flex-shrink: 0; }
+    .reader-toolbar .page-indicator { font-size: 11px; }
+    .upload-zone { margin: var(--space-2); padding: var(--space-4); }
+    .view { padding: var(--space-3) var(--space-2); }
+    .tap-zone { width: 35%; }
+  }
+  @media (max-width: 400px) {
+    .reader-toolbar .btn-text { display: none; }
+    .reader-toolbar .btn { padding: 6px; min-width: 32px; justify-content: center; }
+    .reader-toolbar .page-indicator { font-size: 10px; min-width: auto; }
+  }
+</style>
+</head>
+<body>
+
+<header id="header" class="header">
+  <h1 onclick="showView('landing')">ArCom</h1>
+  <nav class="nav">
+    <button class="nav-btn active" data-view="landing" onclick="showView('landing')">Home</button>
+    <button class="nav-btn" data-view="collection" onclick="showView('collection')">My Comics</button>
+    <button class="nav-btn" data-view="upload" onclick="showView('upload')"><strong>+</strong><sub> Add</sub></button>
+  </nav>
+</header>
+
+<main id="main" class="main">
+
+  <!-- LANDING VIEW -->
+  <div id="view-landing" class="view active">
+    <div class="landing-hero">
+      <p>Read CBZ(ZIP) comics entirely in your browser. No uploads, no accounts — everything stays on your device.</p>
+    </div>
+    <div id="landingContent"></div>
+  </div>
+
+  <!-- UPLOAD VIEW -->
+  <div id="view-upload" class="view">
+    <div id="uploadZone" class="upload-zone">
+      <div class="icon">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      </div>
+      <h2>Import a CBZ file</h2>
+      <p>CBZ (ZIP) is the standard comic archive format.<br>Drag & drop or click to browse files.</p>
+      
+      <div class="hint">Or click anywhere to browse files</div>
+      <input type="file" id="fileInput" accept=".cbz,.zip" style="display:none">
+    </div>
+  </div>
+
+  <!-- COLLECTION VIEW -->
+  <div id="view-collection" class="view">
+    <div class="collection-header">
+      <div class="section-title">My Comics <span class="count" id="collectionCount">0</span></div>
+      <div class="collection-filters">
+        <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+        <button class="filter-btn" data-filter="fav" onclick="setFilter('fav')">Favorites</button>
+        <button class="filter-btn" data-filter="unread" onclick="setFilter('unread')">Unread</button>
+        <button class="filter-btn" data-filter="reading" onclick="setFilter('reading')">Started</button>
+        <button class="filter-btn" data-filter="completed" onclick="setFilter('completed')">Completed</button>
+      </div>
+    </div>
+    <div id="collectionGrid" class="comic-grid"></div>
+  </div>
+
+  <!-- READER VIEW -->
+  <div id="view-reader" class="view">
+    <div style="flex:1;position:relative;overflow:hidden;">
+      <div class="canvas-wrapper">
+        <canvas id="viewportCanvas"></canvas>
+      </div>
+      <div id="tapLeft" class="tap-zone left" title="Previous page" style="z-index:9"></div>
+      <div id="tapRight" class="tap-zone right" title="Next page" style="z-index:9"></div>
+      <div id="progressOverlay" class="progress-overlay">
+        <div class="progress-tier" id="progressTier"></div>
+        <div class="progress-bar"><div class="fill" id="progressFill"></div></div>
+        <div class="progress-text" id="progressText">Loading…</div>
+      </div>
+    </div>
+    <div id="readerToolbar" class="reader-toolbar">
+      <div class="toolbar-group">
+        <button id="prevBtn" class="btn" disabled>
+          <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+          <span class="btn-text">Prev</span>
+        </button>
+        <button id="nextBtn" class="btn" disabled>
+          <span class="btn-text">Next</span>
+          <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+        </button>
+      </div>
+      <div class="page-indicator" id="pageIndicator">— / —</div>
+      <div class="toolbar-group">
+        <button id="favReaderBtn" class="btn" title="Toggle favorite">☆</button>
+        <button id="settingsBtn" class="btn" title="Settings">
+          <svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 0 1 8.5 12 3.5 3.5 0 0 1 12 8.5a3.5 3.5 0 0 1 3.5 3.5 3.5 3.5 0 0 1-3.5 3.5m7.43-2.53c.04-.32.07-.64.07-.97 0-.33-.03-.66-.07-1l2.11-1.63a.49.49 0 0 0 .12-.64l-2-3.46a.49.49 0 0 0-.61-.22l-2.49 1a7.14 7.14 0 0 0-1.69-.98l-.38-2.65A.484.484 0 0 0 14 2h-4c-.25 0-.46.18-.5.42l-.38 2.65c-.62.24-1.19.56-1.69.98l-2.49-1a.496.496 0 0 0-.61.22l-2 3.46c-.13.22-.07.49.12.64L4.57 11c-.04.34-.07.67-.07 1 0 .33.03.66.07 1l-2.11 1.63a.49.49 0 0 0-.12.64l2 3.46c.11.18.34.26.55.2l2.49-1.01c.5.42 1.07.74 1.69.98l.38 2.65c.04.24.25.42.5.42h4c.25 0 .46-.18.5-.42l.38-2.65c.62-.24 1.19-.56 1.69-.98l2.49 1.01c.21.06.44-.02.55-.2l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.63z"/></svg>
+        </button>
+        <button id="focusBtn" class="btn primary">
+          <svg viewBox="0 0 24 24"><path d="M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z"/></svg>
+          <span class="btn-text">Focus</span>
+        </button>
+        <button id="closeReaderBtn" class="btn">
+          <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+          <span class="btn-text">Close</span>
+        </button>
+      </div>
+    </div>
+    <div id="settingsPopover" class="settings-popover">
+      <label>CVD - Colour Correction</label>
+      <div class="correction-grid">
+        <button class="corr-btn active" data-corr=""><b>∅</b></button>
+        <button class="corr-btn" data-corr="protanopia">P</button>
+        <button class="corr-btn" data-corr="deuteranopia">D</button>
+        <button class="corr-btn" data-corr="tritanopia">T</button>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<div id="islandWrapper" class="island-wrapper">
+  <button id="islandBtn" class="island-btn">Exit Focus</button>
+</div>
+
+<div id="fullscreenNotice" role="status" aria-live="polite">Tap Focus again to enable fullscreen</div>
+<div id="toast" class="toast"></div>
+
+<!-- Delete Modal -->
+<div id="deleteModal" class="modal-backdrop">
+  <div class="modal">
+    <h3>Delete Comic?</h3>
+    <p>This will permanently remove the comic and all reading progress from your library.</p>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn primary" id="confirmDeleteBtn" style="background:var(--danger)">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ========================
+// ArCom — Comic Library & Reader (Zero-Dependency, Single-File)
+// ========================
+
+// ----- Centralized UI Text (JS-driven strings only) -----
+const TEXT = {
+  fullscreenHint: 'Tap Focus again to enable fullscreen',
+  focusExit: 'Exit',
+  focusEnter: 'Focus',
+  loading: 'Loading…',
+  extracting: (done, total) => `Extracting… ${done}/${total}`,
+  preparing: 'Preparing…',
+  ready: 'Ready',
+  favoritesHeading: 'Favorites',
+  discoverHeading: 'Discover',
+  yourComicsHeading: 'Your Comics',
+  thumbPlaceholderIcon: '<svg viewBox="0 0 24 24" width="32" height="32"><path d="M4 4.5A2.5 2.5 0 0 1 6.5 2H19a1 1 0 0 1 1 1v17a1 1 0 0 1-1 1H6.5A2.5 2.5 0 0 1 4 18.5v-14zm2.5-.5a.5.5 0 0 0-.5.5V17h13V4H6.5zM6 19a.5.5 0 0 0 .5.5H18V19H6.5c-.17 0-.34.02-.5.05V19z"/></svg>',
+  toastAdded: (name, pages, tier) => `Added "${name}" · ${pages} pages · ${tier} tier`,
+  toastLoaded: (pages, tier) => `${pages} pages · ${tier} tier`,
+  pageIndicatorEmpty: '— / —',
+  pageIndicator: (idx, total) => `${idx} / ${total}`,
+  errUnsupportedZip: (method) => `Unsupported ZIP compression method: ${method}`,
+  errUnsupportedFormat: (ext) => `Unsupported format: .${ext || '(unknown)'}. Only CBZ (ZIP) is supported.`,
+  errPageLoad: (index) => `Failed to load page ${index}`,
+  errPrefix: (msg) => `Error: ${msg}`
+};
+
+// ----- IndexedDB Wrapper -----
+const DB_NAME = 'ArComDB';
+const DB_VERSION = 1;
+let db = null;
+
+function openDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => resolve(req.result);
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains('comics')) {
+        const store = d.createObjectStore('comics', { keyPath: 'id' });
+        store.createIndex('name', 'name', { unique: false });
+        store.createIndex('isFavorite', 'isFavorite', { unique: false });
+        store.createIndex('lastReadAt', 'lastReadAt', { unique: false });
+      }
+    };
+  });
+}
+
+async function getDB() {
+  if (!db) db = await openDB();
+  return db;
+}
+
+async function dbGetAll() {
+  const d = await getDB();
+  return new Promise((resolve, reject) => {
+    const tx = d.transaction('comics', 'readonly');
+    const store = tx.objectStore('comics');
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function dbGet(id) {
+  const d = await getDB();
+  return new Promise((resolve, reject) => {
+    const tx = d.transaction('comics', 'readonly');
+    const store = tx.objectStore('comics');
+    const req = store.get(id);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function dbPut(comic) {
+  const d = await getDB();
+  return new Promise((resolve, reject) => {
+    const tx = d.transaction('comics', 'readwrite');
+    const store = tx.objectStore('comics');
+    const req = store.put(comic);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function dbDelete(id) {
+  const d = await getDB();
+  return new Promise((resolve, reject) => {
+    const tx = d.transaction('comics', 'readwrite');
+    const store = tx.objectStore('comics');
+    const req = store.delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// ----- Tier Policy -----
+const tierPolicyData = {
+  tierOrder: ["issue", "volume", "graphicNovel", "omnibus"],
+  tiers: {
+    issue: {
+      maxPages: 48,
+      extraction: { chunkSize: 9999 },
+      decode: { mode: "eager", lookahead: null },
+      daltonizePreCache: { mode: "all", radius: null },
+      eviction: { enabled: false, maxResidentDecoded: null, maxResidentDaltonized: null }
+    },
+    volume: {
+      maxPages: 200,
+      extraction: { chunkSize: 30 },
+      decode: { mode: "window", lookahead: 5 },
+      daltonizePreCache: { mode: "window", radius: 3 },
+      eviction: { enabled: true, maxResidentDecoded: 12, maxResidentDaltonized: 6 }
+    },
+    graphicNovel: {
+      maxPages: 400,
+      extraction: { chunkSize: 20 },
+      decode: { mode: "window", lookahead: 4 },
+      daltonizePreCache: { mode: "window", radius: 2 },
+      eviction: { enabled: true, maxResidentDecoded: 10, maxResidentDaltonized: 4 }
+    },
+    omnibus: {
+      maxPages: null,
+      extraction: { chunkSize: 15 },
+      decode: { mode: "window", lookahead: 3 },
+      daltonizePreCache: { mode: "on-demand", radius: null },
+      eviction: { enabled: true, maxResidentDecoded: 8, maxResidentDaltonized: 3 }
+    }
+  }
+};
+
+// ----- Minimal Pure-JS ZIP Parser -----
+const IMAGE_EXTENSIONS = new Set(['png','jpg','jpeg','webp','gif','bmp','avif']);
+
+function getExtension(filename) {
+  const parts = filename.split('.');
+  return parts.length > 1 ? parts.pop().toLowerCase() : '';
+}
+function naturalSort(a, b) {
+  return a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
+}
+
+class MinimalZip {
+  constructor(arrayBuffer) {
+    this.buffer = arrayBuffer;
+    this.view = new DataView(arrayBuffer);
+    this.files = [];
+    this._parse();
+  }
+
+  _readString(offset, length) {
+    const bytes = new Uint8Array(this.buffer, offset, length);
+    try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+    catch { return new TextDecoder('latin1').decode(bytes); }
+  }
+
+  _parse() {
+    const buf = this.buffer;
+    const view = this.view;
+    const len = buf.byteLength;
+    let eocdOffset = -1;
+    const maxScan = Math.min(len, 65536 + 22);
+    for (let i = len - 22; i >= len - maxScan && i >= 0; i--) {
+      if (view.getUint32(i, true) === 0x06054b50) {
+        const commentLen = view.getUint16(i + 20, true);
+        if (i + 22 + commentLen === len) {
+          eocdOffset = i;
+          break;
+        }
+      }
+    }
+    if (eocdOffset < 0) throw new Error('Invalid ZIP: EOCD not found');
+
+    const cdEntries = view.getUint16(eocdOffset + 10, true);
+    const cdOffset = view.getUint32(eocdOffset + 16, true);
+
+    let ptr = cdOffset;
+    for (let i = 0; i < cdEntries; i++) {
+      if (ptr + 46 > len) throw new Error('ZIP central directory truncated');
+      const sig = view.getUint32(ptr, true);
+      if (sig !== 0x02014b50) throw new Error('ZIP invalid central directory signature');
+      const compressionMethod = view.getUint16(ptr + 10, true);
+      const compressedSize = view.getUint32(ptr + 20, true);
+      const uncompressedSize = view.getUint32(ptr + 24, true);
+      const nameLen = view.getUint16(ptr + 28, true);
+      const extraLen = view.getUint16(ptr + 30, true);
+      const commentLen = view.getUint16(ptr + 32, true);
+      const localHeaderOffset = view.getUint32(ptr + 42, true);
+      const name = this._readString(ptr + 46, nameLen);
+      if (!name.endsWith('/')) {
+        this.files.push({
+          name, compressionMethod, compressedSize, uncompressedSize,
+          localHeaderOffset, isImage: IMAGE_EXTENSIONS.has(getExtension(name))
+        });
+      }
+      ptr += 46 + nameLen + extraLen + commentLen;
+    }
+  }
+
+  async extractFile(index) {
+    const file = this.files[index];
+    const view = this.view;
+    const ptr = file.localHeaderOffset;
+    const nameLen = view.getUint16(ptr + 26, true);
+    const extraLen = view.getUint16(ptr + 28, true);
+    const dataOffset = ptr + 30 + nameLen + extraLen;
+    const compressed = new Uint8Array(this.buffer, dataOffset, file.compressedSize);
+    if (file.compressionMethod === 0) {
+      return new Blob([compressed]);
+    } else if (file.compressionMethod === 8) {
+      const ds = new DecompressionStream('deflate-raw');
+      const writer = ds.writable.getWriter();
+      writer.write(compressed);
+      writer.close();
+      const out = await new Response(ds.readable).arrayBuffer();
+      return new Blob([out]);
+    } else {
+      throw new Error(TEXT.errUnsupportedZip(file.compressionMethod));
+    }
+  }
+
+  get imageFiles() {
+    return this.files.filter(f => f.isImage).sort((a, b) => naturalSort(a.name, b.name));
+  }
+}
+
+// ----- LRU Cache -----
+class LRUCache {
+  constructor(capacity, onEvict = () => {}) {
+    this.capacity = capacity;
+    this.onEvict = onEvict;
+    this._map = new Map();
+  }
+  get(key) {
+    if (!this._map.has(key)) return undefined;
+    const value = this._map.get(key);
+    this._map.delete(key);
+    this._map.set(key, value);
+    return value;
+  }
+  has(key) { return this._map.has(key); }
+  set(key, value) {
+    if (this._map.has(key)) this._map.delete(key);
+    this._map.set(key, value);
+    this._evictIfNeeded();
+  }
+  _evictIfNeeded() {
+    if (this.capacity == null) return;
+    while (this._map.size > this.capacity) {
+      const oldestKey = this._map.keys().next().value;
+      const oldestValue = this._map.get(oldestKey);
+      this._map.delete(oldestKey);
+      this.onEvict(oldestValue, oldestKey);
+    }
+  }
+  delete(key) {
+    if (!this._map.has(key)) return false;
+    const value = this._map.get(key);
+    this._map.delete(key);
+    this.onEvict(value, key);
+    return true;
+  }
+  clear() {
+    for (const [key, value] of this._map.entries()) this.onEvict(value, key);
+    this._map.clear();
+  }
+  get size() { return this._map.size; }
+  keys() { return Array.from(this._map.keys()); }
+}
+
+// ----- Daltonize -----
+const LMS_MAT = [[0.3138,0.6395,0.0467],[0.1551,0.7579,0.0870],[0.0172,0.1095,0.8733]];
+const INV_LMS_MAT = [[5.4720,-4.6419,0.1699],[-1.1252,2.2932,-0.1680],[0.0298,-0.1933,1.1637]];
+
+function rgbToLms(r, g, b) {
+  const R = r/255, G = g/255, B = b/255;
+  return [
+    LMS_MAT[0][0]*R + LMS_MAT[0][1]*G + LMS_MAT[0][2]*B,
+    LMS_MAT[1][0]*R + LMS_MAT[1][1]*G + LMS_MAT[1][2]*B,
+    LMS_MAT[2][0]*R + LMS_MAT[2][1]*G + LMS_MAT[2][2]*B
+  ];
+}
+function lmsToRgb(l, m, s) {
+  const R = INV_LMS_MAT[0][0]*l + INV_LMS_MAT[0][1]*m + INV_LMS_MAT[0][2]*s;
+  const G = INV_LMS_MAT[1][0]*l + INV_LMS_MAT[1][1]*m + INV_LMS_MAT[1][2]*s;
+  const B = INV_LMS_MAT[2][0]*l + INV_LMS_MAT[2][1]*m + INV_LMS_MAT[2][2]*s;
+  return [
+    Math.max(0, Math.min(255, R*255)),
+    Math.max(0, Math.min(255, G*255)),
+    Math.max(0, Math.min(255, B*255))
+  ];
+}
+
+function daltonizeImageData(srcData, type) {
+  if (!type) return srcData;
+  const w = srcData.width, h = srcData.height;
+  const out = new ImageData(w, h);
+  const s = srcData.data;
+  const d = out.data;
+  const sim = { protanopia: [0,1,0,1,0,0], deuteranopia: [1,0,1,0,0,0], tritanopia: [1,0,0,1,0,1] }[type];
+  if (!sim) return srcData;
+  for (let i = 0; i < s.length; i += 4) {
+    const [l, m, ss] = rgbToLms(s[i], s[i+1], s[i+2]);
+    const l2 = sim[0] ? l : (sim[1] ? m : ss);
+    const m2 = sim[2] ? l : (sim[3] ? m : ss);
+    const s2 = sim[4] ? l : (sim[5] ? m : ss);
+    const [sr, sg, sb] = lmsToRgb(l2, m2, s2);
+    const er = s[i] - sr, eg = s[i+1] - sg, eb = s[i+2] - sb;
+    d[i]   = Math.min(255, Math.max(0, s[i]   + er));
+    d[i+1] = Math.min(255, Math.max(0, s[i+1] + eg));
+    d[i+2] = Math.min(255, Math.max(0, s[i+2] + eb));
+    d[i+3] = s[i+3];
+  }
+  return out;
+}
+function listCorrectableTypes() { return ['protanopia','deuteranopia','tritanopia']; }
+
+// ----- Comic Loader -----
+function detectFormat(file) {
+  const ext = getExtension(file.name);
+  if (ext === 'cbz' || ext === 'zip') return 'cbz';
+  throw new Error(TEXT.errUnsupportedFormat(ext));
+}
+
+async function probePageCount(file, exact = false) {
+  detectFormat(file);
+  const ab = await file.arrayBuffer();
+  const zip = new MinimalZip(ab);
+  return exact ? zip.imageFiles.length : zip.files.length;
+}
+
+async function extractArchivePagesChunked(file, { chunkSize = 20, onProgress = () => {} } = {}) {
+  const ab = await file.arrayBuffer();
+  const zip = new MinimalZip(ab);
+  const imageFiles = zip.imageFiles;
+  if (imageFiles.length === 0) throw new Error('No image pages found in archive.');
+  const pages = new Array(imageFiles.length);
+  for (let i = 0; i < imageFiles.length; i++) {
+    pages[i] = await zip.extractFile(zip.files.indexOf(imageFiles[i]));
+    onProgress(i + 1, imageFiles.length);
+    if ((i + 1) % chunkSize === 0) await new Promise(r => setTimeout(r, 0));
+  }
+  return pages;
+}
+
+
+
+async function generateThumbnail(file) {
+  const pages = await extractArchivePagesChunked(file, { chunkSize: 1 });
+  if (pages.length === 0) return null;
+  const blob = pages[0];
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error('Thumbnail decode failed'));
+      image.src = url;
+    });
+    const canvas = document.createElement('canvas');
+    const maxSize = 300;
+    const scale = Math.min(maxSize / img.naturalWidth, maxSize / img.naturalHeight, 1);
+    canvas.width = Math.round(img.naturalWidth * scale);
+    canvas.height = Math.round(img.naturalHeight * scale);
+    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+    return new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.85));
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+// ----- Comic Page & Reader -----
+class ComicPage {
+  constructor(src, index) {
+    this.src = src;
+    this.index = index;
+    this.width = 0;
+    this.height = 0;
+  }
+  async decode() {
+    const objectUrl = this.src instanceof Blob ? URL.createObjectURL(this.src) : null;
+    const imgSrc = objectUrl ?? this.src;
+    const img = await new Promise((resolve, reject) => {
+      const image = new Image();
+      image.crossOrigin = 'anonymous';
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error(TEXT.errPageLoad(this.index)));
+      image.src = imgSrc;
+    });
+    if (objectUrl) URL.revokeObjectURL(objectUrl);
+    this.width = img.naturalWidth;
+    this.height = img.naturalHeight;
+    const canvas = document.createElement('canvas');
+    canvas.width = this.width;
+    canvas.height = this.height;
+    canvas.getContext('2d').drawImage(img, 0, 0);
+    return canvas;
+  }
+}
+
+class ComicReader {
+  constructor(viewportCanvas, pageSources, tierPolicy = null) {
+    this.viewport = viewportCanvas;
+    this.viewportCtx = viewportCanvas.getContext('2d');
+    this.pages = pageSources.map((src, i) => new ComicPage(src, i));
+    this.currentIndex = 0;
+    this.correctionType = null;
+    
+    this._resizeObserver = new ResizeObserver(() => {
+      if (this._pendingRender) return;
+      this._pendingRender = true;
+      requestAnimationFrame(() => {
+        this._pendingRender = false;
+        this.render();
+      });
+    });
+    this._resizeObserver.observe(this.viewport.parentElement);
+    this._pendingRender = false;
+    this.policy = tierPolicy ?? {
+      decode: { mode: 'eager', lookahead: null },
+      daltonizePreCache: { mode: 'all', radius: null },
+      eviction: { enabled: false, maxResidentDecoded: null, maxResidentDaltonized: null }
+    };
+    const evictCanvas = canvas => { canvas.width = 0; canvas.height = 0; };
+    this._decodedCache = new LRUCache(
+      this.policy.eviction.enabled ? this.policy.eviction.maxResidentDecoded : null,
+      evictCanvas
+    );
+    this._daltonizedCache = new LRUCache(
+      this.policy.eviction.enabled ? this.policy.eviction.maxResidentDaltonized : null,
+      evictCanvas
+    );
+  }
+  static get availableCorrections() { return listCorrectableTypes(); }
+  async _getDecoded(index) {
+    const cached = this._decodedCache.get(index);
+    if (cached) return cached;
+    const canvas = await this.pages[index].decode();
+    this._decodedCache.set(index, canvas);
+    return canvas;
+  }
+  async _getDaltonized(index, type) {
+    const key = `${index}:${type}`;
+    const cached = this._daltonizedCache.get(key);
+    if (cached) return cached;
+    const original = await this._getDecoded(index);
+    const srcData = original.getContext('2d').getImageData(0, 0, original.width, original.height);
+    const correctedData = daltonizeImageData(srcData, type);
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = original.width;
+    outCanvas.height = original.height;
+    outCanvas.getContext('2d').putImageData(correctedData, 0, 0);
+    this._daltonizedCache.set(key, outCanvas);
+    return outCanvas;
+  }
+  async _getRendered(index) {
+    if (!this.correctionType) return this._getDecoded(index);
+    return this._getDaltonized(index, this.correctionType);
+  }
+  async goToPage(index) {
+    if (index < 0 || index >= this.pages.length) return;
+    this.currentIndex = index;
+    await this._getDecoded(index);
+    this._warmAdjacent(index);
+    await this.render();
+  }
+  _warmAdjacent(index) {
+    const lookahead = this.policy.decode.lookahead;
+    if (lookahead != null) {
+      for (let offset = 1; offset <= lookahead; offset++) {
+        [index - offset, index + offset].forEach(i => {
+          if (i >= 0 && i < this.pages.length) this._getDecoded(i).catch(() => {});
+        });
+      }
+    } else if (this.policy.decode.mode === 'eager') {
+      this.pages.forEach((_, i) => { if (i !== index) this._getDecoded(i).catch(() => {}); });
+    }
+    if (this.correctionType) {
+      const radius = this.policy.daltonizePreCache.radius;
+      if (this.policy.daltonizePreCache.mode === 'all') {
+        this.pages.forEach((_, i) => {
+          this._getDaltonized(i, this.correctionType).catch(() => {});
+        });
+      } else if (this.policy.daltonizePreCache.mode === 'window' && radius != null) {
+        for (let offset = 0; offset <= radius; offset++) {
+          [index - offset, index + offset].forEach(i => {
+            if (i >= 0 && i < this.pages.length) {
+              this._getDaltonized(i, this.correctionType).catch(() => {});
+            }
+          });
+        }
+      }
+    }
+  }
+  async setCorrection(type) {
+    this.correctionType = type;
+    await this.render();
+    this._warmAdjacent(this.currentIndex);
+  }
+  async render() {
+    const page = this.pages[this.currentIndex];
+    const rendered = await this._getRendered(this.currentIndex);
+    const imgW = page.width || rendered.width;
+    const imgH = page.height || rendered.height;
+    // Use parent container dimensions
+    const container = this.viewport.parentElement;
+    let cssW = container.clientWidth;
+    let cssH = container.clientHeight;
+    // Fallback to window size if container is not sized yet
+    if (cssW === 0 || cssH === 0) {
+      cssW = window.innerWidth;
+      cssH = window.innerHeight;
+    }
+    // Use device pixel ratio for sharp rendering on retina displays
+    const dpr = window.devicePixelRatio || 1;
+    // Set internal resolution to match CSS size × DPR
+    this.viewport.width = Math.round(cssW * dpr);
+    this.viewport.height = Math.round(cssH * dpr);
+    // Ensure canvas fills container via CSS
+    this.viewport.style.width = '100%';
+    this.viewport.style.height = '100%';
+    // Re-acquire context after resize (context is reset)
+    const ctx = this.viewport.getContext('2d');
+    // Scale context so drawing uses CSS coordinates
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // Calculate scale to fit image within CSS dimensions
+    const scale = Math.min(cssW / imgW, cssH / imgH, 1);
+    const drawW = imgW * scale;
+    const drawH = imgH * scale;
+    // Center the image
+    const offsetX = (cssW - drawW) / 2;
+    const offsetY = (cssH - drawH) / 2;
+    // Draw with high quality
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(rendered, offsetX, offsetY, drawW, drawH);
+  }
+  nextPage() { return this.goToPage(this.currentIndex + 1); }
+  prevPage() { return this.goToPage(this.currentIndex - 1); }
+  get cacheStats() { return { decoded: this._decodedCache.size, daltonized: this._daltonizedCache.size }; }
+}
+
+function classifyTier(pageCount) {
+  for (const tierKey of tierPolicyData.tierOrder) {
+    const tier = tierPolicyData.tiers[tierKey];
+    if (tier.maxPages == null || pageCount <= tier.maxPages) return tierKey;
+  }
+  return tierPolicyData.tierOrder[tierPolicyData.tierOrder.length - 1];
+}
+
+async function loadComicTiered(viewportCanvas, comicFile, { exactProbe = false, onProgress = () => {} } = {}) {
+  onProgress({ stage: 'probing' });
+  const probedCount = await probePageCount(comicFile, exactProbe);
+  const tierKey = classifyTier(probedCount);
+  const tierPolicy = tierPolicyData.tiers[tierKey];
+  onProgress({ stage: 'extracting', tier: tierKey, total: probedCount });
+  const chunkSize = tierPolicy.extraction.chunkSize ?? 9999;
+  const pageBlobs = await extractArchivePagesChunked(comicFile, {
+    chunkSize,
+    onProgress: (done, total) => onProgress({ stage: 'extracting', tier: tierKey, done, total })
+  });
+  onProgress({ stage: 'constructing', tier: tierKey, total: pageBlobs.length });
+  const reader = new ComicReader(viewportCanvas, pageBlobs, tierPolicy);
+  onProgress({ stage: 'ready', tier: tierKey, total: pageBlobs.length });
+  return { reader, tier: tierKey, pageCount: pageBlobs.length };
+}
+
+// ----- Focus + Fullscreen -----
+const SESSION_PULSE_MS = 600000;
+const IDLE_FADE_MS = 3000;
+
+function createFullscreenNotice() {
+  const el = document.createElement('div');
+  el.id = 'fullscreenNotice';
+  el.setAttribute('role', 'status');
+  el.setAttribute('aria-live', 'polite');
+  el.style.cssText = `
+    position: fixed;
+    top: max(56px, calc(env(safe-area-inset-top, 0px) + 50px));
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    z-index: 30;
+    padding: 10px 16px;
+    border-radius: 12px;
+    background: rgba(26, 26, 26, 0.92);
+    color: #f4f1ea;
+    font-size: 13px;
+    font-weight: 600;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    white-space: nowrap;
+  `;
+  el.textContent = TEXT.fullscreenHint;
+  document.body.appendChild(el);
+  return el;
+}
+
+function showNotice(el) {
+  el.style.opacity = '1';
+  el.style.transform = 'translateX(-50%) translateY(0)';
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateX(-50%) translateY(-8px)';
+  }, 2500);
+}
+
+function initFocusFullscreen(opts) {
+  const {
+    header, toolbar, focusBtn, islandWrapper, islandBtn,
+    fullscreenTarget = document.documentElement,
+    noticeEl = createFullscreenNotice()
+  } = opts;
+  let focusMode = false;
+  let idleTimer = null;
+  let sessionPulseTimer = null;
+  async function requestFullscreenSafe() {
+    try {
+      if (fullscreenTarget.requestFullscreen) {
+        await fullscreenTarget.requestFullscreen();
+      } else if (fullscreenTarget.webkitRequestFullscreen) {
+        await fullscreenTarget.webkitRequestFullscreen();
+      } else {
+        throw new Error('Fullscreen API unavailable');
+      }
+    } catch {
+      showNotice(noticeEl);
+    }
+  }
+  async function exitFullscreenSafe() {
+    try {
+      if (document.fullscreenElement && document.exitFullscreen) {
+        await document.exitFullscreen();
+      } else if (document.webkitFullscreenElement && document.webkitExitFullscreen) {
+        await document.webkitExitFullscreen();
+      }
+    } catch {}
+  }
+  function resetIdleTimer() {
+    if (!focusMode) return;
+    islandWrapper.classList.add('visible');
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      islandWrapper.classList.remove('visible');
+    }, IDLE_FADE_MS);
+  }
+  async function enterFocusMode() {
+    focusMode = true;
+    header.classList.add('hidden-ui');
+    toolbar.classList.add('hidden-ui');
+    focusBtn.querySelector('.btn-text').textContent = TEXT.focusExit;
+    resetIdleTimer();
+    await requestFullscreenSafe();
+    sessionPulseTimer = setTimeout(() => {
+      islandBtn.classList.add('session-pulse');
+    }, SESSION_PULSE_MS);
+  }
+  async function exitFocusMode() {
+    focusMode = false;
+    header.classList.remove('hidden-ui');
+    toolbar.classList.remove('hidden-ui');
+    islandWrapper.classList.remove('visible');
+    islandBtn.classList.remove('session-pulse');
+    focusBtn.querySelector('.btn-text').textContent = TEXT.focusEnter;
+    clearTimeout(idleTimer);
+    clearTimeout(sessionPulseTimer);
+    await exitFullscreenSafe();
+  }
+  focusBtn.addEventListener('click', () => {
+    if (focusMode) exitFocusMode();
+    else enterFocusMode();
+  });
+  islandBtn.addEventListener('click', exitFocusMode);
+  ['pointermove','pointerdown','touchstart'].forEach(evt => {
+    document.addEventListener(evt, () => { if (focusMode) resetIdleTimer(); }, { passive: true });
+  });
+  document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement && focusMode) {
+      focusMode = false;
+      header.classList.remove('hidden-ui');
+      toolbar.classList.remove('hidden-ui');
+      islandWrapper.classList.remove('visible');
+      islandBtn.classList.remove('session-pulse');
+      focusBtn.querySelector('.btn-text').textContent = TEXT.focusEnter;
+      clearTimeout(idleTimer);
+      clearTimeout(sessionPulseTimer);
+    }
+  });
+  return { enterFocusMode, exitFocusMode, isFocusMode: () => focusMode };
+}
+
+// ----- App State & Navigation -----
+let allComics = [];
+let currentFilter = 'all';
+let reader = null;
+let currentComicId = null;
+let focusApi = null;
+let deleteTargetId = null;
+
+const $ = id => document.getElementById(id);
+
+function showView(viewName) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  const view = $(`view-${viewName}`);
+  if (view) view.classList.add('active');
+  const btn = document.querySelector(`.nav-btn[data-view="${viewName}"]`);
+  if (btn) btn.classList.add('active');
+
+  if (viewName === 'landing') renderLanding();
+  if (viewName === 'collection') renderCollection();
+  if (viewName === 'reader') {
+    // reader view handles its own chrome
+  }
+}
+
+function showToast(msg) {
+  const el = $('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2500);
+}
+
+// ----- Landing Page -----
+async function renderLanding() {
+  const container = $('landingContent');
+  allComics = await dbGetAll();
+  const favorites = allComics.filter(c => c.isFavorite);
+
+  if (allComics.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon"><svg viewBox="0 0 24 24" width="32" height="32"><path d="M4 4a2 2 0 0 1 2-2h2v20H6a2 2 0 0 1-2-2V4zm7-2h2v20h-2V2zm5 .34l4.8 1.28a1 1 0 0 1 .71 1.22l-4.66 17.4-1.93-.52 4.42-16.5L16 3.87V2.34z"/></svg></div>
+        <h3>Your library is empty</h3>
+        <p>Upload your first CBZ comic to get started. Everything is stored locally on your device.</p>
+        <button class="btn primary" onclick="showView('upload')">Upload First Comic</button>
+      </div>
+    `;
+    return;
+  }
+
+  let html = '';
+  if (favorites.length > 0) {
+    html += `<div class="section-title">${TEXT.favoritesHeading} <span class="count">${favorites.length}</span></div>`;
+    html += `<div class="comic-grid">${favorites.map(c => comicCardHTML(c)).join('')}</div>`;
+  }
+
+  const nonFavorites = allComics.filter(c => !c.isFavorite);
+  const shuffled = nonFavorites.sort(() => Math.random() - 0.5).slice(0, 5);
+
+  if (shuffled.length > 0) {
+    html += `<div class="section-title" style="margin-top:8px;">${favorites.length > 0 ? TEXT.discoverHeading : TEXT.yourComicsHeading} <span class="count">${shuffled.length}</span></div>`;
+    html += `<div class="comic-grid">${shuffled.map(c => comicCardHTML(c)).join('')}</div>`;
+  }
+
+  container.innerHTML = html;
+  attachCardEvents();
+}
+
+function comicCardHTML(c) {
+  const progressPct = c.totalPages > 0 ? Math.round((c.lastReadPage / Math.max(c.totalPages - 1, 1)) * 100) : 0;
+  const thumb = c.thumbnail ? `<img class="thumb" src="${c.thumbnail}" alt="" loading="lazy">` : `<div class="thumb-placeholder">${TEXT.thumbPlaceholderIcon}</div>`;
+  return `
+    <div class="comic-card" data-id="${escapeHtml(c.id)}">
+      ${thumb}
+      <button class="fav-btn ${c.isFavorite ? 'is-fav' : ''}" data-id="${escapeHtml(c.id)}" data-action="toggle-fav">
+        ${c.isFavorite ? '★' : '☆'}
+      </button>
+      <div class="info">
+        <div class="name">${escapeHtml(c.name)}</div>
+        <div class="meta">
+          <span>${c.totalPages} pages · ${c.tier}</span>
+          <span>${progressPct}%</span>
+        </div>
+        <div class="progress-bar"><div class="fill" style="width:${progressPct}%"></div></div>
+      </div>
+    </div>
+  `;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function attachCardEvents() {
+  document.querySelectorAll('.comic-card').forEach(card => {
+    card.addEventListener('click', () => openComic(card.dataset.id));
+  });
+  document.querySelectorAll('.fav-btn[data-action="toggle-fav"]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleFavorite(btn.dataset.id);
+    });
+  });
+}
+
+// ----- Collection Page -----
+async function renderCollection() {
+  allComics = await dbGetAll();
+  const grid = $('collectionGrid');
+  $('collectionCount').textContent = allComics.length;
+
+  let filtered = allComics;
+  if (currentFilter === 'fav') filtered = allComics.filter(c => c.isFavorite);
+  else if (currentFilter === 'unread') filtered = allComics.filter(c => c.lastReadPage === 0);
+  else if (currentFilter === 'reading') filtered = allComics.filter(c => c.lastReadPage > 0 && c.lastReadPage < c.totalPages - 1);
+  else if (currentFilter === 'completed') filtered = allComics.filter(c => c.totalPages > 0 && c.lastReadPage >= c.totalPages - 1);
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `
+      <div class="empty-state" style="grid-column:1/-1;">
+        <div class="icon"><svg viewBox="0 0 24 24" width="32" height="32"><path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 1 0-.7.7l.27.28v.79l5 5 1.5-1.5-5-5zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z"/></svg></div>
+        <h3>No comics match this filter</h3>
+        <p>Try a different filter or upload a new comic.</p>
+      </div>
+    `;
+    return;
+  }
+
+  grid.innerHTML = filtered.map(c => comicCardHTML(c)).join('');
+  attachCardEvents();
+}
+
+function setFilter(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.filter-btn[data-filter="${filter}"]`).classList.add('active');
+  renderCollection();
+}
+
+// ----- Upload -----
+const uploadZone = $('uploadZone');
+const fileInput = $('fileInput');
+
+uploadZone.addEventListener('click', e => {
+  if (e.target.closest('.exact-toggle')) return;
+  fileInput.click();
+});
+fileInput.addEventListener('change', e => {
+  if (e.target.files[0]) handleUpload(e.target.files[0]);
+  e.target.value = '';
+});
+
+['dragenter','dragover'].forEach(evt => {
+  uploadZone.addEventListener(evt, e => {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadZone.classList.add('drag-over');
+  });
+});
+['dragleave','drop'].forEach(evt => {
+  uploadZone.addEventListener(evt, e => {
+    e.preventDefault();
+    e.stopPropagation();
+    uploadZone.classList.remove('drag-over');
+  });
+});
+uploadZone.addEventListener('drop', e => {
+  const file = e.dataTransfer.files[0];
+  if (file) handleUpload(file);
+});
+
+async function handleUpload(file) {
+  showToast('Processing…');
+  try {
+    const exactProbe = true; // always exact count
+    const probedCount = await probePageCount(file, exactProbe);
+    const tierKey = classifyTier(probedCount);
+    const thumbnail = await generateThumbnail(file);
+    let thumbUrl = null;
+    if (thumbnail) {
+      thumbUrl = await new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result);
+        reader.readAsDataURL(thumbnail);
+      });
+    }
+
+    const fileBuffer = await file.arrayBuffer();
+    const comic = {
+      id: generateId(),
+      name: file.name.replace(/\.cbz$/i, '').replace(/\.zip$/i, ''),
+      fileBuffer: fileBuffer,
+      fileName: file.name,
+      fileType: file.type || 'application/x-cbr',
+      totalPages: probedCount,
+      tier: tierKey,
+      thumbnail: thumbUrl,
+      addedAt: Date.now(),
+      lastReadAt: 0,
+      lastReadPage: 0,
+      isFavorite: false
+    };
+
+    await dbPut(comic);
+    showToast(TEXT.toastAdded(comic.name, probedCount, tierKey));
+    renderLanding();
+    showView('landing');
+  } catch (err) {
+    console.error(err);
+    showToast(TEXT.errPrefix(err.message));
+  }
+}
+
+// ----- Reader -----
+async function openComic(id) {
+  const record = await dbGet(id);
+  if (!record) { showToast('Comic not found'); return; }
+  currentComicId = id;
+  // Reconstruct File from stored ArrayBuffer
+  if (!record.fileBlob && record.fileBuffer) {
+    record.fileBlob = new File([record.fileBuffer], record.fileName || `comic-${record.id}.cbz`, { type: record.fileType || 'application/x-cbr' });
+  }
+  showView('reader');
+  $('favReaderBtn').textContent = record.isFavorite ? '★' : '☆';
+
+  const viewportCanvas = $('viewportCanvas');
+  const progressOverlay = $('progressOverlay');
+  const progressFill = $('progressFill');
+  const progressText = $('progressText');
+  const progressTier = $('progressTier');
+
+  progressOverlay.classList.add('active');
+  progressFill.style.width = '0%';
+  progressText.textContent = TEXT.loading;
+  progressTier.textContent = '';
+
+  try {
+    const exactProbe = true;
+    const result = await loadComicTiered(viewportCanvas, record.fileBlob, {
+      exactProbe,
+      onProgress: status => {
+        if (status.stage === 'probing') {
+          progressText.textContent = TEXT.loading;
+        } else if (status.stage === 'extracting') {
+          progressTier.textContent = status.tier || '';
+          const done = status.done ?? 0;
+          const total = status.total ?? 1;
+          progressFill.style.width = Math.round((done / total) * 100) + '%';
+          progressText.textContent = TEXT.extracting(done, total);
+        } else if (status.stage === 'constructing') {
+          progressText.textContent = TEXT.preparing;
+        } else if (status.stage === 'ready') {
+          progressText.textContent = TEXT.ready;
+          progressFill.style.width = '100%';
+        }
+      }
+    });
+
+    reader = result.reader;
+    viewportCanvas.classList.add('active');
+    await reader.goToPage(record.lastReadPage || 0);
+    progressOverlay.classList.remove('active');
+    updateReaderUI();
+    showToast(TEXT.toastLoaded(result.pageCount, result.tier));
+
+    // Focus mode is manual only — user must tap the Focus button
+  } catch (err) {
+    console.error(err);
+    progressOverlay.classList.remove('active');
+    showToast(TEXT.errPrefix(err.message));
+    showView('landing');
+  }
+}
+
+function updateReaderUI() {
+  if (!reader) {
+    $('pageIndicator').textContent = TEXT.pageIndicatorEmpty;
+    $('prevBtn').disabled = true;
+    $('nextBtn').disabled = true;
+    return;
+  }
+  const idx = reader.currentIndex;
+  const total = reader.pages.length;
+  $('pageIndicator').textContent = TEXT.pageIndicator(idx + 1, total);
+  $('prevBtn').disabled = idx <= 0;
+  $('nextBtn').disabled = idx >= total - 1;
+}
+
+async function saveProgress() {
+  if (!currentComicId || !reader) return;
+  const record = await dbGet(currentComicId);
+  if (!record) return;
+  record.lastReadPage = reader.currentIndex;
+  record.lastReadAt = Date.now();
+  await dbPut(record);
+}
+
+async function toggleFavorite(id) {
+  const record = await dbGet(id);
+  if (!record) return;
+  record.isFavorite = !record.isFavorite;
+  await dbPut(record);
+  showToast(record.isFavorite ? 'Added to favorites' : 'Removed from favorites');
+  if ($('view-landing').classList.contains('active')) renderLanding();
+  if ($('view-collection').classList.contains('active')) renderCollection();
+  if (currentComicId === id) $('favReaderBtn').textContent = record.isFavorite ? '★' : '☆';
+}
+
+async function closeReader() {
+  // Capture what saveProgress needs before we null out reader/currentComicId,
+  // then fire the save in the background so a slow IndexedDB write (mobile,
+  // or queued behind an in-flight page-turn save) can never block the UI close.
+  const idToSave = currentComicId;
+  const pageToSave = reader ? reader.currentIndex : null;
+
+  if (reader) {
+    reader._resizeObserver.disconnect();
+    reader._decodedCache.clear();
+    reader._daltonizedCache.clear();
+  }
+  reader = null;
+  currentComicId = null;
+
+  $('viewportCanvas').classList.remove('active');
+  $('viewportCanvas').width = 0;
+  $('viewportCanvas').height = 0;
+  if (focusApi && focusApi.isFocusMode()) focusApi.exitFocusMode();
+  showView('landing');
+
+  if (idToSave != null && pageToSave != null) {
+    saveProgressFor(idToSave, pageToSave).catch(err => console.error('Failed to save reading progress:', err));
+  }
+}
+
+async function saveProgressFor(id, page) {
+  const record = await dbGet(id);
+  if (!record) return;
+  record.lastReadPage = page;
+  record.lastReadAt = Date.now();
+  await dbPut(record);
+  // Refresh whichever list view is visible so a newly-completed comic
+  // shows up under the Completed filter without needing a manual refresh.
+  if ($('view-landing').classList.contains('active')) renderLanding();
+  if ($('view-collection').classList.contains('active')) renderCollection();
+}
+
+// Reader controls
+$('prevBtn').addEventListener('click', async () => {
+  if (!reader) return;
+  await reader.prevPage();
+  updateReaderUI();
+  await saveProgress();
+});
+$('nextBtn').addEventListener('click', async () => {
+  if (!reader) return;
+  await reader.nextPage();
+  updateReaderUI();
+  await saveProgress();
+});
+$('closeReaderBtn').addEventListener('click', closeReader);
+$('favReaderBtn').addEventListener('click', () => {
+  if (currentComicId) toggleFavorite(currentComicId);
+});
+
+$('tapLeft').addEventListener('click', async () => {
+  if (!reader) return;
+  await reader.prevPage();
+  updateReaderUI();
+  await saveProgress();
+});
+$('tapRight').addEventListener('click', async () => {
+  if (!reader) return;
+  await reader.nextPage();
+  updateReaderUI();
+  await saveProgress();
+});
+
+document.addEventListener('keydown', async e => {
+  if (!reader || !$('view-reader').classList.contains('active')) return;
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp') {
+    e.preventDefault();
+    await reader.prevPage();
+    updateReaderUI();
+    await saveProgress();
+  } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'PageDown') {
+    e.preventDefault();
+    await reader.nextPage();
+    updateReaderUI();
+    await saveProgress();
+  } else if (e.key === 'Escape') {
+    if (focusApi && focusApi.isFocusMode()) focusApi.exitFocusMode();
+    else closeReader();
+  }
+});
+
+// Swipe gestures for mobile
+let touchStartX = 0;
+let touchStartY = 0;
+const SWIPE_THRESHOLD = 50;
+$('viewportCanvas').addEventListener('touchstart', e => {
+  touchStartX = e.changedTouches[0].screenX;
+  touchStartY = e.changedTouches[0].screenY;
+}, { passive: true });
+$('viewportCanvas').addEventListener('touchend', async e => {
+  if (!reader) return;
+  const dx = e.changedTouches[0].screenX - touchStartX;
+  const dy = e.changedTouches[0].screenY - touchStartY;
+  if (Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > SWIPE_THRESHOLD) {
+    if (dx < 0) {
+      await reader.nextPage();
+    } else {
+      await reader.prevPage();
+    }
+    updateReaderUI();
+    await saveProgress();
+  }
+}, { passive: true });
+
+// Settings
+$('settingsBtn').addEventListener('click', e => {
+  e.stopPropagation();
+  $('settingsPopover').classList.toggle('open');
+});
+document.addEventListener('click', e => {
+  if (!$('settingsPopover').contains(e.target) && e.target !== $('settingsBtn')) {
+    $('settingsPopover').classList.remove('open');
+  }
+});
+// Color correction buttons
+document.querySelectorAll('.corr-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    if (!reader) return;
+    const type = btn.dataset.corr || null;
+    await reader.setCorrection(type);
+    document.querySelectorAll('.corr-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.corr === (type || ''));
+    });
+    updateReaderUI();
+  });
+});
+
+// Delete modal
+function closeDeleteModal() {
+  $('deleteModal').classList.remove('active');
+  deleteTargetId = null;
+}
+$('confirmDeleteBtn').addEventListener('click', async () => {
+  if (!deleteTargetId) return;
+  await dbDelete(deleteTargetId);
+  if (currentComicId === deleteTargetId) closeReader();
+  showToast('Comic deleted');
+  closeDeleteModal();
+  renderLanding();
+  renderCollection();
+});
+
+// Focus + fullscreen
+focusApi = initFocusFullscreen({
+  header: $('header'),
+  toolbar: $('readerToolbar'),
+  focusBtn: $('focusBtn'),
+  islandWrapper: $('islandWrapper'),
+  islandBtn: $('islandBtn')
+});
+
+// Init
+
+// Expose functions used via inline onclick to satisfy linters
+window.setFilter = setFilter;
+window.openComic = openComic;
+window.showView = showView;
+window.toggleFavorite = toggleFavorite;
+window.closeDeleteModal = closeDeleteModal;
+
+(async () => {
+  await getDB();
+  renderLanding();
+})();
+</script>
+</body>
+</html>
