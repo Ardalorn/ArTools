@@ -75,7 +75,8 @@
     position:fixed;z-index:10;pointer-events:none;
     background:var(--charcoal-800);border:1px solid var(--line);border-radius:9px;
     padding:8px 12px;max-width:220px;
-    font-family:var(--sans);font-size:12.5px;line-height:1.4;color:var(--parchment-dim);
+    font-fam
+    );
     box-shadow:0 8px 22px rgba(0,0,0,.35);
     opacity:0;transform:translateY(4px) scale(.97);
     transition:opacity .12s ease, transform .12s ease;
@@ -156,6 +157,19 @@
           </svg>
         </span>
         <span class="tool-name">ArHar</span>
+      </a>
+    </li>
+    <li>
+      <a class="tool" href="ArCom/" aria-label="ArCom" data-desc="A zero-dependency comic library and reader for your local collection, with CVD support." style="--tool-color:#ff4d4d">
+        <span class="tool-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <path d="M10 3v7"/>
+            <path d="M3 10h18"/>
+            <path d="M13 10v11"/>
+          </svg>
+        </span>
+        <span class="tool-name">ArCom</span>
       </a>
     </li>
     <!-- Add further tools here, one <li> per entry — icon svg + tool-name. Set style="--tool-color:#hex" from that app's :root palette, and data-desc="..." for the tooltip -->
