@@ -32,6 +32,12 @@ A network log (HAR file) inspector.
 
 → https://ardalorn.github.io/ArTools/ArHar/
 
+ArCom
+
+Oflline only Comic Book and Graphic Novel reader. With hopefully accurate CVD colour correction, via toggle.
+
+→ https://ardalorn.github.io/ArTools/ArCom/
+
 ## How it works
 
 - Open the link, use the app. That's it.
