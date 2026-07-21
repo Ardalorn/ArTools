@@ -1,0 +1,2301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#15181d">
+    <meta name="description" content="ArHar — A network log (HAR file) inspector.">
+    <meta name="author" content="Ardalorn">
+    <link rel="canonical" href="https://ardalorn.github.io/ArTools/ArHar/">
+    <meta property="og:title" content="ArHar">
+    <meta property="og:description" content="A network log (HAR file) inspector.">
+    <meta property="og:url" content="https://ardalorn.github.io/ArTools/ArHar/">
+    <meta property="og:type" content="website">
+    <title>ArHar</title>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "ArHar",
+      "author": {
+        "@type": "Person",
+        "name": "Ardalorn"
+      },
+      "url": "https://ardalorn.github.io/ArTools/ArHar/",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Any"
+    }
+    </script>
+    <style>
+        /* ===== RESET & BASE ===== */
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        :root {
+            /* -- ink / paper (base surfaces & text) -- */
+            --bg: #15181d;
+            --surface: #1b1f26;
+            --surface-elevated: #232830;
+            --text: #e8e4da;
+            --text-secondary: #9b9690;
+            --text-tertiary: #6b6862;
+            --border: #2a2f37;
+            --border-light: #3a4048;
+
+            /* -- signal (primary mark, used for actions & emphasis) -- */
+            --accent: #c98a3f;
+            --accent-light: #dba361;
+            --accent-soft: rgba(201, 138, 63, 0.12);
+
+            /* -- flags (semantic, kept muted rather than neon) -- */
+            --ok: #7fa876;
+            --warn: #c9a23f;
+            --error: #c1614f;
+            --success: #7fa876;
+
+            /* -- type -- */
+            --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', 'Consolas', 'Liberation Mono', monospace;
+            --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+            --safe-left: env(safe-area-inset-left, 0px);
+            --safe-right: env(safe-area-inset-right, 0px);
+        }
+
+        html {
+            height: 100%;
+            overflow: hidden;
+            -webkit-text-size-adjust: 100%;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background: var(--bg);
+            color: var(--text);
+            height: 100%;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        /* ===== APP SHELL / MASTHEAD ===== */
+        .app-header {
+            padding: 0.75rem 1rem;
+            padding-top: calc(0.75rem + var(--safe-top));
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-elevated);
+            flex-shrink: 0;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+        .app-header h1 {
+            font-family: var(--font-mono);
+            font-size: 1rem;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            color: var(--text);
+            white-space: nowrap;
+        }
+        .app-header h1 .mark {
+            color: var(--accent);
+        }
+        .app-header p {
+            font-size: 0.72rem;
+            color: var(--text-tertiary);
+            margin-top: 0;
+            text-align: right;
+            line-height: 1.4;
+        }
+        .app-header p .credit {
+            color: var(--text-secondary);
+        }
+
+        /* ===== TABS ===== */
+        .tab-bar {
+            display: flex;
+            background: var(--surface-elevated);
+            border-bottom: 1px solid var(--border);
+            overflow-x: auto;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+            flex-shrink: 0;
+        }
+        .tab-bar::-webkit-scrollbar { display: none; }
+        .tab-btn {
+            flex: 1;
+            min-width: 0;
+            padding: 0.75rem 0.25rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            transition: color 0.15s, border-color 0.15s;
+            position: relative;
+        }
+        .tab-btn.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            background: none;
+        }
+        .tab-btn.active::before { content: "["; opacity: 0.55; padding-right: 0.35em; }
+        .tab-btn.active::after { content: "]"; opacity: 0.55; padding-left: 0.35em; }
+
+        /* ===== TAB PANELS ===== */
+        .tab-panels {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+        .tab-panel {
+            display: none;
+            padding: 0.75rem;
+            height: 100%;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-bottom: calc(0.75rem + var(--safe-bottom));
+        }
+        .tab-panel.active { display: block; }
+
+        /* ===== DROP ZONE (inspection frame — signature element) ===== */
+        .drop-zone {
+            position: relative;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 2.75rem 1.5rem 2.25rem;
+            text-align: center;
+            background: var(--surface);
+            transition: border-color 0.2s, background 0.2s;
+            cursor: pointer;
+            margin-bottom: 0.75rem;
+        }
+        .drop-zone::before {
+            content: "";
+            position: absolute;
+            inset: 10px;
+            pointer-events: none;
+            opacity: 0.45;
+            transition: opacity 0.2s;
+            background-repeat: no-repeat;
+            background-image:
+                linear-gradient(var(--accent) 0 0), linear-gradient(var(--accent) 0 0),
+                linear-gradient(var(--accent) 0 0), linear-gradient(var(--accent) 0 0),
+                linear-gradient(var(--accent) 0 0), linear-gradient(var(--accent) 0 0),
+                linear-gradient(var(--accent) 0 0), linear-gradient(var(--accent) 0 0);
+            background-size:
+                14px 2px, 2px 14px,
+                14px 2px, 2px 14px,
+                14px 2px, 2px 14px,
+                14px 2px, 2px 14px;
+            background-position:
+                top left, top left,
+                top right, top right,
+                bottom left, bottom left,
+                bottom right, bottom right;
+        }
+        .drop-zone:active, .drop-zone.dragover {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+        }
+        .drop-zone:active::before, .drop-zone.dragover::before { opacity: 0.9; }
+        .drop-zone input { display: none; }
+        .drop-zone .icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.75rem;
+            color: var(--text-tertiary);
+        }
+        .drop-zone .icon svg { width: 2.25rem; height: 2.25rem; }
+        .drop-zone p { font-size: 0.95rem; font-weight: 600; font-family: var(--font-sans); }
+        .drop-zone .hint { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.4rem; font-weight: 400; }
+
+        /* ===== STATS (manifest summary strip) ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+        }
+        .stat-card {
+            padding: 0.9rem 0.75rem;
+            text-align: center;
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+        .stat-card:nth-child(even) { border-right: none; }
+        .stat-card:nth-child(3), .stat-card:nth-child(4) { border-bottom: none; }
+        .stat-value {
+            font-family: var(--font-mono);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--accent);
+            line-height: 1.2;
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-label {
+            font-family: var(--font-mono);
+            font-size: 0.64rem;
+            color: var(--text-tertiary);
+            margin-top: 0.35rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        /* ===== CONTROLS ===== */
+        .control-card {
+            background: var(--surface);
+            padding: 0.875rem;
+            border-radius: 3px;
+            border: 1px solid var(--border);
+            margin-bottom: 0.625rem;
+        }
+        .control-card label {
+            display: block;
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+        .control-card select,
+        .control-card input[type="text"],
+        .control-card input[type="number"] {
+            width: 100%;
+            padding: 0.7rem 0.75rem;
+            border: 1px solid var(--border-light);
+            border-radius: 3px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 0.95rem;
+            font-family: var(--font-sans);
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .control-card select:focus,
+        .control-card input:focus {
+            border-color: var(--accent);
+        }
+        .control-card select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239b9690' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            padding-right: 2rem;
+        }
+        .checkbox-row {
+            display: flex;
+            align-items: center;
+            gap: 0.625rem;
+            padding: 0.5rem 0;
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+        }
+        .checkbox-row input {
+            width: 1.15rem;
+            height: 1.15rem;
+            accent-color: var(--accent);
+            flex-shrink: 0;
+        }
+
+        /* ===== FILTER CHIPS (route tags, not pills) ===== */
+        .filter-row {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+        .filter-chip {
+            padding: 0.4rem 0.7rem;
+            border-radius: 2px;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            background: var(--bg);
+            color: var(--text-secondary);
+            border: 1px solid var(--border-light);
+            cursor: pointer;
+            transition: all 0.15s;
+            min-height: 34px;
+            display: inline-flex;
+            align-items: center;
+        }
+        .filter-chip.active {
+            background: var(--accent-soft);
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+
+        /* ===== OUTPUT ===== */
+        .output-card {
+            display: none;
+            background: var(--surface);
+            border-radius: 3px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            margin-top: 0.75rem;
+        }
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.7rem 1rem;
+            background: var(--surface-elevated);
+            border-bottom: 1px solid var(--border);
+        }
+        .output-header h3 {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-secondary);
+        }
+        .output-actions { display: flex; gap: 0.5rem; }
+        .btn {
+            padding: 0.6rem 1.1rem;
+            border-radius: 3px;
+            border: 1px solid transparent;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            cursor: pointer;
+            transition: all 0.15s;
+            min-height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #15181d;
+        }
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-secondary);
+            border-color: var(--border-light);
+        }
+        .btn:active { transform: scale(0.96); opacity: 0.85; }
+        pre.output {
+            padding: 1rem;
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            line-height: 1.6;
+            color: var(--text);
+            max-height: 40vh;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* ===== VIEWER - REQUEST LIST (the ledger) ===== */
+        .viewer-toolbar {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.625rem;
+            flex-wrap: wrap;
+        }
+        .viewer-toolbar input,
+        .viewer-toolbar select {
+            flex: 1;
+            min-width: 100px;
+            padding: 0.7rem 0.75rem;
+            border: 1px solid var(--border-light);
+            border-radius: 3px;
+            background: var(--surface);
+            color: var(--text);
+            font-size: 0.88rem;
+            font-family: var(--font-sans);
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        .viewer-toolbar input:focus,
+        .viewer-toolbar select:focus {
+            border-color: var(--accent);
+        }
+        .viewer-toolbar select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239b9690' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            padding-right: 2rem;
+        }
+        .viewer-count {
+            width: 100%;
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            color: var(--text-tertiary);
+            padding: 0.25rem 0;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .request-list {
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            background: var(--surface);
+            overflow: hidden;
+        }
+        .request-item {
+            padding: 0.9rem 1rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.1s;
+            position: relative;
+            touch-action: pan-y;
+        }
+        .request-item:active { background: var(--accent-soft); }
+        .request-item:last-child { border-bottom: none; }
+        .request-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            padding-right: 1.5rem;
+        }
+        .method-badge {
+            padding: 0.15rem 0.4rem;
+            border-radius: 2px;
+            font-family: var(--font-mono);
+            font-size: 0.68rem;
+            font-weight: 700;
+            min-width: 2.75rem;
+            text-align: center;
+            flex-shrink: 0;
+            background: transparent;
+            border: 1px solid currentColor;
+        }
+        .method-GET { color: var(--ok); }
+        .method-POST { color: var(--accent); }
+        .method-PUT { color: var(--warn); }
+        .method-DELETE { color: var(--error); }
+        .method-PATCH { color: #a08bb0; }
+        .method-HEAD, .method-OPTIONS { color: var(--text-secondary); }
+        .type-badge {
+            padding: 0.1rem 0.35rem;
+            border-radius: 1px;
+            font-family: var(--font-mono);
+            font-size: 0.62rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+            flex-shrink: 0;
+            background: var(--bg);
+            border-left: 2px solid var(--text-tertiary);
+            color: var(--text-secondary);
+        }
+        .type-stylesheet { border-left-color: #6c8fc7; }
+        .type-script { border-left-color: var(--warn); }
+        .type-image { border-left-color: var(--ok); }
+        .type-document { border-left-color: #a08bb0; }
+        .type-xhr, .type-fetch { border-left-color: #c77fa0; }
+        .type-font { border-left-color: #6fb0b8; }
+        .type-media { border-left-color: #c78a5f; }
+        .type-other { border-left-color: var(--text-tertiary); }
+        .request-url {
+            font-family: var(--font-mono);
+            font-size: 0.82rem;
+            color: var(--text);
+            word-break: break-all;
+            flex: 1;
+            min-width: 0;
+            line-height: 1.4;
+        }
+        .request-meta {
+            display: flex;
+            gap: 1rem;
+            margin-top: 0.5rem;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+        }
+        .status-ok { color: var(--ok); }
+        .status-redirect { color: var(--warn); }
+        .status-error { color: var(--error); }
+        .request-arrow {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-tertiary);
+            font-size: 1.1rem;
+            opacity: 0.5;
+        }
+
+        /* ===== DETAIL SHEET - MOBILE OVERLAY ===== */
+        .detail-sheet {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            padding-bottom: var(--safe-bottom);
+        }
+        .detail-sheet.active {
+            display: flex;
+            animation: sheetEnter 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+        @keyframes sheetEnter {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+        .gesture-handle {
+            display: flex;
+            justify-content: center;
+            padding: 0.625rem 0;
+            flex-shrink: 0;
+            background: var(--surface-elevated);
+            border-bottom: 1px solid var(--border);
+            cursor: grab;
+            touch-action: none;
+            user-select: none;
+            padding-top: calc(0.625rem + var(--safe-top));
+        }
+        .gesture-handle:active { cursor: grabbing; }
+        .gesture-bar {
+            width: 36px;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--text-tertiary);
+            opacity: 0.4;
+        }
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1rem;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .breadcrumb a {
+            color: var(--accent);
+            text-decoration: none;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .breadcrumb span { color: var(--text-tertiary); }
+        .detail-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            background: var(--surface-elevated);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+            gap: 0.5rem;
+        }
+        .detail-header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+            min-width: 0;
+            overflow: hidden;
+        }
+        .detail-header h3 {
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .detail-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-shrink: 0;
+        }
+        .detail-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.6rem 1rem;
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.5rem 0.9rem;
+            border-radius: 3px;
+            border: 1px solid var(--border-light);
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            font-weight: 600;
+            cursor: pointer;
+            min-height: 40px;
+        }
+        .nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .nav-count {
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--text-tertiary);
+            font-weight: 600;
+        }
+        .detail-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            -webkit-overflow-scrolling: touch;
+        }
+        .detail-section {
+            margin-bottom: 1.5rem;
+        }
+        .detail-section h4 {
+            font-family: var(--font-mono);
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-tertiary);
+            margin-bottom: 0.625rem;
+            font-weight: 700;
+        }
+        .detail-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.5rem 1rem;
+            font-size: 0.85rem;
+        }
+        .detail-grid dt {
+            font-family: var(--font-mono);
+            color: var(--text-tertiary);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+        .detail-grid dd {
+            color: var(--text);
+            word-break: break-word;
+            line-height: 1.4;
+        }
+        .code-block {
+            background: #0f1216;
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 1rem;
+            overflow-x: auto;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            max-height: 250px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            line-height: 1.5;
+        }
+
+        /* ===== TOAST ===== */
+        .toast {
+            position: fixed;
+            bottom: calc(1.5rem + var(--safe-bottom));
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--surface-elevated);
+            color: var(--text);
+            padding: 0.8rem 1.25rem;
+            border-radius: 3px;
+            border: 1px solid var(--border-light);
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 300;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+            white-space: nowrap;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+        /* ===== GESTURE HINT ===== */
+        .gesture-hint {
+            position: fixed;
+            bottom: calc(1rem + var(--safe-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(21, 24, 29, 0.95);
+            color: var(--text-secondary);
+            padding: 0.6rem 1.2rem;
+            border-radius: 3px;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            z-index: 250;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            border: 1px solid var(--border-light);
+            white-space: nowrap;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .gesture-hint.show { opacity: 1; }
+
+        /* ===== TOUCH FEEDBACK ===== */
+        .request-item::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--accent);
+            transform: scaleY(0);
+            transition: transform 0.15s;
+        }
+        .request-item:active::after {
+            transform: scaleY(1);
+        }
+
+        /* ===== LOADING STATE ===== */
+        .drop-zone.loading {
+            border-color: var(--accent);
+            background: var(--accent-soft);
+            pointer-events: none;
+        }
+        .drop-zone.loading .icon svg { animation: spin 0.9s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* ===== PROGRESS MODAL ===== */
+        .progress-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 500;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            padding-bottom: calc(1rem + var(--safe-bottom));
+        }
+        .progress-modal.active { display: flex; }
+        .progress-modal-backdrop {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        .progress-modal-content {
+            position: relative;
+            background: var(--surface);
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+            animation: modalEnter 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+            overflow: hidden;
+        }
+        .progress-modal-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1.1rem 1.1rem 0.7rem;
+        }
+        .progress-modal-icon {
+            display: flex;
+            color: var(--accent);
+            animation: pulse 1.6s ease-in-out infinite;
+        }
+        .progress-modal-icon svg { width: 1.3rem; height: 1.3rem; }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .progress-modal-header h3 {
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            color: var(--text);
+            font-weight: 600;
+            letter-spacing: 0.02em;
+        }
+        .progress-modal-body {
+            padding: 0.5rem 1.1rem 1.1rem;
+        }
+        .progress-file-info {
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        .progress-bar-track {
+            width: 100%;
+            height: 6px;
+            background: var(--bg);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 0.75rem;
+            position: relative;
+            border: 1px solid var(--border);
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 0;
+            transition: width 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .progress-bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.25), transparent);
+            animation: shimmer 1.2s ease-in-out infinite;
+        }
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        .progress-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            color: var(--text-tertiary);
+            margin-bottom: 0.75rem;
+        }
+        .progress-stats #progressPercent {
+            font-weight: 700;
+            color: var(--accent);
+            font-variant-numeric: tabular-nums;
+        }
+        .progress-stats #progressStage {
+            font-style: normal;
+        }
+        .progress-details {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 0.6rem 0.85rem;
+            font-family: var(--font-mono);
+            font-size: 0.72rem;
+            color: var(--text-tertiary);
+            min-height: 2rem;
+            max-height: 80px;
+            overflow-y: auto;
+            word-break: break-word;
+        }
+        .progress-modal-actions {
+            padding: 0 1.1rem 1.1rem;
+            display: flex;
+            justify-content: center;
+        }
+        .progress-modal-actions .btn {
+            font-size: 0.75rem;
+            padding: 0.5rem 1.1rem;
+        }
+
+        /* ===== ERROR MODAL ===== */
+        .error-modal {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 400;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            padding-bottom: calc(1rem + var(--safe-bottom));
+        }
+        .error-modal.active { display: flex; }
+        .error-modal-backdrop {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+        }
+        .error-modal-content {
+            position: relative;
+            background: var(--surface);
+            border: 1px solid var(--border-light);
+            border-radius: 4px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+            animation: modalEnter 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+        }
+        @keyframes modalEnter {
+            from { opacity: 0; transform: scale(0.96) translateY(12px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .error-modal-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1.1rem 1.1rem 0.7rem;
+            border-bottom: 1px solid var(--border);
+        }
+        .error-modal-icon { display: flex; color: var(--error); }
+        .error-modal-icon svg { width: 1.25rem; height: 1.25rem; }
+        .error-modal-header h3 {
+            font-family: var(--font-mono);
+            font-size: 0.95rem;
+            color: var(--error);
+            letter-spacing: 0.02em;
+        }
+        .error-modal-body {
+            padding: 1rem 1.1rem;
+            font-size: 0.88rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        .error-modal-body p { margin-bottom: 0.75rem; }
+        .error-modal-details {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 3px;
+            padding: 0.85rem 1rem;
+            font-family: var(--font-mono);
+            font-size: 0.78rem;
+            color: var(--text-tertiary);
+            word-break: break-word;
+            margin-bottom: 1rem;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+        .error-modal-suggestions h4 {
+            font-family: var(--font-mono);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        .error-modal-suggestions ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .error-modal-suggestions li {
+            padding: 0.35rem 0;
+            padding-left: 1.25rem;
+            position: relative;
+            font-size: 0.85rem;
+        }
+        .error-modal-suggestions li::before {
+            content: "\2013";
+            position: absolute;
+            left: 0.35rem;
+            color: var(--accent);
+        }
+        .error-modal-actions {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0.85rem 1.1rem 1.1rem;
+            border-top: 1px solid var(--border);
+            justify-content: flex-end;
+        }
+
+        /* ===== REDUCED MOTION ===== */
+        @media (prefers-reduced-motion: reduce) {
+            .drop-zone.loading .icon svg,
+            .progress-modal-icon,
+            .progress-bar-fill::after,
+            .detail-sheet.active,
+            .progress-modal-content,
+            .error-modal-content {
+                animation: none !important;
+            }
+        }
+
+        /* ===== DESKTOP ENHANCEMENTS ===== */
+        @media (min-width: 769px) {
+            .app-header {
+                padding: 0.9rem 1.25rem;
+                padding-top: 0.9rem;
+            }
+            .app-header h1 { font-size: 1.2rem; }
+            .app-header p { font-size: 0.78rem; }
+
+            .tab-btn {
+                padding: 1rem 1.5rem;
+                font-size: 0.78rem;
+            }
+
+            .tab-panel { padding: 1.5rem; }
+
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            .stat-card {
+                border-bottom: none;
+            }
+            .stat-card:nth-child(even) {
+                border-right: 1px solid var(--border);
+            }
+            .stat-card:nth-child(4n) {
+                border-right: none;
+            }
+            .stat-value { font-size: 1.85rem; }
+
+            .viewer-layout {
+                display: grid;
+                grid-template-columns: 400px 1fr;
+                gap: 1rem;
+                border: 1px solid var(--border);
+                border-radius: 3px;
+                overflow: hidden;
+                background: var(--surface);
+                height: 65vh;
+            }
+            .viewer-left {
+                border-right: 1px solid var(--border);
+                overflow-y: auto;
+                height: 100%;
+            }
+            .viewer-right {
+                display: block !important;
+                position: relative;
+                overflow: hidden;
+                height: 100%;
+            }
+            .request-list {
+                border: none;
+                border-radius: 0;
+                height: 100%;
+                overflow-y: auto;
+            }
+            .request-item {
+                padding: 0.875rem 1rem;
+            }
+            .request-item:hover {
+                background: var(--surface-elevated);
+            }
+
+            .detail-sheet {
+                position: relative;
+                top: auto;
+                left: auto;
+                right: auto;
+                bottom: auto;
+                z-index: 1;
+                display: none;
+                height: 100%;
+                padding-bottom: 0;
+                animation: none;
+            }
+            .detail-sheet.active {
+                display: flex;
+            }
+            .gesture-handle { display: none; }
+            .detail-header .close-btn { display: none; }
+            .detail-nav { display: none; }
+            .breadcrumb { display: none; }
+            .gesture-hint { display: none; }
+
+            pre.output { max-height: 50vh; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-header">
+        <h1>ArHar<span class="mark">v1.1.0</span></h1>
+        <p>.HAR Network log inspector &mdash; <span class="credit">Ardalorn</span></p>
+    </div>
+
+    <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('convert')">HAR>>MD</button>
+        <button class="tab-btn" onclick="switchTab('viewer')">View .HAR</button>
+        <button class="tab-btn" onclick="switchTab('parse')">MD>>JSON</button>
+    </div>
+
+    <div class="tab-panels">
+        <!-- CONVERT TAB -->
+        <div id="convertTab" class="tab-panel active">
+            <div class="drop-zone" id="dropZone">
+                <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13v6a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-6"/><path d="M4 13h4l2 3h4l2-3h4"/><path d="M12 3v8"/><path d="M9 8l3 3 3-3"/></svg></div>
+                <p>Upload .har file to browse</p>
+                <p class="hint">Chrome, Firefox, Safari exports</p>
+                <input type="file" id="fileInput" accept=".har,.json">
+            </div>
+
+            <div class="stats-grid" id="stats" style="display:none;">
+                <div class="stat-card"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Requests</div></div>
+                <div class="stat-card"><div class="stat-value" id="statDomains">0</div><div class="stat-label">Domains</div></div>
+                <div class="stat-card"><div class="stat-value" id="statSize">0</div><div class="stat-label">Size KB</div></div>
+                <div class="stat-card"><div class="stat-value" id="statTime">0</div><div class="stat-label">Avg ms</div></div>
+            </div>
+
+            <div id="controls" style="display:none;">
+                <div class="control-card">
+                    <label>Output Format</label>
+                    <select id="outputFormat" onchange="generateOutput()">
+                        <option value="json">JSON (.json)</option>
+                        <option value="txt">Plain Text (.txt)</option>
+                        <option value="ndjson">NDJSON (.ndjson)</option>
+                    </select>
+                </div>
+                <div class="control-card">
+                    <label>HTTP Methods</label>
+                    <div class="filter-row" id="methodFilters"></div>
+                </div>
+                <div class="control-card">
+                    <label>Status Codes</label>
+                    <div class="filter-row" id="statusFilters"></div>
+                </div>
+                <div class="control-card">
+                    <label>Include</label>
+                    <label class="checkbox-row"><input type="checkbox" id="includeHeaders" checked onchange="generateOutput()"> Headers</label>
+                    <label class="checkbox-row"><input type="checkbox" id="includeResponse" checked onchange="generateOutput()"> Response body</label>
+                    <label class="checkbox-row"><input type="checkbox" id="includeTiming" checked onchange="generateOutput()"> Timing</label>
+                    <label class="checkbox-row"><input type="checkbox" id="includeCookies" onchange="generateOutput()"> Cookies</label>
+                </div>
+                <div class="control-card">
+                    <label>Max body length (0 = unlimited)</label>
+                    <input type="number" id="maxBodySize" value="50000" oninput="generateOutput()">
+                </div>
+            </div>
+
+            <div class="output-card" id="outputSection">
+                <div class="output-header">
+                    <h3 id="outputTitle">Output</h3>
+                    <div class="output-actions">
+                        <button class="btn btn-secondary" onclick="copyToClipboard()">Copy</button>
+                        <button class="btn btn-primary" onclick="downloadOutput()">Download</button>
+                    </div>
+                </div>
+                <pre class="output" id="output"></pre>
+            </div>
+        </div>
+
+        <!-- VIEWER TAB -->
+        <div id="viewerTab" class="tab-panel">
+            <div class="drop-zone" id="viewerDropZone">
+                <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><line x1="20" y1="20" x2="15.3" y2="15.3"/></svg></div>
+                <p>Drop .har to inspect interactively</p>
+                <input type="file" id="viewerFileInput" accept=".har,.json">
+            </div>
+
+            <div id="viewerContent" style="display:none;">
+                <div class="viewer-toolbar">
+                    <input type="text" id="viewerSearch" placeholder="Search everything (URL, headers, cookies, body)…" oninput="filterViewer()">
+                    <select id="resourceTypeFilter" onchange="filterViewer()"><option value="">All types</option></select>
+                    <select id="priorityFilter" onchange="filterViewer()">
+                        <option value="">All priorities</option>
+                        <option value="VeryHigh">VeryHigh</option>
+                        <option value="High">High</option>
+                        <option value="Medium">Medium</option>
+                        <option value="Low">Low</option>
+                        <option value="VeryLow">VeryLow</option>
+                    </select>
+                    <div class="viewer-count" id="viewerCount">0 requests</div>
+                </div>
+
+                <div class="viewer-layout">
+                    <div class="viewer-left">
+                        <div class="request-list" id="requestList"></div>
+                    </div>
+                    <div class="viewer-right" id="viewerRight">
+                        <!-- Detail sheet lives here so the desktop two-column grid
+                             (.viewer-layout) can place it beside the request list.
+                             On mobile it's position:fixed and still covers the full
+                             screen regardless of where it sits in the DOM. -->
+                        <div class="detail-sheet" id="detailSheet">
+                            <div class="gesture-handle" id="gestureHandle">
+                                <div class="gesture-bar"></div>
+                            </div>
+                            <div class="breadcrumb">
+                                <a onclick="closeDetail()">← List</a>
+                                <span>›</span>
+                                <span id="breadcrumbCurrent">Detail</span>
+                            </div>
+                            <div class="detail-header">
+                                <div class="detail-header-left">
+                                    <h3 id="detailTitle">Request</h3>
+                                </div>
+                                <div class="detail-actions">
+                                    <button class="btn btn-secondary" onclick="exportDetailMd()">Export .md</button>
+                                    <button class="btn btn-secondary close-btn" onclick="closeDetail()">✕</button>
+                                </div>
+                            </div>
+                            <div class="detail-nav">
+                                <button class="nav-btn" id="prevBtn" onclick="navigateDetail(-1)">← Prev</button>
+                                <span class="nav-count" id="navCount">1 / 1</span>
+                                <button class="nav-btn" id="nextBtn" onclick="navigateDetail(1)">Next →</button>
+                            </div>
+                            <div class="detail-content" id="detailContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="gesture-hint" id="gestureHint">Swipe down to close · Swipe left/right to navigate</div>
+
+        <!-- PARSE TAB -->
+        <div id="parseTab" class="tab-panel">
+            <div class="drop-zone" id="parseDropZone">
+                <div class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h9l5 5v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z"/><path d="M14 2v6h6"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg></div>
+                <p>Drop har-analysis.md</p>
+                <p class="hint">Convert back to structured JSON</p>
+                <input type="file" id="parseFileInput" accept=".md,.txt">
+            </div>
+            <div class="output-card" id="parseOutputSection" style="display:none;">
+                <div class="output-header">
+                    <h3>Parsed</h3>
+                    <div class="output-actions">
+                        <button class="btn btn-secondary" onclick="copyParsed()">Copy</button>
+                        <button class="btn btn-primary" onclick="downloadParsed()">Download</button>
+                    </div>
+                </div>
+                <pre class="output" id="parseOutput"></pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Copied!</div>
+
+    <script>
+        // ===== TABS =====
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-btn').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(t => {
+                t.classList.remove('active');
+                t.style.display = 'none';
+            });
+            event.target.classList.add('active');
+            const panel = document.getElementById(tab + 'Tab');
+            panel.style.display = 'block';
+            requestAnimationFrame(() => panel.classList.add('active'));
+        }
+
+        // ===== CONVERT =====
+        let harData = null, currentOutput = '', currentFormat = 'json';
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        fileInput.addEventListener('click', e => e.stopPropagation());
+        dropZone.addEventListener('click', () => fileInput.click());
+        dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', e => {
+            e.preventDefault(); dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+        });
+        fileInput.addEventListener('change', e => { if (e.target.files[0]) processFile(e.target.files[0]); });
+
+        let isProcessing = false;
+        function processFile(file) {
+            if (isProcessing) { console.log('Already processing, ignoring duplicate'); return; }
+            isProcessing = true;
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            showProgress('Processing HAR File', file.name + ' (' + sizeMB + ' MB)');
+            setLoading(dropZone, true);
+
+            readFileRobust(file,
+                (pct, stage, details) => updateProgress(pct, stage, details),
+                (text) => {
+                    parseHarText(text,
+                        (pct, stage, details) => updateProgress(pct, stage, details),
+                        (data) => {
+                            updateProgress(95, 'Building output…', 'Rendering ' + (data.log && data.log.entries ? data.log.entries.length : 0) + ' entries');
+                            try {
+                                harData = data;
+                                showStats();
+                                showFilters();
+                                document.getElementById('controls').style.display = 'block';
+                                generateOutput();
+                                updateProgress(100, 'Complete!', 'Output generated successfully');
+                                setTimeout(() => {
+                                    hideProgress();
+                                    setLoading(dropZone, false);
+                                    isProcessing = false;
+                                    showToast('HAR loaded: ' + (data.log && data.log.entries ? data.log.entries.length : 0) + ' entries');
+                                }, 400);
+                            } catch (renderErr) {
+                                console.error('Render error:', renderErr);
+                                hideProgress();
+                                setLoading(dropZone, false);
+                                isProcessing = false;
+                                showErrorModal({ message: 'File parsed but UI rendering failed: ' + renderErr.message }, { name: file.name, size: file.size, sizeMB: sizeMB }, file, 'convert');
+                            }
+                        },
+                        (err) => {
+                            hideProgress();
+                            setLoading(dropZone, false);
+                            isProcessing = false;
+                            showErrorModal(err, { name: file.name, size: file.size, sizeMB: sizeMB }, file, 'convert');
+                        }
+                    );
+                },
+                (err) => {
+                    hideProgress();
+                    setLoading(dropZone, false);
+                    showErrorModal(err, { name: file.name, size: file.size, sizeMB: sizeMB }, file, 'convert');
+                }
+            );
+        }
+
+        function showStats() {
+            const entries = harData.log.entries || [];
+            const domains = new Set();
+            entries.forEach(e => { try { domains.add(new URL(e.request.url).hostname); } catch {} });
+            document.getElementById('stats').style.display = 'grid';
+            document.getElementById('statTotal').textContent = entries.length;
+            document.getElementById('statDomains').textContent = domains.size;
+            const totalSize = entries.reduce((s, e) => s + (e.response.bodySize || 0), 0);
+            document.getElementById('statSize').textContent = (totalSize / 1024).toFixed(1);
+            const avgTime = entries.length ? Math.round(entries.reduce((s, e) => s + (e.time || 0), 0) / entries.length) : 0;
+            document.getElementById('statTime').textContent = avgTime;
+        }
+
+        function showFilters() {
+            const entries = harData.log.entries || [];
+            const methods = [...new Set(entries.map(e => e.request.method))];
+            const statuses = [...new Set(entries.map(e => e.response.status))];
+            document.getElementById('methodFilters').innerHTML = methods.map(m =>
+                `<span class="filter-chip active" data-type="method" data-value="${m}" onclick="toggleFilter(this)">${m}</span>`
+            ).join('');
+            document.getElementById('statusFilters').innerHTML = statuses.map(s =>
+                `<span class="filter-chip active" data-type="status" data-value="${s}" onclick="toggleFilter(this)">${s}</span>`
+            ).join('');
+        }
+
+        function toggleFilter(el) { el.classList.toggle('active'); generateOutput(); }
+        function getActiveFilters(type) {
+            return [...document.querySelectorAll(`[data-type="${type}"].active`)].map(el => el.dataset.value);
+        }
+
+        function generateOutput() {
+            if (!harData) return;
+            const methods = getActiveFilters('method');
+            const statuses = getActiveFilters('status');
+            const maxBody = parseInt(document.getElementById('maxBodySize').value) || 0;
+            const inclHeaders = document.getElementById('includeHeaders').checked;
+            const inclResp = document.getElementById('includeResponse').checked;
+            const inclTime = document.getElementById('includeTiming').checked;
+            const inclCookies = document.getElementById('includeCookies').checked;
+            const format = document.getElementById('outputFormat').value;
+            currentFormat = format;
+
+            let entries = (harData.log.entries || []).filter(e => {
+                if (!methods.includes(e.request.method)) return false;
+                if (!statuses.includes(String(e.response.status))) return false;
+                return true;
+            });
+
+            let output = '';
+            if (format === 'json') {
+                const data = {
+                    meta: { generatedAt: new Date().toISOString(), source: harData.log.creator?.name, totalRequests: entries.length },
+                    requests: entries.map((e, i) => buildRequestObj(e, i, inclHeaders, inclResp, inclTime, inclCookies, maxBody))
+                };
+                output = JSON.stringify(data, null, 2);
+            } else if (format === 'ndjson') {
+                output = entries.map(e => JSON.stringify(buildRequestObj(e, 0, inclHeaders, inclResp, inclTime, inclCookies, maxBody))).join('\n');
+            } else {
+                output = buildTxtOutput(entries, inclHeaders, inclResp, inclTime, inclCookies, maxBody);
+            }
+
+            currentOutput = output;
+            document.getElementById('output').textContent = output;
+            document.getElementById('outputSection').style.display = 'block';
+            document.getElementById('outputTitle').textContent = format === 'txt' ? 'Plain Text' : format.toUpperCase();
+        }
+
+        function buildRequestObj(entry, idx, inclHeaders, inclResp, inclTime, inclCookies, maxBody) {
+            const req = entry.request, res = entry.response;
+            let domain = ''; try { domain = new URL(req.url).hostname; } catch {}
+            const obj = { index: idx, method: req.method, url: req.url, domain, status: res.status, statusText: res.statusText || '', contentType: res.content?.mimeType || '', size: res.bodySize || 0, time: Math.round(entry.time || 0) };
+            if (inclTime && entry.timings) obj.timing = entry.timings;
+            if (inclHeaders && req.headers) obj.requestHeaders = req.headers.filter(h => !/^:/.test(h.name)).reduce((a, h) => { a[h.name] = h.value; return a; }, {});
+            if (inclHeaders && res.headers) obj.responseHeaders = res.headers.reduce((a, h) => { a[h.name] = h.value; return a; }, {});
+            if (inclCookies && req.cookies) obj.requestCookies = req.cookies;
+            if (inclCookies && res.cookies) obj.responseCookies = res.cookies;
+            if (inclResp && res.content?.text) {
+                let body = res.content.text;
+                if (maxBody > 0 && body.length > maxBody) body = body.substring(0, maxBody) + '... [truncated]';
+                obj.responseBody = body;
+            }
+            return obj;
+        }
+
+        function buildTxtOutput(entries, inclHeaders, inclResp, inclTime, inclCookies, maxBody) {
+            let lines = ['='.repeat(60), 'HAR LOG', 'Generated: ' + new Date().toISOString(), '='.repeat(60), ''];
+            entries.forEach((entry, i) => {
+                const req = entry.request, res = entry.response;
+                lines.push(`--- Request #${i + 1} ---`);
+                lines.push(`${req.method} ${res.status} ${res.statusText || ''}`);
+                lines.push(`URL: ${req.url}`);
+                lines.push(`Size: ${res.bodySize || 0} bytes | Time: ${Math.round(entry.time || 0)}ms`);
+                if (inclTime && entry.timings) lines.push('Timing: ' + JSON.stringify(entry.timings));
+                if (inclHeaders && req.headers) lines.push('ReqHeaders: ' + JSON.stringify(req.headers.filter(h => !/^:/.test(h.name)).reduce((a, h) => { a[h.name] = h.value; return a; }, {})));
+                if (inclHeaders && res.headers) lines.push('ResHeaders: ' + JSON.stringify(res.headers.reduce((a, h) => { a[h.name] = h.value; return a; }, {})));
+                if (inclResp && res.content?.text) {
+                    let body = res.content.text;
+                    if (maxBody > 0 && body.length > maxBody) body = body.substring(0, maxBody) + '...';
+                    lines.push('Body: ' + body);
+                }
+                lines.push('');
+            });
+            return lines.join('\n');
+        }
+
+        // ===== VIEWER =====
+        const viewerDropZone = document.getElementById('viewerDropZone');
+        const viewerFileInput = document.getElementById('viewerFileInput');
+        viewerFileInput.addEventListener('click', e => e.stopPropagation());
+        viewerDropZone.addEventListener('click', () => viewerFileInput.click());
+        viewerDropZone.addEventListener('dragover', e => { e.preventDefault(); viewerDropZone.classList.add('dragover'); });
+        viewerDropZone.addEventListener('dragleave', () => viewerDropZone.classList.remove('dragover'));
+        viewerDropZone.addEventListener('drop', e => {
+            e.preventDefault(); viewerDropZone.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) loadViewer(e.dataTransfer.files[0]);
+        });
+        viewerFileInput.addEventListener('change', e => { if (e.target.files[0]) loadViewer(e.target.files[0]); });
+
+        let viewerEntries = [], viewerSearchIndex = [], visibleIndices = [], currentDetailIndex = -1, currentVisibleIndex = -1;
+
+        let isViewerProcessing = false;
+        function loadViewer(file) {
+            if (isViewerProcessing) { console.log('Viewer already processing, ignoring duplicate'); return; }
+            isViewerProcessing = true;
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            showProgress('Inspecting HAR File', file.name + ' (' + sizeMB + ' MB)');
+            setLoading(viewerDropZone, true);
+
+            readFileRobust(file,
+                (pct, stage, details) => updateProgress(pct, stage, details),
+                (text) => {
+                    parseHarText(text,
+                        (pct, stage, details) => updateProgress(pct, stage, details),
+                        (data) => {
+                            updateProgress(95, 'Building viewer…', 'Rendering ' + (data.log && data.log.entries ? data.log.entries.length : 0) + ' entries');
+                            try {
+                                viewerEntries = data.log.entries || [];
+                                viewerDropZone.style.display = 'none';
+                                document.getElementById('viewerContent').style.display = 'block';
+                                renderViewerList(viewerEntries);
+                                closeDetail();
+                                updateProgress(100, 'Complete!', 'Viewer ready');
+                                setTimeout(() => {
+                                    hideProgress();
+                                    setLoading(viewerDropZone, false);
+                                    isViewerProcessing = false;
+                                    showToast('Viewer loaded: ' + viewerEntries.length + ' entries');
+                                }, 400);
+                            } catch (renderErr) {
+                                console.error('Viewer render error:', renderErr);
+                                hideProgress();
+                                setLoading(viewerDropZone, false);
+                                isViewerProcessing = false;
+                                showErrorModal({ message: 'File parsed but viewer rendering failed: ' + renderErr.message }, { name: file.name, size: file.size, sizeMB: sizeMB }, file, 'viewer');
+                            }
+                        },
+                        (err) => {
+                            hideProgress();
+                            setLoading(viewerDropZone, false);
+                            isViewerProcessing = false;
+                            showErrorModal(err, { name: file.name, size: file.size, sizeMB: sizeMB }, file, 'viewer');
+                        }
+                    );
+                },
+                (err) => {
+                    hideProgress();
+                    setLoading(viewerDropZone, false);
+                    showErrorModal(err, { name: file.name, size: file.size, sizeMB: sizeMB }, file, 'viewer');
+                }
+            );
+        }
+
+
+
+        // ===== PROGRESS UI =====
+        let progressCancelled = false;
+        let currentReader = null;
+        let progressStartTime = 0;
+        const MIN_PROGRESS_MS = 1200; // minimum time progress stays visible
+
+        function showProgress(title, fileInfo) {
+            progressCancelled = false;
+            progressStartTime = Date.now();
+            const modal = document.getElementById('progressModal');
+            document.getElementById('progressTitle').textContent = title || 'Processing HAR File';
+            document.getElementById('progressFileInfo').textContent = fileInfo || '';
+            document.getElementById('progressBarFill').style.width = '0%';
+            document.getElementById('progressPercent').textContent = '0%';
+            document.getElementById('progressStage').textContent = 'Initializing…';
+            document.getElementById('progressDetails').textContent = '';
+            document.getElementById('progressCancelBtn').style.display = 'inline-flex';
+            modal.classList.add('active');
+        }
+
+        function updateProgress(percent, stage, details) {
+            document.getElementById('progressBarFill').style.width = Math.min(percent, 100) + '%';
+            document.getElementById('progressPercent').textContent = Math.round(Math.min(percent, 100)) + '%';
+            if (stage) document.getElementById('progressStage').textContent = stage;
+            if (details) {
+                const el = document.getElementById('progressDetails');
+                el.textContent = details;
+                el.scrollTop = el.scrollHeight;
+            }
+        }
+
+        function hideProgress() {
+            const elapsed = Date.now() - progressStartTime;
+            const remaining = Math.max(0, MIN_PROGRESS_MS - elapsed);
+            setTimeout(() => {
+                document.getElementById('progressModal').classList.remove('active');
+                currentReader = null;
+            }, remaining);
+        }
+
+        function cancelProcessing() {
+            progressCancelled = true;
+            if (currentReader) {
+                try { currentReader.cancel(); } catch(e) {}
+            }
+            updateProgress(100, 'Cancelled', 'Operation cancelled by user');
+            setTimeout(() => {
+                document.getElementById('progressModal').classList.remove('active');
+                currentReader = null;
+            }, 400);
+        }
+
+        // ===== ROBUST HAR PARSING =====
+        let lastFileRaw = null, lastFileObject = null, lastFileContext = null;
+
+        function setLoading(el, loading) {
+            if (!el) return;
+            const p = el.querySelector('p');
+            if (loading) {
+                el.classList.add('loading');
+                if (p) p.textContent = 'Processing large file, please wait…';
+            } else {
+                el.classList.remove('loading');
+                if (p) p.textContent = el.id === 'dropZone' ? 'Drop .har file or tap to browse' : el.id === 'viewerDropZone' ? 'Drop .har to inspect interactively' : 'Drop har-analysis.md';
+            }
+        }
+
+        // Read file. Does NOT show/hide progress — caller manages UI.
+        // Calls onProgress(percent, stage, details) periodically.
+        async function readFileRobust(file, onProgress, onSuccess, onError) {
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            console.log('Reading file:', file.name, 'Size:', sizeMB, 'MB');
+            onProgress(5, 'Preparing…', 'File: ' + file.name + ' (' + sizeMB + ' MB)');
+
+            // For files under 8MB, prefer FileReader (simpler, no chunk boundary issues)
+            // For larger files, use streaming API to avoid V8 string limits
+            const useStreaming = file.size > 8 * 1024 * 1024 && file.stream && typeof TextDecoderStream !== 'undefined';
+
+            if (useStreaming) {
+                try {
+                    onProgress(10, 'Opening stream…', 'Large file: using TextDecoderStream');
+                    const stream = file.stream().pipeThrough(new TextDecoderStream());
+                    const reader = stream.getReader();
+                    currentReader = reader;
+                    let chunks = [];
+                    let bytesRead = 0;
+                    const totalBytes = file.size;
+                    let lastUpdate = Date.now();
+
+                    while (true) {
+                        if (progressCancelled) {
+                            reader.cancel();
+                            onError({ message: 'Cancelled by user' });
+                            return;
+                        }
+                        const { done, value } = await reader.read();
+                        if (done) break;
+                        chunks.push(value);
+                        bytesRead += value.length;
+                        const now = Date.now();
+                        if (now - lastUpdate > 150) {
+                            const pct = 10 + (bytesRead / totalBytes) * 60;
+                            onProgress(pct, 'Reading file…', 'Read ' + (bytesRead / 1024 / 1024).toFixed(2) + ' / ' + sizeMB + ' MB  (' + chunks.length + ' chunks)');
+                            lastUpdate = now;
+                        }
+                    }
+                    onProgress(70, 'Assembling…', 'Joining ' + chunks.length + ' chunks');
+                    const text = chunks.join('');
+                    console.log('Streaming read complete, length:', text.length);
+                    if (text.length === 0 && file.size > 0) {
+                        throw new Error('Stream returned empty string for non-empty file');
+                    }
+                    onProgress(75, 'Read complete', 'Total: ' + (text.length / 1024 / 1024).toFixed(2) + ' MB (' + text.length.toLocaleString() + ' chars)');
+                    onSuccess(text);
+                    return;
+                } catch (streamErr) {
+                    console.log('Streaming failed, falling back to FileReader:', streamErr.message);
+                    onProgress(10, 'Stream failed, trying FileReader…', streamErr.message);
+                }
+            }
+
+            // FileReader path (used for smaller files and as fallback)
+            const fr = new FileReader();
+            currentReader = fr;
+            onProgress(15, 'Reading file…', useStreaming ? 'FileReader fallback' : 'Reading via FileReader');
+
+            let progressSim = 15;
+            const progressInterval = setInterval(() => {
+                if (progressSim < 65) {
+                    progressSim += 3;
+                    onProgress(progressSim, 'Reading file…', 'FileReader processing…');
+                }
+            }, 250);
+
+            fr.onload = e => {
+                clearInterval(progressInterval);
+                const text = e.target.result;
+                console.log('FileReader complete, length:', text ? text.length : 0);
+                if (!text && file.size > 0) {
+                    onError({ message: 'FileReader returned empty string for a ' + sizeMB + ' MB file. This is a known V8 engine limitation on large files. Try opening this page on desktop or use a smaller HAR file.' });
+                    return;
+                }
+                onProgress(75, 'Read complete', 'Total: ' + (text.length / 1024 / 1024).toFixed(2) + ' MB (' + text.length.toLocaleString() + ' chars)');
+                onSuccess(text);
+            };
+            fr.onerror = () => {
+                clearInterval(progressInterval);
+                onError({ message: 'FileReader failed to read the file.' });
+            };
+            fr.readAsText(file);
+        }
+
+        function parseHarText(rawText, onProgress, onSuccess, onError) {
+            lastFileRaw = rawText;
+
+            onProgress(80, 'Parsing JSON…', 'Attempting direct parse (' + (rawText.length / 1024 / 1024).toFixed(2) + ' MB)');
+
+            // Try direct parse
+            try {
+                console.log('Trying direct JSON.parse...');
+                const data = JSON.parse(rawText);
+                console.log('Direct parse success!');
+                const entries = data.log && data.log.entries ? data.log.entries.length : 0;
+                onProgress(90, 'JSON parsed', 'Found ' + entries.toLocaleString() + ' entries');
+                onSuccess(data);
+                return;
+            } catch (err) {
+                console.log('Direct parse failed:', err.message);
+                onProgress(85, 'Parse failed', 'Error: ' + err.message.substring(0, 80));
+                onError(err);
+            }
+        }
+
+        function retryParse() {
+            closeErrorModal();
+            if (!lastFileObject) return;
+            isProcessing = false;
+            isViewerProcessing = false;
+            console.log('Retrying...');
+            const file = lastFileObject;
+            const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+            showProgress('Retrying HAR File', file.name + ' (' + sizeMB + ' MB)');
+            setLoading(lastFileContext === 'convert' ? dropZone : viewerDropZone, true);
+
+            readFileRobust(file,
+                (pct, stage, details) => updateProgress(pct, stage, details),
+                (rawText) => {
+                    parseHarText(rawText,
+                        (pct, stage, details) => updateProgress(pct, stage, details),
+                        (data) => {
+                            updateProgress(95, 'Success!', 'Loaded ' + (data.log && data.log.entries ? data.log.entries.length : 0).toLocaleString() + ' entries');
+                            setTimeout(() => {
+                                hideProgress();
+                                setLoading(lastFileContext === 'convert' ? dropZone : viewerDropZone, false);
+                                if (lastFileContext === 'convert') {
+                                    harData = data;
+                                    showStats();
+                                    showFilters();
+                                    document.getElementById('controls').style.display = 'block';
+                                    generateOutput();
+                                } else if (lastFileContext === 'viewer') {
+                                    viewerEntries = data.log.entries || [];
+                                    viewerDropZone.style.display = 'none';
+                                    document.getElementById('viewerContent').style.display = 'block';
+                                    renderViewerList(viewerEntries);
+                                    closeDetail();
+                                }
+                                showToast('HAR loaded successfully');
+                            }, 500);
+                        },
+                        (err) => {
+                            hideProgress();
+                            setLoading(lastFileContext === 'convert' ? dropZone : viewerDropZone, false);
+                            showErrorModal(err, { name: lastFileObject.name, size: lastFileObject.size, sizeMB: (lastFileObject.size / (1024 * 1024)).toFixed(2) }, lastFileObject, lastFileContext);
+                        }
+                    );
+                },
+                (err) => {
+                    hideProgress();
+                    setLoading(lastFileContext === 'convert' ? dropZone : viewerDropZone, false);
+                    showErrorModal(err, { name: lastFileObject.name, size: lastFileObject.size, sizeMB: (lastFileObject.size / (1024 * 1024)).toFixed(2) }, lastFileObject, lastFileContext);
+                }
+            );
+        }
+
+        // ===== ERROR MODAL =====
+        function showErrorModal(err, fileInfo, fileObj, context) {
+            lastFileObject = fileObj;
+            lastFileContext = context;
+            const modal = document.getElementById('errorModal');
+            const msgEl = document.getElementById('errorModalMessage');
+            const detailsEl = document.getElementById('errorModalDetails');
+            const suggestionsList = document.getElementById('errorSuggestionsList');
+            const retryBtn = document.getElementById('errorModalRetryBtn');
+
+            msgEl.textContent = 'The HAR file could not be parsed as valid JSON.';
+            const errMsg = err && err.message ? err.message : String(err);
+            detailsEl.textContent = 'File: ' + fileInfo.name + '\nSize: ' + fileInfo.sizeMB + ' MB\nError: ' + errMsg;
+
+            const suggestions = [];
+            if (fileInfo.size > 10 * 1024 * 1024) {
+                suggestions.push('This file is very large (' + fileInfo.sizeMB + ' MB). Browser JSON parsers may struggle with files over 10-15 MB.');
+            }
+            suggestions.push('The JSON structure is malformed at the reported position.');
+            suggestions.push('Try re-exporting the HAR from your browser without including response bodies.');
+            suggestions.push('You can use the "Retry" button to attempt parsing again.');
+            if (errMsg.includes('empty string')) {
+                suggestions.push('Your browser (V8 engine) silently failed to read this large file. Try using desktop Chrome/Firefox, or split the HAR into smaller files.');
+            }
+
+            suggestionsList.innerHTML = suggestions.map(s => '<li>' + s + '</li>').join('');
+            retryBtn.style.display = 'inline-flex';
+
+            modal.classList.add('active');
+        }
+
+        function closeErrorModal() {
+            document.getElementById('errorModal').classList.remove('active');
+        }
+
+        // ===== ERROR MODAL =====
+        function showErrorModal(err, fileInfo, fileObj, context) {
+            lastFileObject = fileObj;
+            lastFileContext = context;
+            const modal = document.getElementById('errorModal');
+            const msgEl = document.getElementById('errorModalMessage');
+            const detailsEl = document.getElementById('errorModalDetails');
+            const suggestionsList = document.getElementById('errorSuggestionsList');
+            const retryBtn = document.getElementById('errorModalRetryBtn');
+
+            msgEl.textContent = 'The HAR file could not be parsed as valid JSON.';
+            const errMsg = err && err.message ? err.message : String(err);
+            detailsEl.textContent = 'File: ' + fileInfo.name + '\nSize: ' + fileInfo.sizeMB + ' MB\nError: ' + errMsg;
+
+            const suggestions = [];
+            if (fileInfo.size > 10 * 1024 * 1024) {
+                suggestions.push('This file is very large (' + fileInfo.sizeMB + ' MB). Browser JSON parsers may struggle with files over 10-15 MB.');
+            }
+            suggestions.push('The JSON structure is malformed at the reported position.');
+            suggestions.push('Try re-exporting the HAR from your browser without including response bodies.');
+            suggestions.push('You can use the "Retry" button to attempt parsing again.');
+            if (errMsg.includes('empty string')) {
+                suggestions.push('Your browser (V8 engine) silently failed to read this large file. Try using desktop Chrome/Firefox, or split the HAR into smaller files.');
+            }
+
+            suggestionsList.innerHTML = suggestions.map(s => '<li>' + s + '</li>').join('');
+            retryBtn.style.display = 'inline-flex';
+
+            modal.classList.add('active');
+        }
+
+        function closeErrorModal() {
+            document.getElementById('errorModal').classList.remove('active');
+        }
+
+        // ===== ERROR MODAL =====
+        function showErrorModal(err, fileInfo, fileObj, context) {
+            lastFileObject = fileObj;
+            lastFileContext = context;
+            const modal = document.getElementById('errorModal');
+            const msgEl = document.getElementById('errorModalMessage');
+            const detailsEl = document.getElementById('errorModalDetails');
+            const suggestionsList = document.getElementById('errorSuggestionsList');
+            const retryBtn = document.getElementById('errorModalRetryBtn');
+
+            msgEl.textContent = 'The HAR file could not be parsed as valid JSON.';
+            const errMsg = err && err.message ? err.message : String(err);
+            detailsEl.textContent = 'File: ' + fileInfo.name + '\nSize: ' + fileInfo.sizeMB + ' MB\nError: ' + errMsg;
+
+            const suggestions = [];
+            if (fileInfo.size > 10 * 1024 * 1024) {
+                suggestions.push('This file is very large (' + fileInfo.sizeMB + ' MB). Browser JSON parsers may struggle with files over 10-15 MB.');
+            }
+            suggestions.push('The JSON structure is malformed at the reported position.');
+            suggestions.push('Try re-exporting the HAR from your browser without including response bodies.');
+            suggestions.push('You can use the "Retry" button to attempt parsing again.');
+            if (errMsg.includes('empty string')) {
+                suggestions.push('Your browser (V8 engine) silently failed to read this large file. Try using desktop Chrome/Firefox, or split the HAR into smaller files.');
+            }
+
+            suggestionsList.innerHTML = suggestions.map(s => '<li>' + s + '</li>').join('');
+            retryBtn.style.display = 'inline-flex';
+
+            modal.classList.add('active');
+        }
+
+        function closeErrorModal() {
+            document.getElementById('errorModal').classList.remove('active');
+        }
+
+        function buildSearchHaystack(entry) {
+            const req = entry.request || {};
+            const res = entry.response || {};
+            const parts = [
+                req.method, req.url, req.httpVersion,
+                res.status, res.statusText, res.httpVersion,
+                entry._resourceType, entry._priority
+            ];
+            (req.headers || []).forEach(h => parts.push(h.name, h.value));
+            (req.cookies || []).forEach(c => parts.push(c.name, c.value));
+            (req.queryString || []).forEach(q => parts.push(q.name, q.value));
+            if (req.postData) {
+                parts.push(req.postData.mimeType, (req.postData.text || '').substring(0, 3000));
+                (req.postData.params || []).forEach(p => parts.push(p.name, p.value));
+            }
+            (res.headers || []).forEach(h => parts.push(h.name, h.value));
+            (res.cookies || []).forEach(c => parts.push(c.name, c.value));
+            if (res.content) parts.push(res.content.mimeType, (res.content.text || '').substring(0, 3000));
+            if (entry._initiator) {
+                const init = entry._initiator;
+                parts.push(init.type, init.url);
+                (init.stack?.callFrames || []).forEach(f => parts.push(f.functionName, f.url));
+            }
+            if (entry.timings) parts.push(...Object.values(entry.timings));
+            return parts.filter(p => p !== undefined && p !== null && p !== '').join('\n').toLowerCase();
+        }
+
+        function renderViewerList(entries) {
+            const list = document.getElementById('requestList');
+            viewerSearchIndex = entries.map(buildSearchHaystack);
+            visibleIndices = [];
+            const allTypes = new Set();
+            entries.forEach(e => { if (e._resourceType) allTypes.add(e._resourceType); });
+            const typeSelect = document.getElementById('resourceTypeFilter');
+            const curVal = typeSelect.value;
+            typeSelect.innerHTML = '<option value="">All types</option>' + [...allTypes].sort().map(t => `<option value="${t}">${t}</option>`).join('');
+            typeSelect.value = curVal;
+
+            list.innerHTML = entries.map((entry, i) => {
+                visibleIndices.push(i);
+                const url = entry.request.url;
+                const method = entry.request.method;
+                const status = entry.response.status;
+                const time = Math.round(entry.time || 0);
+                const size = ((entry.response.bodySize || 0) / 1024).toFixed(1);
+                const rType = entry._resourceType || 'other';
+                const typeClass = 'type-' + rType.toLowerCase().replace(/[^a-z]/g, '');
+                const statusClass = status < 300 ? 'status-ok' : status < 400 ? 'status-redirect' : 'status-error';
+                return `<div class="request-item" onclick="showDetail(${i})" data-index="${i}" data-url="${url.toLowerCase()}" data-type="${rType.toLowerCase()}" data-priority="${(entry._priority || '').toLowerCase().replace(/\s/g, '')}">
+                    <div class="request-row">
+                        <span class="method-badge method-${method}">${method}</span>
+                        <span class="type-badge ${typeClass}">${rType}</span>
+                        <span class="request-url">${truncateUrl(url)}</span>
+                    </div>
+                    <div class="request-meta">
+                        <span class="${statusClass}">${status}</span>
+                        <span>${time}ms</span>
+                        <span>${size}KB</span>
+                    </div>
+                    <span class="request-arrow">›</span>
+                </div>`;
+            }).join('');
+            document.getElementById('viewerCount').textContent = `${entries.length} requests`;
+        }
+
+        function truncateUrl(url) {
+            try { const u = new URL(url); return u.pathname + u.search; } catch { return url; }
+        }
+
+        function filterViewer() {
+            const query = document.getElementById('viewerSearch').value.toLowerCase();
+            const typeFilter = document.getElementById('resourceTypeFilter').value.toLowerCase();
+            const priorityFilter = document.getElementById('priorityFilter').value.toLowerCase().replace(/\s/g, '');
+            visibleIndices = [];
+            document.querySelectorAll('.request-item').forEach(item => {
+                const idx = parseInt(item.dataset.index);
+                const haystack = viewerSearchIndex[idx] !== undefined ? viewerSearchIndex[idx] : item.dataset.url;
+                const matches = haystack.includes(query) &&
+                    (!typeFilter || item.dataset.type === typeFilter) &&
+                    (!priorityFilter || item.dataset.priority === priorityFilter);
+                item.style.display = matches ? 'block' : 'none';
+                if (matches) {
+                    visibleIndices.push(parseInt(item.dataset.index));
+                    item.dataset.visibleIndex = visibleIndices.length - 1;
+                }
+            });
+            const visible = document.querySelectorAll('.request-item[style*="block"]').length;
+            document.getElementById('viewerCount').textContent = `${visible} of ${viewerEntries.length}`;
+            if (currentDetailIndex >= 0 && !visibleIndices.includes(currentDetailIndex)) closeDetail();
+            else if (currentDetailIndex >= 0) { currentVisibleIndex = visibleIndices.indexOf(currentDetailIndex); updateNav(); }
+        }
+
+        function showDetail(index) {
+            document.querySelectorAll('.request-item').forEach(i => i.classList.remove('active'));
+            document.querySelector(`[data-index="${index}"]`)?.classList.add('active');
+            currentDetailIndex = index;
+            currentVisibleIndex = visibleIndices.indexOf(index);
+            const entry = viewerEntries[index];
+            document.getElementById('breadcrumbCurrent').textContent = `${entry.request.method} ${entry.response.status}`;
+            document.getElementById('detailSheet').classList.add('active');
+            updateNav();
+            renderDetailContent(index);
+            showGestureHint();
+        }
+
+        function updateNav() {
+            document.getElementById('prevBtn').disabled = currentVisibleIndex <= 0;
+            document.getElementById('nextBtn').disabled = currentVisibleIndex >= visibleIndices.length - 1 || currentVisibleIndex < 0;
+            document.getElementById('navCount').textContent = visibleIndices.length > 0 ? `${currentVisibleIndex + 1} / ${visibleIndices.length}` : '0 / 0';
+        }
+
+        function navigateDetail(dir) {
+            const newIdx = currentVisibleIndex + dir;
+            if (newIdx >= 0 && newIdx < visibleIndices.length) {
+                showDetail(visibleIndices[newIdx]);
+                document.querySelector(`[data-index="${visibleIndices[newIdx]}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }
+
+        function closeDetail() {
+            currentDetailIndex = -1; currentVisibleIndex = -1;
+            document.querySelectorAll('.request-item').forEach(i => i.classList.remove('active'));
+            document.getElementById('detailSheet').classList.remove('active');
+        }
+
+        function renderDetailContent(index) {
+            const entry = viewerEntries[index];
+            const req = entry.request, res = entry.response;
+            let domain = ''; try { domain = new URL(req.url).hostname; } catch {}
+            const rType = entry._resourceType || 'other';
+            const priority = entry._priority || '';
+
+            document.getElementById('detailTitle').innerHTML = `<span class="method-badge method-${req.method}">${req.method}</span> ${res.status}`;
+
+            let html = `<div class="detail-section"><h4>General</h4><dl class="detail-grid">
+                <dt>URL</dt><dd>${req.url}</dd>
+                <dt>Domain</dt><dd>${domain}</dd>
+                <dt>Type</dt><dd><span class="type-badge type-${rType.toLowerCase().replace(/[^a-z]/g, '')}">${rType}</span></dd>
+                ${priority ? `<dt>Priority</dt><dd>${priority}</dd>` : ''}
+                <dt>Status</dt><dd>${res.status} ${res.statusText || ''}</dd>
+                <dt>Time</dt><dd>${Math.round(entry.time || 0)}ms</dd>
+                <dt>Size</dt><dd>${((res.bodySize || 0) / 1024).toFixed(2)} KB</dd>
+            </dl></div>`;
+
+            if (entry.timings) {
+                html += `<div class="detail-section"><h4>Timing</h4><dl class="detail-grid">`;
+                ['dns', 'connect', 'ssl', 'send', 'wait', 'receive'].forEach(t => {
+                    html += `<dt>${t}</dt><dd>${entry.timings[t] || 0}ms</dd>`;
+                });
+                html += `</dl></div>`;
+            }
+
+            if (entry._initiator) {
+                html += `<div class="detail-section"><h4>Initiator</h4>`;
+                const init = entry._initiator;
+                if (init.type) html += `<p style="font-size:0.8rem;color:var(--text-secondary)">Type: ${init.type}</p>`;
+                if (init.url) html += `<p style="font-size:0.8rem;color:var(--text-secondary)">URL: <code>${init.url}</code></p>`;
+                if (init.lineNumber) html += `<p style="font-size:0.8rem;color:var(--text-secondary)">Line: ${init.lineNumber}</p>`;
+                if (init.stack?.callFrames) {
+                    html += `<div class="code-block">`;
+                    init.stack.callFrames.forEach(f => {
+                        const name = f.functionName || '<anonymous>';
+                        const loc = f.url ? `${truncateUrl(f.url)}:${f.lineNumber || 0}` : '';
+                        html += `<div style="margin-bottom:0.35rem"><span style="color:var(--accent)">${name}</span>${loc ? `<span style="color:var(--text-tertiary)"> — ${loc}</span>` : ''}</div>`;
+                    });
+                    html += `</div>`;
+                }
+                html += `</div>`;
+            }
+
+            if (req.headers?.length) {
+                html += `<div class="detail-section"><h4>Request Headers</h4><dl class="detail-grid">`;
+                req.headers.forEach(h => { if (!/^:/.test(h.name)) html += `<dt>${esc(h.name)}</dt><dd>${esc(h.value)}</dd>`; });
+                html += `</dl></div>`;
+            }
+
+            if (req.cookies?.length) html += `<div class="detail-section"><h4>Request Cookies</h4><div class="code-block">${esc(JSON.stringify(req.cookies, null, 2))}</div></div>`;
+
+            if (res.headers?.length) {
+                html += `<div class="detail-section"><h4>Response Headers</h4><dl class="detail-grid">`;
+                res.headers.forEach(h => { html += `<dt>${esc(h.name)}</dt><dd>${esc(h.value)}</dd>`; });
+                html += `</dl></div>`;
+            }
+
+            if (res.cookies?.length) html += `<div class="detail-section"><h4>Response Cookies</h4><div class="code-block">${esc(JSON.stringify(res.cookies, null, 2))}</div></div>`;
+
+            if (res.content?.text) {
+                const ct = res.content.mimeType || 'text';
+                let body = res.content.text;
+                if (body.length > 5000) body = body.substring(0, 5000) + '\n... (truncated)';
+                html += `<div class="detail-section"><h4>Response Body (${ct})</h4>`;
+                if (ct.includes('json')) {
+                    try { html += `<div class="code-block">${esc(JSON.stringify(JSON.parse(res.content.text), null, 2))}</div>`; }
+                    catch { html += `<div class="code-block">${esc(body)}</div>`; }
+                } else {
+                    html += `<div class="code-block">${esc(body)}</div>`;
+                }
+                html += `</div>`;
+            }
+
+            document.getElementById('detailContent').innerHTML = html;
+        }
+
+        function exportDetailMd() {
+            if (currentDetailIndex < 0) return;
+            const entry = viewerEntries[currentDetailIndex];
+            const json = JSON.stringify(entry, null, 2);
+            const blob = new Blob(['```json\n' + json + '\n```'], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `request-${currentDetailIndex + 1}.md`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // ===== GESTURES =====
+        let touchStartY = 0, touchStartX = 0, touchCurrentY = 0, touchCurrentX = 0;
+        let isDragging = false;
+        let detailScrollAtStart = 0;
+        let touchStartedInCodeBlock = false;
+        const gestureHint = document.getElementById('gestureHint');
+        const gestureHandle = document.getElementById('gestureHandle');
+        const detailSheet = document.getElementById('detailSheet');
+
+        function showGestureHint() {
+            gestureHint.classList.add('show');
+            setTimeout(() => gestureHint.classList.remove('show'), 3000);
+        }
+
+        gestureHandle.addEventListener('touchstart', e => {
+            touchStartY = e.touches[0].clientY;
+            touchStartX = e.touches[0].clientX;
+            isDragging = true;
+            detailSheet.style.transition = 'none';
+        }, { passive: true });
+
+        gestureHandle.addEventListener('touchmove', e => {
+            if (!isDragging) return;
+            touchCurrentY = e.touches[0].clientY;
+            const deltaY = touchCurrentY - touchStartY;
+            if (deltaY > 0) detailSheet.style.transform = `translateY(${deltaY * 0.5}px)`;
+        }, { passive: true });
+
+        gestureHandle.addEventListener('touchend', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            detailSheet.style.transition = '';
+            const deltaY = touchCurrentY - touchStartY;
+            if (deltaY > 60) closeDetail();
+            else detailSheet.style.transform = '';
+            touchStartY = 0; touchCurrentY = 0;
+        });
+
+        const detailContent = document.getElementById('detailContent');
+        detailContent.addEventListener('touchstart', e => {
+            touchStartY = e.touches[0].clientY;
+            touchStartX = e.touches[0].clientX;
+            detailScrollAtStart = detailContent.scrollTop;
+            touchStartedInCodeBlock = !!e.target.closest('.code-block');
+            isDragging = true;
+        }, { passive: true });
+
+        detailContent.addEventListener('touchmove', e => {
+            if (!isDragging) return;
+            touchCurrentY = e.touches[0].clientY;
+            touchCurrentX = e.touches[0].clientX;
+        }, { passive: true });
+
+        detailContent.addEventListener('touchend', () => {
+            if (!isDragging) return;
+            isDragging = false;
+            const deltaX = touchCurrentX - touchStartX;
+            const deltaY = touchCurrentY - touchStartY;
+            const absX = Math.abs(deltaX);
+            const absY = Math.abs(deltaY);
+            // Only treat this as a navigation swipe if it didn't start inside a
+            // horizontally-scrollable code block, and only treat it as a close-swipe
+            // if the content was already scrolled to the top — otherwise an ordinary
+            // scroll or a scroll inside a code sample gets misread as an exit gesture.
+            if (!touchStartedInCodeBlock && absX > absY && absX > 60) {
+                if (deltaX > 0) navigateDetail(-1);
+                else navigateDetail(1);
+            } else if (absY > absX && deltaY > 80 && detailScrollAtStart <= 0) {
+                closeDetail();
+            }
+            touchStartY = 0; touchStartX = 0; touchCurrentY = 0; touchCurrentX = 0;
+        });
+
+        // ===== PARSE MD =====
+        const parseDropZone = document.getElementById('parseDropZone');
+        const parseFileInput = document.getElementById('parseFileInput');
+        parseDropZone.addEventListener('click', () => parseFileInput.click());
+        parseDropZone.addEventListener('dragover', e => { e.preventDefault(); parseDropZone.classList.add('dragover'); });
+        parseDropZone.addEventListener('dragleave', () => parseDropZone.classList.remove('dragover'));
+        parseDropZone.addEventListener('drop', e => {
+            e.preventDefault(); parseDropZone.classList.remove('dragover');
+            if (e.dataTransfer.files[0]) parseMdFile(e.dataTransfer.files[0]);
+        });
+        parseFileInput.addEventListener('change', e => { if (e.target.files[0]) parseMdFile(e.target.files[0]); });
+
+        function parseMdFile(file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const md = e.target.result;
+                const requests = [];
+                md.split('### ').slice(1).forEach(section => {
+                    const lines = section.split('\n');
+                    const [method, status, ...rest] = lines[0].trim().split(' ');
+                    const req = { method, status: parseInt(status) || 0, statusText: rest.join(' '), url: '', size: '', time: '' };
+                    lines.forEach(l => {
+                        if (l.includes('**URL:**')) req.url = l.match(/\`(.+?)\`/)?.[1] || '';
+                        if (l.includes('**Size:**')) req.size = l.match(/([\d.]+ KB)/)?.[1] || '';
+                        if (l.includes('**Time:**')) req.time = l.match(/(\d+)ms/)?.[1] || '';
+                    });
+                    requests.push(req);
+                });
+                const data = { totalRequests: requests.length, methods: [...new Set(requests.map(r => r.method))], requests };
+                document.getElementById('parseOutput').textContent = JSON.stringify(data, null, 2);
+                document.getElementById('parseOutputSection').style.display = 'block';
+            };
+            reader.readAsText(file);
+        }
+
+        // ===== SHARED =====
+        function esc(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        function copyToClipboard() {
+            navigator.clipboard.writeText(currentOutput).then(() => showToast('Copied!'));
+        }
+        function copyParsed() {
+            const text = document.getElementById('parseOutput').textContent;
+            navigator.clipboard.writeText(text).then(() => showToast('Copied!'));
+        }
+        function downloadOutput() {
+            const exts = { json: 'json', txt: 'txt', ndjson: 'ndjson' };
+            const mimes = { json: 'application/json', txt: 'text/plain', ndjson: 'application/x-ndjson' };
+            const blob = new Blob([currentOutput], { type: mimes[currentFormat] || 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `har-export.${exts[currentFormat] || 'txt'}`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        function downloadParsed() {
+            const text = document.getElementById('parseOutput').textContent;
+            const blob = new Blob([text], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'parsed-har.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2000);
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', e => {
+            if (document.getElementById('viewerTab').classList.contains('active')) {
+                if (e.key === 'ArrowLeft' && currentDetailIndex >= 0) { e.preventDefault(); navigateDetail(-1); }
+                else if (e.key === 'ArrowRight' && currentDetailIndex >= 0) { e.preventDefault(); navigateDetail(1); }
+                else if (e.key === 'Escape' && currentDetailIndex >= 0) { e.preventDefault(); closeDetail(); }
+            }
+        });
+    </script>
+
+
+    <!-- PROGRESS MODAL -->
+    <div class="progress-modal" id="progressModal">
+        <div class="progress-modal-backdrop"></div>
+        <div class="progress-modal-content">
+            <div class="progress-modal-header">
+                <span class="progress-modal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+                <h3 id="progressTitle">Processing HAR File</h3>
+            </div>
+            <div class="progress-modal-body">
+                <div class="progress-file-info" id="progressFileInfo">Reading file…</div>
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill" id="progressBarFill" style="width: 0%"></div>
+                </div>
+                <div class="progress-stats">
+                    <span id="progressPercent">0%</span>
+                    <span id="progressStage">Initializing…</span>
+                </div>
+                <div class="progress-details" id="progressDetails"></div>
+            </div>
+            <div class="progress-modal-actions">
+                <button class="btn btn-secondary" id="progressCancelBtn" onclick="cancelProcessing()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ERROR MODAL -->
+    <div class="error-modal" id="errorModal">
+        <div class="error-modal-backdrop" onclick="closeErrorModal()"></div>
+        <div class="error-modal-content">
+            <div class="error-modal-header">
+                <span class="error-modal-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"/><line x1="12" y1="9" x2="12" y2="14"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg></span>
+                <h3>Unable to Parse HAR File</h3>
+            </div>
+            <div class="error-modal-body">
+                <p id="errorModalMessage">An error occurred while parsing the HAR file.</p>
+                <div class="error-modal-details" id="errorModalDetails"></div>
+                <div class="error-modal-suggestions" id="errorModalSuggestions">
+                    <h4>Suggestions:</h4>
+                    <ul id="errorSuggestionsList"></ul>
+                </div>
+            </div>
+            <div class="error-modal-actions">
+                <button class="btn btn-secondary" onclick="closeErrorModal()">Close</button>
+                <button class="btn btn-primary" id="errorModalRetryBtn" style="display:none;" onclick="retryParse()">Retry</button>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
