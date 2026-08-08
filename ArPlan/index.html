@@ -8,7 +8,6 @@
 <meta name="author" content="Ardalorn">
 <title>ArPlan — Weekly Planner</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&family=Source+Code+Pro:wght@400;600&display=swap');
   :root{
     --charcoal-950:#14110e;
     --charcoal-900:#1c1815;
@@ -21,8 +20,11 @@
     --brass-bright:#e8b97a;
     --slate:#5a7a72;
     --slate-bright:#7da89c;
+    --slate-badge:#445c56;
     --clay:#b85c3e;
     --clay-dim:#8a4530;
+    --clay-text:#c9795f;
+    --clay-badge:#914831;
     --line:#3a332b;
     --radius:14px;
     --serif: "Source Serif 4", "Source Serif Pro", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
@@ -99,7 +101,7 @@
   }
   .bath-badge{
     font-size:10px;text-transform:uppercase;letter-spacing:.1em;
-    background:var(--slate);color:var(--parchment);
+    background:var(--slate-badge);color:var(--parchment);
     padding:2px 8px;border-radius:99px;font-weight:700;
   }
   .person-block{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);}
@@ -126,7 +128,7 @@
   .bathtime-row{display:flex;align-items:center;gap:8px;padding:6px 0;font-family:var(--sans);font-size:13px;color:var(--parchment-dim);}
   .bathtime-row input{width:18px;height:18px;accent-color:var(--brass);}
   .expiry-section{margin-top:8px;padding:8px;border:1px dashed var(--clay-dim);border-radius:8px;background:rgba(184,92,62,0.08);}
-  .expiry-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--clay);font-weight:600;margin-bottom:4px;}
+  .expiry-title{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--clay-text);font-weight:600;margin-bottom:4px;}
   .expiry-item{display:flex;align-items:center;gap:6px;font-family:var(--sans);font-size:13px;color:var(--parchment);padding:2px 0;}
   .expiry-item::before{content:'•';color:var(--clay);font-size:16px;}
 
@@ -169,7 +171,7 @@
   .pantry-empty{font-family:var(--sans);font-size:13px;color:var(--parchment-dim);padding:8px 0;text-align:center;}
     .pantry-expiry-pill{
     font-size:10px;text-transform:uppercase;letter-spacing:.1em;
-    background:var(--clay);color:var(--parchment);
+    background:var(--clay-badge);color:var(--parchment);
     padding:2px 8px;border-radius:99px;font-weight:700;flex-shrink:0;
     white-space:nowrap;
   }
@@ -181,8 +183,8 @@
   .pantry-name{flex:1;font-family:var(--sans);font-size:14px;color:var(--parchment);}
   .pantry-name:focus-visible{outline:3px solid var(--brass-bright);outline-offset:2px;border-radius:4px;}
   .pantry-stock{font-family:var(--mono);font-size:12px;color:var(--parchment-dim);text-align:right;min-width:60px;display:flex;flex-direction:column;align-items:flex-end;gap:2px;}
-  .pantry-stock.low{color:var(--clay);}
-  .pantry-stock.out{color:var(--clay);font-weight:700;}
+  .pantry-stock.low{color:var(--clay-text);}
+  .pantry-stock.out{color:var(--clay-text);font-weight:700;}
   .pantry-price-line{font-family:var(--mono);font-size:10px;color:var(--brass);font-weight:400;}
   .pantry-actions{display:flex;gap:4px;}
   .pantry-btn{
@@ -400,7 +402,7 @@
   .modal-btn.primary{background:var(--brass);color:var(--charcoal-950);border-color:var(--brass);font-weight:600;}
   .modal-btn.primary:active{background:var(--brass-bright);}
   .modal-btn:active{background:var(--charcoal-700);}
-  .modal-btn.danger{color:var(--clay);border-color:var(--clay-dim);}
+  .modal-btn.danger{color:var(--clay-text);border-color:var(--clay-dim);}
 
   /* Day plan icon chooser */
   .dayplan-icon-wrap{display:flex;align-items:center;gap:14px;}
@@ -459,7 +461,7 @@
       </button>
     </div>
   </div>
-  <div class="export-toast" id="exportToast" aria-live="polite"></div>
+  <div class="export-toast" id="exportToast" role="status" aria-live="polite"></div>
 
   <main id="main">
     <section id="landing" aria-label="Weekly overview">
@@ -509,19 +511,20 @@
 
     <nav class="tab-bar" id="tabBar" aria-label="Main sections">
       <button class="tab-btn active" data-view="viewItinerary" type="button" aria-current="page">
-        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="4" width="18" height="17" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="16" y1="2" x2="16" y2="6"/></svg>
         Week
       </button>
       <button class="tab-btn" data-view="viewMeals" type="button">
-        <svg viewBox="0 0 24 24"><path d="M4 21V9a4 4 0 0 1 8 0v12"/><path d="M4 14h8"/><path d="M17 3v7"/><path d="M14 3v4a3 3 0 0 0 3 3 3 3 0 0 0 3-3V3"/><line x1="17" y1="10" x2="17" y2="21"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 21V9a4 4 0 0 1 8 0v12"/><path d="M4 14h8"/><path d="M17 3v7"/><path d="M14 3v4a3 3 0 0 0 3 3 3 3 0 0 0 3-3V3"/><line x1="17" y1="10" x2="17" y2="21"/></svg>
         Meals
       </button>
       <button class="tab-btn" data-view="viewRecipes" type="button">
-        <svg viewBox="0 0 24 24"><path d="M4 4h13a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><line x1="8" y1="8" x2="15" y2="8"/><line x1="8" y1="12" x2="15" y2="12"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 4h13a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z"/><line x1="8" y1="8" x2="15" y2="8"/><line x1="8" y1="12" x2="15" y2="12"/></svg>
         Recipes
       </button>
       <button class="tab-btn" data-view="viewPantry" type="button">
-        <svg viewBox="0 0 24 24"><path d="M5 8h14l-1.5 12a2 2 0 0 1-2 1.8H8.5a2 2 0 0 1-2-1.8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 8h14l-1.5 12a2 2 0 0 1-2 1.8H8.5a2 2 0 0 1-2-1.8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>
+
         Pantry
       </button>
     </nav>
@@ -555,7 +558,7 @@
       </div>
 
       <div class="card">
-        <div class="card-label">Cooking instructions <span class="saved-flag" id="savedFlag2" aria-live="polite">saved</span></div>
+        <div class="card-label">Cooking instructions <span class="saved-flag" id="savedFlag2" role="status" aria-live="polite">saved</span></div>
         <textarea id="instructionsInput" placeholder="Method, oven temps, timings — as much as you need." aria-label="Cooking instructions"></textarea>
       </div>
 
@@ -574,23 +577,23 @@
           <input class="new-entry-input" id="newEntryInput" placeholder="Type an ingredient, then press Return" aria-label="Add new ingredient">
         </div>
         <p class="new-entry-hint">Return adds the item. If it matches your pantry, stock is auto-subtracted.</p>
-        <div class="pantry-toast" id="pantryToast" aria-live="polite"></div>
+        <div class="pantry-toast" id="pantryToast" role="status" aria-live="polite"></div>
       </div>
     </section>
   </main>
 </div>
 
-<div class="modal-backdrop" id="iconModal" role="dialog" style="display:none" aria-modal="true" aria-label="Choose a meal icon">
+<div class="modal-backdrop" id="iconModal" role="dialog" style="display:none" aria-modal="true" aria-labelledby="iconModalTitle">
   <div class="modal">
     <div class="modal-head">
-      <h2>Choose a dish icon</h2>
+      <h2 id="iconModalTitle">Choose a dish icon</h2>
       <button class="modal-close" id="iconModalClose" type="button" aria-label="Close icon picker">✕</button>
     </div>
     <div class="icon-grid" id="iconGrid" role="listbox" aria-label="Meal icons"></div>
   </div>
 </div>
 
-<div class="modal-backdrop" id="pantryModal" role="dialog" style="display:none" aria-modal="true" aria-label="Add to pantry">
+<div class="modal-backdrop" id="pantryModal" role="dialog" style="display:none" aria-modal="true" aria-labelledby="pantryModalTitle">
   <div class="modal">
     <div class="modal-head">
       <h2 id="pantryModalTitle">Add to pantry</h2>
@@ -653,6 +656,8 @@
 <script>
 (function(){
   "use strict";
+
+  const appRoot = document.getElementById('app');
 
   /* ============ 64 Dinner Dish Icons ============ */
   function dishSVG(hue, paths, size){
@@ -813,6 +818,9 @@
     header.setAttribute('role', 'button');
     header.tabIndex = 0;
     header.setAttribute('aria-expanded', 'true');
+    const fieldsId = 'day-fields-' + iso;
+    header.setAttribute('aria-controls', fieldsId);
+    header.setAttribute('aria-label', dayName + ' ' + dateNum + ' ' + monthShort + (isToday ? ', today' : '') + (hasBath ? ', bath night' : ''));
     const bathHtml = hasBath ? '<span class="bath-badge">Bath</span>' : '';
     header.innerHTML = '<span class="day-name">' + bathHtml + dayName + ' ' + dateNum + ' ' + monthShort + '</span>' +
       '<span class="day-card-header-right">' +
@@ -829,6 +837,7 @@
 
     const fields = document.createElement('div');
     fields.className = 'day-fields';
+    fields.id = fieldsId;
 
     if(!store.itinerary[iso]) store.itinerary[iso] = {};
     const dayItin = store.itinerary[iso];
@@ -839,14 +848,19 @@
     ['personA', 'personB'].forEach(function(person){
       const personBlock = document.createElement('div');
       personBlock.className = 'person-block';
+      personBlock.id = 'person-fields-' + iso + '-' + person;
       const personHeader = document.createElement('div');
       personHeader.className = 'person-block-header';
       personHeader.setAttribute('role', 'button');
       personHeader.tabIndex = 0;
       personHeader.setAttribute('aria-expanded', 'true');
+      const personName = person === 'personA' ? 'Ella' : 'Alfie';
+      const personFieldsId = 'person-fields-' + iso + '-' + person;
+      personHeader.setAttribute('aria-controls', personFieldsId);
+      personHeader.setAttribute('aria-label', personName + ' plans');
       const personLabel = document.createElement('div');
       personLabel.className = 'person-label';
-      personLabel.textContent = person === 'personA' ? 'Ella' : 'Alfie';
+      personLabel.textContent = personName;
       const personToggle = document.createElement('div');
       personToggle.innerHTML = '<svg class="person-block-toggle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>';
       personHeader.appendChild(personLabel);
@@ -1169,12 +1183,12 @@
     flashPantry('Deleted ' + item.name + (affected ? ' — unlinked from ' + affected + ' meal item' + (affected === 1 ? '' : 's') : ''));
   }
 
-  function renderPantry(){
+  function renderPantry(focusHint){
     pantryList.innerHTML = '';
     if(store.pantry.length === 0){ pantryList.innerHTML = '<div class="pantry-empty">Pantry is empty. Add items here or from the meal plan.</div>'; return; }
     store.pantry.forEach(function(item){
       const row = document.createElement('div'); row.className = 'pantry-row';
-      const dot = document.createElement('div'); dot.className = 'pantry-dot'; dot.style.background = CAT_COLORS[item.category] || CAT_COLORS.other;
+      const dot = document.createElement('div'); dot.className = 'pantry-dot'; dot.style.background = CAT_COLORS[item.category] || CAT_COLORS.other; dot.setAttribute('aria-hidden', 'true');
       const nameWrap = document.createElement('div'); nameWrap.style.display = 'flex'; nameWrap.style.alignItems = 'center'; nameWrap.style.gap = '8px'; nameWrap.style.flex = '1'; nameWrap.style.minWidth = '0';
       const isExpiringThisWeek = item.expiry && weekDates.some(function(d){ return isoDate(d) === item.expiry; });
       if(isExpiringThisWeek){
@@ -1203,7 +1217,7 @@
       const isExpired = item.expiry && item.expiry < todayIso;
       if(isExpired){ stock.className += ' out'; stockQty.textContent = 'EXPIRED'; }
       else if(stockVal <= 0){ stock.className += ' out'; stockQty.textContent = 'OUT'; }
-      else if(stockVal < 10){ stock.className += ' low'; stockQty.textContent = stockVal.toFixed(1) + ' ' + item.unit; }
+      else if(stockVal < 10){ stock.className += ' low'; stockQty.textContent = 'LOW · ' + stockVal.toFixed(1) + ' ' + item.unit; }
       else { stockQty.textContent = stockVal.toFixed(1) + ' ' + item.unit; }
       stock.appendChild(stockQty);
       if(item.pricePerUnit != null){
@@ -1213,14 +1227,26 @@
       }
       const actions = document.createElement('div'); actions.className = 'pantry-actions';
       const minus = document.createElement('button'); minus.type = 'button'; minus.className = 'pantry-btn'; minus.textContent = '-'; minus.setAttribute('aria-label','Decrease '+item.name);
-      minus.addEventListener('click', function(){ item.qty = Math.max(0, (parseFloat(item.qty)||0) - 1); persist(); renderPantry(); });
+      minus.addEventListener('click', function(){
+        item.qty = Math.max(0, (parseFloat(item.qty)||0) - 1); persist();
+        renderPantry({itemId: item.id, control: 'minus'});
+        flashPantry(item.name + ': ' + (parseFloat(item.qty)||0).toFixed(1) + ' ' + item.unit);
+      });
       const plus = document.createElement('button'); plus.type = 'button'; plus.className = 'pantry-btn'; plus.textContent = '+'; plus.setAttribute('aria-label','Increase '+item.name);
-      plus.addEventListener('click', function(){ item.qty = (parseFloat(item.qty)||0) + 1; persist(); renderPantry(); });
+      plus.addEventListener('click', function(){
+        item.qty = (parseFloat(item.qty)||0) + 1; persist();
+        renderPantry({itemId: item.id, control: 'plus'});
+        flashPantry(item.name + ': ' + (parseFloat(item.qty)||0).toFixed(1) + ' ' + item.unit);
+      });
       const del = document.createElement('button'); del.type = 'button'; del.className = 'pantry-btn pantry-btn-delete'; del.innerHTML = '✕'; del.setAttribute('aria-label','Delete '+item.name+' from pantry');
       del.addEventListener('click', function(){ deletePantryItem(item); });
       actions.appendChild(minus); actions.appendChild(plus); actions.appendChild(del);
       row.appendChild(dot); row.appendChild(nameWrap); row.appendChild(stock); row.appendChild(actions);
       pantryList.appendChild(row);
+      if(focusHint && focusHint.itemId === item.id){
+        const toFocus = focusHint.control === 'minus' ? minus : plus;
+        requestAnimationFrame(function(){ toFocus.focus(); });
+      }
     });
     refreshExpirySections();
   }
@@ -1253,6 +1279,7 @@
   });
   setUnit('g');
 
+  let pantryModalOpener = null;
   function openPantryModal(opts){
     opts = opts || {};
     editingPantryItem = opts.editingItem || null;
@@ -1273,23 +1300,29 @@
     pantrySaveBtn.replaceWith(freshSaveBtn);
     pantrySaveBtn = freshSaveBtn;
     pantrySaveBtn.addEventListener('click', handlePantrySave);
+    pantryModalOpener = document.activeElement;
     pantryModal.style.display = 'flex';
+    appRoot.setAttribute('inert', '');
     pantryModalClose.focus();
     document.body.style.overflow = 'hidden';
   }
   function closePantryModal(){
     const wasIngredientFlow = !!onPantrySave;
     pantryModal.style.display = 'none';
+    appRoot.removeAttribute('inert');
     if(wasIngredientFlow && onPantrySave) onPantrySave(null);
     onPantrySave = null;
     editingPantryItem = null;
     document.body.style.overflow = '';
+    if(pantryModalOpener && typeof pantryModalOpener.focus === 'function') pantryModalOpener.focus();
+    pantryModalOpener = null;
   }
   pantryModalClose.addEventListener('click', function(){
     if(onPantrySave) onPantrySave(null);
     closePantryModal();
   });
   pantryModal.addEventListener('click', function(e){ if(e.target===pantryModal){ if(onPantrySave) onPantrySave(null); closePantryModal(); } });
+  pantryModal.addEventListener('keydown', function(e){ trapModalTab(pantryModal, e); });
 
   function handlePantrySave(){
     const name = pantryNameInput.value.trim(); if(!name){ pantryNameInput.focus(); return; }
@@ -1407,21 +1440,50 @@
   const iconGrid = document.getElementById('iconGrid');
   const iconModalClose = document.getElementById('iconModalClose');
 
-  DISH_ICONS.forEach(function(icon){
+  const iconOptionBtns = [];
+  DISH_ICONS.forEach(function(icon, i){
     const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'icon-choice';
-    btn.setAttribute('role','option'); btn.setAttribute('aria-label', 'Dish icon');
+    btn.setAttribute('role','option'); btn.setAttribute('aria-label', 'Dish icon ' + (i + 1));
+    btn.setAttribute('aria-selected', 'false');
     btn.innerHTML = iconSVG(icon);
     btn.addEventListener('click', function(){
       if(activeIconTarget){ mealPlanFor(activeIconTarget).iconId = icon.id; persist(); }
+      iconOptionBtns.forEach(function(b){ b.setAttribute('aria-selected', b === btn ? 'true' : 'false'); });
       closeIconModal(); if(afterIconPick) afterIconPick();
     });
+    iconOptionBtns.push(btn);
     iconGrid.appendChild(btn);
   });
 
-  function openIconModal(dayKey, cb){ activeIconTarget = dayKey; afterIconPick = cb; iconModal.style.display = 'flex'; iconModalClose.focus(); document.body.style.overflow = 'hidden'; }
-  function closeIconModal(){ iconModal.style.display = 'none'; activeIconTarget = null; document.body.style.overflow = ''; }
+  function trapModalTab(modalEl, e){
+    if(e.key !== 'Tab') return;
+    const focusables = modalEl.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+    if(!focusables.length) return;
+    const first = focusables[0], last = focusables[focusables.length - 1];
+    if(e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+  }
+
+  let iconModalOpener = null;
+  function openIconModal(dayKey, cb){
+    activeIconTarget = dayKey; afterIconPick = cb;
+    iconModalOpener = document.activeElement;
+    const currentIconId = dayKey ? (mealPlanFor(dayKey).iconId || null) : null;
+    iconOptionBtns.forEach(function(b, i){ b.setAttribute('aria-selected', (currentIconId && DISH_ICONS[i].id === currentIconId) ? 'true' : 'false'); });
+    iconModal.style.display = 'flex'; iconModal.removeAttribute('hidden');
+    appRoot.setAttribute('inert', '');
+    iconModalClose.focus(); document.body.style.overflow = 'hidden';
+  }
+  function closeIconModal(){
+    iconModal.style.display = 'none';
+    appRoot.removeAttribute('inert');
+    activeIconTarget = null; document.body.style.overflow = '';
+    if(iconModalOpener && typeof iconModalOpener.focus === 'function') iconModalOpener.focus();
+    iconModalOpener = null;
+  }
   iconModalClose.addEventListener('click', closeIconModal);
   iconModal.addEventListener('click', function(e){ if(e.target===iconModal) closeIconModal(); });
+  iconModal.addEventListener('keydown', function(e){ trapModalTab(iconModal, e); });
   document.addEventListener('keydown', function(e){ if(e.key==='Escape'){ if(iconModal.style.display !== 'none') closeIconModal(); if(pantryModal.style.display !== 'none') closePantryModal(); } });
 
   /* ============ Tab navigation ============ */
@@ -1472,7 +1534,7 @@
   dayplanIconBtn.addEventListener('click', openDayplanIconPicker);
   dayplanIconChange.addEventListener('click', openDayplanIconPicker);
 
-  function flash(el){ el.classList.add('show'); clearTimeout(el._t); el._t = setTimeout(function(){ el.classList.remove('show'); }, 900); }
+  function flash(el){ el.textContent = ''; el.classList.add('show'); requestAnimationFrame(function(){ el.textContent = 'saved'; }); clearTimeout(el._t); el._t = setTimeout(function(){ el.classList.remove('show'); }, 900); }
 
   function openDayPlan(dayKey, label){
     currentDayKey = dayKey; currentRecipeId = null;
