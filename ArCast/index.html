@@ -31,9 +31,10 @@
             --border-chill: rgba(255, 255, 255, 0.06);
             --text: #f0f0f5;
             --text-secondary: #c5c5d2;
-            --text-muted: #9ca3af;
+            --text-muted: #a9adc1;
             --primary: #a5b4fc;
             --primary-glow: rgba(165, 180, 252, 0.15);
+            --focus-ring: rgba(165, 180, 252, 0.6);
             --night-glow: rgba(96, 165, 250, 0.08);
         }
         @media (prefers-reduced-motion: reduce) {
@@ -99,6 +100,25 @@
             will-change: opacity;
             transition: opacity 0.3s ease;
         }
+        .privacy-note {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 12px;
+        }
+        .link-btn {
+            background: none;
+            border: none;
+            padding: 0;
+            font: inherit;
+            font-size: 12px;
+            color: var(--primary);
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .link-btn:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
         .status-loading { background: var(--surface-soft); color: var(--primary); }
         .status-error { background: rgba(241, 76, 76, 0.1); color: #f14c4c; }
         .status-offline { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
@@ -119,14 +139,16 @@
             color: var(--text);
             padding: 14px 22px;
             border-radius: 24px;
-            font-size: 15px;
+            font-size: 16px;
             outline: none;
             transition: all 0.2s ease;
         }
         .search-input:focus {
             border-color: var(--primary);
             background: var(--surface);
-            box-shadow: 0 0 0 3px var(--primary-glow);
+        }
+        .search-input:focus-visible {
+            box-shadow: 0 0 0 2px var(--focus-ring);
         }
         .btn {
             background: var(--surface-soft);
@@ -179,19 +201,40 @@
             margin-top: 20px;
         }
         #tabsContainer { display: none; }
+        #tabsHeaderWrap {
+            position: relative;
+            margin-bottom: 28px;
+        }
+        #tabsHeaderWrap::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 32px;
+            background: linear-gradient(to right, transparent, var(--bg));
+            pointer-events: none;
+        }
+        #tabsHeaderWrap.at-end::after { opacity: 0; }
         #tabsHeader {
             display: flex;
             gap: 10px;
-            margin-bottom: 28px;
+            margin-bottom: 0;
             overflow-x: auto;
-            padding: 4px 0;
+            padding: 4px 2px;
             scrollbar-width: none;
             justify-content: flex-start;
             touch-action: pan-x;
+            scroll-snap-type: x proximity;
+            -webkit-overflow-scrolling: touch;
         }
         #tabsHeader::-webkit-scrollbar { display: none; }
         .tab-button {
             padding: 10px 18px;
+            min-height: 44px;
+            min-width: 44px;
+            flex: 0 0 auto;
+            scroll-snap-align: start;
             background: var(--surface-soft);
             border: 1px solid var(--border-chill);
             border-radius: 20px;
@@ -328,6 +371,7 @@
             scroll-snap-align: start;
             border-right: 1px solid var(--border-chill);
             min-width: 76px;
+            min-height: 44px;
         }
         .hourly-item:last-child {
             border-right: none;
@@ -375,6 +419,7 @@
         }
         @media (max-width: 480px) {
             .controls-wrapper { flex-direction: column; align-items: stretch; }
+            .controls-wrapper > * { margin-left: 4px; margin-right: 4px; }
             .hero-temp { font-size: 56px; }
         }
 
@@ -398,7 +443,9 @@
         html.is-tv .status-message { font-size: 18px; padding: 16px 28px; border-radius: 24px; }
         html.is-tv #emptyState { padding: 80px 24px; }
         html.is-tv #emptyState p { font-size: 20px; }
-        html.is-tv #tabsHeader { gap: 16px; margin-bottom: 40px; }
+        html.is-tv #tabsHeader { gap: 16px; }
+        html.is-tv #tabsHeaderWrap { margin-bottom: 40px; }
+        html.is-tv #tabsHeaderWrap::after { display: none; }
         html.is-tv .tab-button {
             padding: 14px 24px;
             font-size: 18px;
@@ -442,6 +489,7 @@
         /* ── Lunar Block ── */
         .moon-block {
             display: flex;
+            flex-wrap: wrap;
             align-items: center;
             gap: 20px;
         }
@@ -503,16 +551,17 @@
             </div>
             <div class="controls-wrapper">
                 <input type="text" id="locationInput" class="search-input" placeholder="Optional UK postcode..." aria-label="Enter UK postcode" autocomplete="postal-code">
-                <button class="btn btn-primary" id="searchBtn" onclick="window.handleSearch()" aria-label="Search weather by postcode">
+                <button class="btn btn-primary" id="searchBtn" onclick="window.handleSearch()" aria-label="Check weather by postcode">
                     <span id="searchBtnText">Check weather</span>
                     <span id="searchSpinner" class="spinner" aria-hidden="true"></span>
                 </button>
-                <button class="btn" id="geoBtn" onclick="window.handleGeolocation()" aria-label="Use my current location" title="Use my current location">
+                <button class="btn" id="geoBtn" onclick="window.handleGeolocation()" aria-label="Near Me: use my current location" title="Use my current location">
                     <span id="geoBtnText">📍 Near Me</span>
                     <span id="geoSpinner" class="spinner" aria-hidden="true"></span>
                 </button>
             </div>
-            <div id="statusMessage" class="status-message" role="status" aria-live="polite"></div>
+            <div id="statusMessage" class="status-message" role="status" aria-live="polite" aria-atomic="true"></div>
+            <p class="privacy-note">Forecasts are cached on this device only, for up to 1 hour. <button type="button" class="link-btn" id="clearCacheBtn" onclick="window.handleClearCache()">Clear stored data</button></p>
         </header>
         <main id="mainScreen">
             <noscript>
@@ -529,7 +578,9 @@
                 <p style="color: var(--text-muted); margin: 0;">Enter a postcode or tap "Near Me" to grab the forecast.</p>
             </div>
             <div id="tabsContainer">
-                <nav id="tabsHeader" role="tablist" aria-label="Daily weather tabs"></nav>
+                <div id="tabsHeaderWrap">
+                    <div id="tabsHeader" role="tablist" aria-label="Daily weather tabs"></div>
+                </div>
                 <div id="tabsContent"></div>
             </div>
         </main>
@@ -620,6 +671,7 @@
             const emptyState = getElement('emptyState');
             const tabsContainer = getElement('tabsContainer');
             const tabsHeader = getElement('tabsHeader');
+            const tabsHeaderWrap = getElement('tabsHeaderWrap');
             const tabsContent = getElement('tabsContent');
             function showStatus(msg, type) {
                 statusEl.textContent = msg;
@@ -697,6 +749,12 @@
                     return parsed;
                 } catch (ignore) { return null; }
             }
+            function handleClearCache() {
+                try { localStorage.removeItem(CONFIG.CACHE_KEY); } catch (ignore) {}
+                appState.weatherData = null;
+                appState.lastCoords = null;
+                showStatus('Stored forecast data cleared.', 'loading');
+            }
             function coordsMatch(a, b) {
                 if (!a || !b) return false;
                 return Math.abs(a.lat - b.lat) < CONFIG.COORD_MATCH_THRESHOLD &&
@@ -723,12 +781,14 @@
             function renderSkeletonState() {
                 emptyState.style.display = 'none';
                 tabsContainer.style.display = 'block';
+                tabsHeader.setAttribute('aria-busy', 'true');
                 tabsHeader.innerHTML =
-                    '<div class="tab-button skeleton" style="width:80px;height:40px;"></div>' +
-                    '<div class="tab-button skeleton" style="width:80px;height:40px;"></div>' +
-                    '<div class="tab-button skeleton" style="width:80px;height:40px;"></div>';
+                    '<div class="tab-button skeleton" role="tab" aria-selected="false" aria-hidden="true" style="width:80px;height:40px;"></div>' +
+                    '<div class="tab-button skeleton" role="tab" aria-selected="false" aria-hidden="true" style="width:80px;height:40px;"></div>' +
+                    '<div class="tab-button skeleton" role="tab" aria-selected="false" aria-hidden="true" style="width:80px;height:40px;"></div>';
+                tabsContent.setAttribute('aria-busy', 'true');
                 tabsContent.innerHTML =
-                    '<div class="cozy-view is-visible">' +
+                    '<div class="cozy-view is-visible" aria-hidden="true">' +
                         '<div class="block skeleton" style="height:140px;"></div>' +
                         '<div class="block">' +
                             '<div class="skeleton" style="height:110px;"></div>' +
@@ -914,6 +974,8 @@
                 switchTab(index);
             }
             function renderTabs() {
+                tabsHeader.removeAttribute('aria-busy');
+                tabsContent.removeAttribute('aria-busy');
                 tabsHeader.innerHTML = '';
                 tabsContent.innerHTML = '';
                 if (appState.intersectionObserver) {
@@ -932,7 +994,15 @@
                 }
                 tabsHeader.removeEventListener('keydown', handleTabKeyboard);
                 tabsHeader.addEventListener('keydown', handleTabKeyboard);
+                tabsHeader.removeEventListener('scroll', updateTabsScrollFade);
+                tabsHeader.addEventListener('scroll', updateTabsScrollFade, { passive: true });
                 tabsHeader.scrollLeft = 0;
+                updateTabsScrollFade();
+            }
+            function updateTabsScrollFade() {
+                if (!tabsHeaderWrap) return;
+                const atEnd = tabsHeader.scrollWidth - tabsHeader.clientWidth - tabsHeader.scrollLeft < 4;
+                tabsHeaderWrap.classList.toggle('at-end', atEnd || tabsHeader.scrollWidth <= tabsHeader.clientWidth);
             }
             function allDaysForEachContainer() {
                 appState.allDays.forEach(function(day, index) {
@@ -1059,7 +1129,7 @@
                     const currentClass = isCurrent ? 'is-current' : '';
                     trackHtml += (
                         '<div class="hourly-item ' + currentClass + '" tabindex="0"' +
-                             ' aria-label="' + h.hourOnly + ', ' + temp + ' degrees, ' + rain + '% chance of rain">' +
+                             ' aria-label="' + h.hourOnly + ', ' + temp + ' degrees Celsius, ' + rain + '% chance of rain">' +
                             '<div class="time" aria-hidden="true">' + h.hourOnly + '</div>' +
                             '<div class="icon" aria-hidden="true">' + icon + '</div>' +
                             '<div class="pop ' + rainClass + '" aria-hidden="true">' + rainStr + '</div>' +
@@ -1152,31 +1222,44 @@
                 );
             }
             function enableDragScroll(track) {
+                // Pointer Events (W3C Pointer Events Level 3): unifies mouse input only.
+                // Touch input is deliberately excluded so native touch-scroll and
+                // scroll-snap keep working unmodified (WCAG 2.2 SC 2.5.7 Dragging
+                // Movements: this is a supplementary mouse convenience, not the
+                // only way to operate the control).
                 let isDown = false;
                 let startX;
                 let startScrollLeft;
+                let activePointerId = null;
 
-                track.addEventListener('mousedown', function(e) {
+                track.addEventListener('pointerdown', function(e) {
+                    if (e.pointerType !== 'mouse') return;
                     isDown = true;
+                    activePointerId = e.pointerId;
+                    track.setPointerCapture(e.pointerId);
                     track.classList.add('dragging');
-                    startX = e.pageX - track.offsetLeft;
+                    startX = e.clientX - track.offsetLeft;
                     startScrollLeft = track.scrollLeft;
                 });
 
-                track.addEventListener('mouseleave', function() {
-                    isDown = false;
-                    track.classList.remove('dragging');
-                });
-
-                track.addEventListener('mouseup', function() {
-                    isDown = false;
-                    track.classList.remove('dragging');
-                });
-
-                track.addEventListener('mousemove', function(e) {
+                function endDrag(e) {
                     if (!isDown) return;
+                    if (activePointerId !== null && track.hasPointerCapture(activePointerId)) {
+                        track.releasePointerCapture(activePointerId);
+                    }
+                    isDown = false;
+                    activePointerId = null;
+                    track.classList.remove('dragging');
+                }
+
+                track.addEventListener('pointerup', endDrag);
+                track.addEventListener('pointercancel', endDrag);
+                track.addEventListener('lostpointercapture', endDrag);
+
+                track.addEventListener('pointermove', function(e) {
+                    if (!isDown || e.pointerType !== 'mouse') return;
                     e.preventDefault();
-                    const x = e.pageX - track.offsetLeft;
+                    const x = e.clientX - track.offsetLeft;
                     const walk = (x - startX) * 1.2;
                     track.scrollLeft = startScrollLeft - walk;
                 });
@@ -1215,7 +1298,7 @@
                     '</div>' +
                     '<div class="block">' +
                         '<div class="block-label">Hourly snapshot</div>' +
-                        '<div class="scroll-track" role="region" aria-label="Hourly timeline">' +
+                        '<div class="scroll-track" role="group" aria-label="Hourly timeline">' +
                             trackHtml +
                         '</div>' +
                     '</div>' +
@@ -1258,6 +1341,7 @@
             }
             window.handleSearch = handleSearch;
             window.handleGeolocation = handleGeolocation;
+            window.handleClearCache = handleClearCache;
         })();
     </script>
 </body>
