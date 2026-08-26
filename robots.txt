@@ -1,8 +1,8 @@
-# Allow Google Search for indexing
-User-agent: Googlebot
+# Allow standard search engine indexing and Google tools
+User-agent: *
 Allow: /
 
-# Block AI training bots and other crawlers
+# Block AI scrapers
 User-agent: GPTBot
 Disallow: /
 
@@ -15,5 +15,5 @@ Disallow: /
 User-agent: Claude-Web
 Disallow: /
 
-User-agent: *
-Disallow: /
+# Direct sitemap path
+Sitemap: https://ardalorn.github.io/ArTools/sitemap.xml
