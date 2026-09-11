@@ -1,8 +1,6 @@
 # ArTools
 
-A small collection of free, single-file web apps by Ardalorn. No installs, no accounts, no tracking — everything runs in your browser.
-
-Previously working under the handle "Rexore", however I have lost access to account, so I have taken the chance to rebrand slightly.
+A small collection of free, single-file web apps by Ardalorn. No installs, no accounts, no tracking, everything runs in your browser.
 
 **→ https://ardalorn.github.io/ArTools/**
 
