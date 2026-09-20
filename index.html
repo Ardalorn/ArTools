@@ -4,20 +4,37 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1c1815">
-<!-- Enhanced invisible description for AI summarization -->
+<!-- The page is dark-only by design (see --charcoal-950 body background below),
+     so tell the browser to render native UI — scrollbars, form controls,
+     the default page background before CSS loads — in dark, not light. -->
+<meta name="color-scheme" content="dark">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://ardalorn.github.io/ArTools/">
+
 <meta name="description" content="A shelf of privacy-focused, single-file web applications by Ardalorn. Includes tools for planning, weather tracking, drawing, and developer utilities.">
 <meta name="author" content="Ardalorn">
 
-<!-- Open Graph Meta Tags for AI agent and social link context -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%231c1815'/%3E%3Ccircle cx='50' cy='50' r='22' fill='%23d49e5a'/%3E%3C/svg%3E">
+
 <meta property="og:title" content="Ardalorn — Tools">
 <meta property="og:description" content="A shelf of single-file apps. Each one runs entirely in your browser, no accounts, no tracking.">
 <meta property="og:type" content="website">
+<meta property="og:url" content="https://ardalorn.github.io/ArTools/">
+<meta property="og:locale" content="en_GB">
+<!-- No og:image yet — omitted rather than pointed at a file that doesn't exist.
+     Without one, most platforms fall back to a plain title/description card
+     instead of a broken image. Once you have a preview graphic (ideally
+     1200x630px), add og:image here, a twitter:image below, and switch
+     twitter:card to "summary_large_image" for the bigger card layout. -->
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Ardalorn — Tools">
+<meta name="twitter:description" content="A shelf of single-file apps. Each one runs entirely in your browser, no accounts, no tracking.">
 
 <title>Ardalorn — Tools</title>
 
-<!-- 
+<!--
   JSON-LD Schema Markup (AI Generative Engine Optimization)
-  This maps your JavaScript tooltip descriptions into a structured Knowledge Graph 
+  This maps your JavaScript tooltip descriptions into a structured Knowledge Graph
   so AI Overviews can read and recommend your individual tools.
 -->
 <script type="application/ld+json">
@@ -110,6 +127,8 @@
     --brass:#d49e5a;
     --brass-bright:#e8b97a;
     --line:#3a332b;
+    --line-strong:#5a5044;
+    --focus-ring:#f0e6d4;
     --radius:14px;
     --serif: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
     --mono: "Source Code Pro", "JetBrains Mono", "SF Mono", Consolas, Menlo, monospace;
@@ -117,6 +136,9 @@
   }
   *{box-sizing:border-box;margin:0;padding:0;}
   html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;}
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+  }
   body{
     background:var(--charcoal-950);color:var(--parchment);font-family:var(--sans);
     font-size:16px;line-height:1.5;min-height:100dvh;-webkit-font-smoothing:antialiased;
@@ -124,6 +146,22 @@
   }
   ::selection{background:var(--brass);color:var(--charcoal-950);}
   a{color:inherit;}
+
+  /* Requirement 9 / SC 2.4.1 Bypass Blocks: skip link so keyboard and screen-reader
+     users can jump past the intro copy straight to the tool list. Visually hidden
+     until it receives focus, per standard skip-link pattern. */
+  .skip-link{
+    position:absolute;top:-48px;left:12px;z-index:100;
+    background:var(--brass);color:var(--charcoal-950);
+    font-family:var(--sans);font-weight:600;font-size:14px;
+    padding:10px 16px;border-radius:8px;text-decoration:none;
+    transition:top .15s ease;
+  }
+  .skip-link:focus{top:12px;}
+  @media (prefers-reduced-motion: reduce){
+    .skip-link{transition:none;}
+  }
+
   main{max-width:680px;margin:0 auto;padding:56px 20px 64px;}
 
   .eyebrow{
@@ -136,6 +174,15 @@
   }
   .lede{color:var(--parchment-dim);font-size:15px;margin:0 0 44px;max-width:52ch;}
 
+  /* Standard visually-hidden pattern: keeps content in the accessibility tree
+     and in document flow for focus purposes, but removes it from the visual
+     canvas without using display:none or visibility:hidden, which would also
+     remove it from the accessibility tree. */
+  .visually-hidden{
+    position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+    overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0;
+  }
+
   .shelf{
     list-style:none;display:grid;
     grid-template-columns:repeat(auto-fill, minmax(128px, 1fr));
@@ -145,29 +192,54 @@
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
     background:var(--charcoal-900);border:1px solid var(--line);border-radius:var(--radius);
     padding:26px 12px;text-decoration:none;text-align:center;
+    /* Requirement 10 / SC 2.5.8 Target Size: 128px grid column and 26px vertical
+       padding around a 30px icon + label keep every tile comfortably above the
+       24×24px CSS-pixel minimum target size, at any viewport width. */
+    min-height:44px;
     -webkit-touch-callout:none;-webkit-user-select:none;user-select:none;
     transition:border-color .15s ease, transform .15s ease, background .15s ease;
   }
   .tool:hover, .tool:focus-visible{
     border-color:var(--tool-color, var(--brass));transform:translateY(-2px);background:var(--charcoal-800);
   }
-  .tool:focus-visible{outline:2px solid var(--tool-color, var(--brass));outline-offset:2px;}
+  /* Requirement 12 / SC 2.4.13 Focus Appearance: a 2px outline plus offset, in a
+     fixed parchment tone that stays >=6.8:1 against every tile background,
+     rather than the previous --tool-color which is chosen for icon decoration
+     and isn't guaranteed to meet contrast against every future tile color. */
+  .tool:focus-visible{
+    outline:2px solid var(--focus-ring);outline-offset:2px;
+    border-color:var(--tool-color, var(--brass));
+  }
+  @media (prefers-reduced-motion: reduce){
+    .tool{transition:none;}
+    .tool:hover, .tool:focus-visible{transform:none;}
+  }
   .tool-icon{
     width:30px;height:30px;color:var(--tool-color, var(--brass));
     transition:filter .15s ease;
+  }
+  @media (prefers-reduced-motion: reduce){
+    .tool-icon{transition:none;}
   }
   .tool:hover .tool-icon, .tool:focus-visible .tool-icon{filter:brightness(1.25);}
   .tool-icon svg{width:100%;height:100%;display:block;}
   .tool-name{
     font-family:var(--serif);font-size:15.5px;color:var(--parchment);line-height:1.25;
   }
+  /* Requirement 13 / SC 2.4.4 Link Purpose: the description that used to live only
+     in a hover/long-press tooltip is now permanent, visible text inside the link,
+     so the link's accessible name (built from its own text content) states what
+     the tool does, not just its short brand name. */
+  .tool-desc{
+    font-family:var(--sans);font-size:12.5px;line-height:1.35;
+    color:var(--parchment-dim);max-width:22ch;
+  }
 
   .tooltip{
     position:fixed;z-index:10;pointer-events:none;
-    background:var(--charcoal-800);border:1px solid var(--line);border-radius:9px;
+    background:var(--charcoal-800);border:1px solid var(--line-strong);border-radius:9px;
     padding:8px 12px;max-width:220px;
-    font-fam
-    );
+    font-family:var(--sans);font-size:13px;line-height:1.4;color:var(--parchment);
     box-shadow:0 8px 22px rgba(0,0,0,.35);
     opacity:0;transform:translateY(4px) scale(.97);
     transition:opacity .12s ease, transform .12s ease;
@@ -175,7 +247,7 @@
   .tooltip.is-visible{opacity:1;transform:translateY(0) scale(1);}
   .tooltip::after{
     content:"";position:absolute;width:8px;height:8px;
-    background:var(--charcoal-800);border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+    background:var(--charcoal-800);border-right:1px solid var(--line-strong);border-bottom:1px solid var(--line-strong);
     transform:rotate(45deg);
   }
   .tooltip[data-pos="above"]::after{bottom:-5px;left:50%;margin-left:-4px;}
@@ -190,23 +262,25 @@
     font-family:var(--mono);font-size:11px;color:var(--parchment-dim);
     letter-spacing:.04em;
   }
-
-  @media (prefers-reduced-motion: reduce){
-    .tool{transition:none;}
-  }
 </style>
 </head>
 <body>
+<a class="skip-link" href="#tool-shelf">Skip to tools</a>
 <main>
   <div class="eyebrow">Ardalorn</div>
   <h1>Tools, kept in one place</h1>
   <p class="lede">A shelf of single-file apps. Each one runs entirely in your browser, no accounts, no tracking.</p>
 
-  <ul class="shelf">
+  <!-- Requirement 3 / SC 1.3.1: heading precedes the list it labels, so the
+       list's role in the page structure is programmatically clear, not just
+       visually implied by position. Visually hidden — the H1 and lede already
+       say this is a tools page — but present for landmark/heading navigation. -->
+  <h2 id="tool-shelf-heading" class="visually-hidden">Available tools</h2>
+  <ul class="shelf" id="tool-shelf" aria-labelledby="tool-shelf-heading">
     <li>
-      <a class="tool" href="ArPlan/" aria-label="ArPlan" data-desc="Weekly itinerary, meal planning, and pantry tracker." style="--tool-color:var(--brass)">
+      <a class="tool" href="ArPlan/" style="--tool-color:var(--brass)">
         <span class="tool-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
             <rect x="3" y="4.5" width="18" height="16" rx="2"/>
             <path d="M3 9.5h18"/>
             <path d="M8 2.5v4M16 2.5v4"/>
@@ -214,46 +288,50 @@
           </svg>
         </span>
         <span class="tool-name">ArPlan</span>
+        <span class="tool-desc">Weekly itinerary, meal planning, and pantry tracker.</span>
       </a>
     </li>
     <li>
-      <a class="tool" href="ArCast/" aria-label="ArCast" data-desc="A calm, accessible UK weather dashboard with moon phase tracking." style="--tool-color:#a5b4fc">
+      <a class="tool" href="ArCast/" style="--tool-color:#a5b4fc">
         <span class="tool-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
             <path d="M17.5 18a4 4 0 0 0 0-8 5.5 5.5 0 0 0-10.6-1.6A4.5 4.5 0 0 0 7.5 18h10z"/>
             <path d="M18.5 6.5a5 5 0 0 1 1.2 3"/>
           </svg>
         </span>
         <span class="tool-name">ArCast</span>
+        <span class="tool-desc">A calm, accessible UK weather dashboard with moon phase tracking.</span>
       </a>
     </li>
     <li>
-      <a class="tool" href="ArCanvas/" aria-label="ArCanvas" data-desc="A distraction-free drawing experience for children.">
+      <a class="tool" href="ArCanvas/" style="--tool-color:#c98b7a">
         <span class="tool-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M4 20l1-4.2L15.6 5.2a1.5 1.5 0 0 1 2.1 0l1.1 1.1a1.5 1.5 0 0 1 0 2.1L8.2 19 4 20z" stroke="#c98b7a" fill="none"/>
-            <path d="M13.8 6.9l3.3 3.3" stroke="#d1b47e" fill="none"/>
-            <path d="M4 20l1-4.2 2 2z" stroke="#8fa882" fill="#8fa882" fill-opacity=".35"/>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
+            <path d="M4 20l1-4.2L15.6 5.2a1.5 1.5 0 0 1 2.1 0l1.1 1.1a1.5 1.5 0 0 1 0 2.1L8.2 19 4 20z"/>
+            <path d="M13.8 6.9l3.3 3.3" opacity=".65"/>
+            <path d="M4 20l1-4.2 2 2z" fill="currentColor" fill-opacity=".35" stroke="none"/>
           </svg>
         </span>
         <span class="tool-name">ArCanvas</span>
+        <span class="tool-desc">A distraction-free drawing experience for children.</span>
       </a>
     </li>
     <li>
-      <a class="tool" href="ArHar/" aria-label="ArHar" data-desc="A network log (HAR file) inspector." style="--tool-color:#dba361">
+      <a class="tool" href="ArHar/" style="--tool-color:#dba361">
         <span class="tool-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
             <path d="M3 13h3l2 6 4-14 2 8h4"/>
             <path d="M18 13h3"/>
           </svg>
         </span>
         <span class="tool-name">ArHar</span>
+        <span class="tool-desc">A network log (HAR file) inspector.</span>
       </a>
     </li>
     <li>
-      <a class="tool" href="ArCom/" aria-label="ArCom" data-desc="A zero-dependency comic library and reader for your local collection, with CVD support." style="--tool-color:#ff4d4d">
+      <a class="tool" href="ArCom/" style="--tool-color:#ff4d4d">
         <span class="tool-icon" aria-hidden="true">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
             <rect x="3" y="3" width="18" height="18" rx="2"/>
             <path d="M10 3v7"/>
             <path d="M3 10h18"/>
@@ -261,25 +339,42 @@
           </svg>
         </span>
         <span class="tool-name">ArCom</span>
+        <span class="tool-desc">A zero-dependency comic library and reader for your local collection, with CVD support.</span>
       </a>
     </li>
-    <!-- Add further tools here, one <li> per entry — icon svg + tool-name. Set style="--tool-color:#hex" from that app's :root palette, and data-desc="..." for the tooltip -->
+    <!-- Add further tools here, one <li> per entry — icon svg + tool-name + tool-desc.
+         Set style="--tool-color:#hex" from that app's :root palette. The tool-desc
+         text is both the visible description and the accessible name context, so
+         write it as a complete sentence describing what the tool does. -->
   </ul>
 </main>
 <footer>Ardalorn · built with plain HTML, CSS, and JS</footer>
 <script>
 (function(){
+  'use strict';
+
+  // Progressive-enhancement tooltip: the description is already permanent,
+  // visible text in each tile (.tool-desc), which is what makes each link's
+  // name and purpose available to every user and every assistive technology
+  // without any interaction. This tooltip is a supplementary hover/focus
+  // affordance for sighted mouse and keyboard users on narrow layouts where
+  // the description wraps small — it duplicates, rather than is the sole
+  // source of, information already in the accessibility tree.
   var tooltip = document.createElement('div');
   tooltip.className = 'tooltip';
-  tooltip.setAttribute('role', 'tooltip');
-  tooltip.id = 'shelf-tooltip';
+  tooltip.setAttribute('role', 'presentation');
+  tooltip.setAttribute('aria-hidden', 'true');
   document.body.appendChild(tooltip);
 
-  var tools = document.querySelectorAll('.tool[data-desc]');
+  var tools = document.querySelectorAll('.tool');
   var activeTool = null;
   var showTimer = null;
-  var longPressTimer = null;
-  var isTouch = false;
+  var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function descFor(el){
+    var descEl = el.querySelector('.tool-desc');
+    return descEl ? descEl.textContent : '';
+  }
 
   function position(el){
     var r = el.getBoundingClientRect();
@@ -297,25 +392,23 @@
   }
 
   function show(el){
-    tooltip.textContent = el.getAttribute('data-desc');
+    var text = descFor(el);
+    if (!text) return;
+    tooltip.textContent = text;
     activeTool = el;
-    el.setAttribute('aria-describedby', 'shelf-tooltip');
     position(el);
     tooltip.classList.add('is-visible');
   }
 
   function hide(){
     tooltip.classList.remove('is-visible');
-    if (activeTool) activeTool.removeAttribute('aria-describedby');
     activeTool = null;
   }
 
   tools.forEach(function(el){
-    el.addEventListener('contextmenu', function(e){ e.preventDefault(); });
-
-    // Desktop hover — small delay so it doesn't flash on quick mouse pass-through
+    // Desktop hover — small delay so it doesn't flash on quick mouse pass-through.
+    // Purely decorative: the same text is already visible in .tool-desc.
     el.addEventListener('mouseenter', function(){
-      if (isTouch) return;
       clearTimeout(showTimer);
       showTimer = setTimeout(function(){ show(el); }, 350);
     });
@@ -324,46 +417,26 @@
       hide();
     });
 
-    // Keyboard focus — show immediately, no delay
+    // Keyboard focus — show immediately, no delay. Because the description is
+    // also permanent visible text within the link (read as part of the link's
+    // accessible name), this tooltip is decorative reinforcement, not the
+    // sole channel, so it is safe to hide it from the accessibility tree.
     el.addEventListener('focus', function(){ show(el); });
     el.addEventListener('blur', hide);
-
-    // Touch — long-press (500ms) shows tooltip and suppresses the click-through navigation;
-    // a normal tap still navigates as usual.
-    el.addEventListener('touchstart', function(){
-      isTouch = true;
-      var target = el;
-      longPressTimer = setTimeout(function(){
-        show(target);
-        target.dataset.longPressed = 'true';
-        if (navigator.vibrate) navigator.vibrate(8);
-      }, 500);
-    }, {passive:true});
-
-    el.addEventListener('touchend', function(){
-      clearTimeout(longPressTimer);
-    });
-    el.addEventListener('touchmove', function(){
-      clearTimeout(longPressTimer);
-    }, {passive:true});
-
-    el.addEventListener('click', function(e){
-      if (el.dataset.longPressed === 'true'){
-        e.preventDefault();
-        delete el.dataset.longPressed;
-        setTimeout(hide, 1800);
-      }
-    });
   });
-
-  document.addEventListener('touchstart', function(e){
-    if (activeTool && !activeTool.contains(e.target)) hide();
-  }, {passive:true});
 
   window.addEventListener('scroll', hide, {passive:true});
   window.addEventListener('resize', function(){
     if (activeTool) position(activeTool);
   });
+
+  // Requirement 23 / SC 1.4.13-adjacent: respect the user's reduced-motion
+  // preference by skipping the position/transition dance entirely rather than
+  // just relying on the CSS transition override — avoids the transform-based
+  // reposition being perceived as unwanted motion.
+  if (prefersReducedMotion){
+    tooltip.style.transition = 'none';
+  }
 })();
 </script>
 </body>
