@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#1c1815">
 <meta name="description" content="A mobile-first weekly itinerary and meal planner with pantry integration.">
 <meta name="author" content="Ardalorn">
-<title>ArPlan — Weekly Planner</title>
+<title>ArPlan - Weekly Planner</title>
 <style>
   :root{
     --charcoal-950:#14110e;
@@ -465,8 +465,8 @@
 
   <main id="main">
     <section id="landing" aria-label="Weekly overview">
-      <h1 class="date-line" id="todayHeadline">—</h1>
-      <p class="date-sub" id="todaySub">—</p>
+      <h1 class="date-line" id="todayHeadline">-</h1>
+      <p class="date-sub" id="todaySub">-</p>
 
       <div class="view-panel active" id="viewItinerary">
         <div class="panel">
@@ -538,7 +538,7 @@
           <div class="day-assign-grid" id="dayAssignGrid"></div>
         </div>
       </div>
-      <p class="dayplan-context" id="dayplanContext">—</p>
+      <p class="dayplan-context" id="dayplanContext">-</p>
 
       <div style="display:flex;gap:8px;margin-bottom:16px;">
         <button class="panel-action" id="saveRecipeBtn" type="button" style="flex:1;font-size:12px;">Save to recipes</button>
@@ -559,7 +559,7 @@
 
       <div class="card">
         <div class="card-label">Cooking instructions <span class="saved-flag" id="savedFlag2" role="status" aria-live="polite">saved</span></div>
-        <textarea id="instructionsInput" placeholder="Method, oven temps, timings — as much as you need." aria-label="Cooking instructions"></textarea>
+        <textarea id="instructionsInput" placeholder="Method, oven temps, timings, as much as you need." aria-label="Cooking instructions"></textarea>
       </div>
 
       <div class="card">
@@ -640,7 +640,7 @@
       <div class="form-group">
         <label class="form-label" for="pantryPriceInput">Price paid (£, optional)</label>
         <input class="form-input" id="pantryPriceInput" type="number" step="0.01" min="0" placeholder="0.00" aria-label="Price paid for this quantity">
-        <span class="new-entry-hint" style="padding:4px 2px 0;">For the quantity above — cost per unit is worked out for you.</span>
+        <span class="new-entry-hint" style="padding:4px 2px 0;">For the quantity above. Cost per unit is worked out for you.</span>
       </div>
       <div class="form-group">
         <label class="form-label" for="pantryExpiryInput">Expires (optional)</label>
@@ -808,7 +808,7 @@
     const dayName = FULL_DAYS[idx];
     const dateNum = d.getDate();
     const monthShort = months[d.getMonth()].slice(0,3);
-    const hasBath = (idx === 1 || idx === 4 || idx === 6); // Tue, Fri, Sun
+    const hasBath = (idx === 1 || idx === 4 || idx === 6); // Tue, Fri, Sun (swim nights)
 
     const card = document.createElement('div');
     card.className = 'day-card';
@@ -820,8 +820,8 @@
     header.setAttribute('aria-expanded', 'true');
     const fieldsId = 'day-fields-' + iso;
     header.setAttribute('aria-controls', fieldsId);
-    header.setAttribute('aria-label', dayName + ' ' + dateNum + ' ' + monthShort + (isToday ? ', today' : '') + (hasBath ? ', bath night' : ''));
-    const bathHtml = hasBath ? '<span class="bath-badge">Bath</span>' : '';
+    header.setAttribute('aria-label', dayName + ' ' + dateNum + ' ' + monthShort + (isToday ? ', today' : '') + (hasBath ? ', swim night' : ''));
+    const bathHtml = hasBath ? '<span class="bath-badge">Swim</span>' : '';
     header.innerHTML = '<span class="day-name">' + bathHtml + dayName + ' ' + dateNum + ' ' + monthShort + '</span>' +
       '<span class="day-card-header-right">' +
       (isToday ? '<span class="today-badge">Today</span>' : '') +
@@ -854,7 +854,7 @@
       personHeader.setAttribute('role', 'button');
       personHeader.tabIndex = 0;
       personHeader.setAttribute('aria-expanded', 'true');
-      const personName = person === 'personA' ? 'Ella' : 'Alfie';
+      const personName = person === 'personA' ? 'Person 2' : 'Person 1';
       const personFieldsId = 'person-fields-' + iso + '-' + person;
       personHeader.setAttribute('aria-controls', personFieldsId);
       personHeader.setAttribute('aria-label', personName + ' plans');
@@ -914,7 +914,7 @@
       });
       const bathLbl = document.createElement('label');
       bathLbl.htmlFor = iso + '-bathtime';
-      bathLbl.textContent = 'Bath';
+      bathLbl.textContent = 'Swim';
       bathLbl.style.cursor = 'pointer';
       bathRow.appendChild(bathCheck);
       bathRow.appendChild(bathLbl);
@@ -1136,9 +1136,9 @@
       if(dayCardRefreshers[dayKey]) dayCardRefreshers[dayKey]();
       closeDayPlan();
       if(shortages.length){
-        flashPantry('Assigned to ' + FULL_DAYS[idx] + ' — short on: ' + shortages.join(', '));
+        flashPantry('Assigned to ' + FULL_DAYS[idx] + '. Short on: ' + shortages.join(', '));
       } else if(missing.length){
-        flashPantry('Assigned to ' + FULL_DAYS[idx] + ' — no longer in pantry: ' + missing.join(', '));
+        flashPantry('Assigned to ' + FULL_DAYS[idx] + '. No longer in pantry: ' + missing.join(', '));
       } else {
         flashPantry('Assigned to ' + FULL_DAYS[idx]);
       }
@@ -1180,7 +1180,7 @@
     if(currentDayKey && typeof renderEntries === 'function') renderEntries();
     refreshAllMealCards();
 
-    flashPantry('Deleted ' + item.name + (affected ? ' — unlinked from ' + affected + ' meal item' + (affected === 1 ? '' : 's') : ''));
+    flashPantry('Deleted ' + item.name + (affected ? '. Unlinked from ' + affected + ' meal item' + (affected === 1 ? '' : 's') : ''));
   }
 
   function renderPantry(focusHint){
@@ -1333,10 +1333,10 @@
     const totalPricePaid = priceRaw === '' ? null : Math.max(0, parseFloat(priceRaw));
     if(totalPricePaid != null && !isNaN(totalPricePaid) && qty <= 0){
       pantryQtyInput.focus();
-      flashPantry('Add a quantity first — price paid needs an amount to work out the cost per unit');
+      flashPantry('Add a quantity first. Price paid needs an amount to work out the cost per unit');
       return;
     }
-    // Price is entered as what was actually paid for this quantity — the per-unit
+    // Price is entered as what was actually paid for this quantity. The per-unit
     // rate used for cost calculations elsewhere is worked out from that, not typed directly.
     const cleanPrice = (totalPricePaid != null && !isNaN(totalPricePaid) && qty > 0) ? (totalPricePaid / qty) : null;
 
@@ -1396,14 +1396,14 @@
   }
 
   // A recipe's saved entries are a cached snapshot (name/qty/unit + the pantryId they were
-  // originally linked to) — they do NOT represent stock still held aside for that recipe.
+  // originally linked to). They do NOT represent stock still held aside for that recipe.
   // When a recipe is actually assigned to a day, this re-validates that cache against the
   // pantry's current state and performs a real pull, rather than reusing the stale numbers.
   function applyFreshPantryPull(entry){
     if(!entry.pantryId) return null;
     const pItem = store.pantry.find(function(p){ return p.id === entry.pantryId; });
     if(!pItem){
-      // The linked pantry item no longer exists — invalidate the stale link entirely.
+      // The linked pantry item no longer exists, so invalidate the stale link entirely.
       delete entry.pantryId; delete entry.pullQty; delete entry.pullUnit;
       return {missing:true, name: entry.text};
     }
@@ -1540,7 +1540,7 @@
     currentDayKey = dayKey; currentRecipeId = null;
     document.getElementById('recipeAssignWrap').hidden = true;
     const dp = dayPlanFor(dayKey);
-    dayplanContext.textContent = label + ' — meal plan';
+    dayplanContext.textContent = label + ' - meal plan';
     titleInput.value = dp.title || ''; instructionsInput.value = dp.instructions || '';
     renderStyleButtons(dp.listStyle||'none'); renderEntries(); refreshDayplanIcon();
     landing.classList.add('hidden'); dayplan.classList.add('active'); tabBar.style.display = 'none'; window.scrollTo(0,0); titleInput.focus();
@@ -1557,7 +1557,7 @@
       entries: recipe.entries ? JSON.parse(JSON.stringify(recipe.entries)) : [],
       listStyle: recipe.listStyle || 'none'
     };
-    dayplanContext.textContent = 'Recipe — ' + (recipe.title || 'Untitled');
+    dayplanContext.textContent = 'Recipe - ' + (recipe.title || 'Untitled');
     document.getElementById('recipeAssignWrap').hidden = false;
     titleInput.value = recipe.title || '';
     instructionsInput.value = recipe.instructions || '';
@@ -1650,7 +1650,7 @@
             let typed = parseFloat(qtyInput.value);
             if(isNaN(typed) || typed < 0) typed = 0;
             if(isTemplateMode){
-              // Template mode only edits the recipe's cached default quantity — nothing has
+              // Template mode only edits the recipe's cached default quantity. Nothing has
               // actually been pulled yet, so there's no live stock to reconcile against.
               entry.pullQty = typed;
               entry.pullUnit = pItem.unit;
@@ -1729,7 +1729,7 @@
       const pullQty = parsed.qty != null ? parsed.qty : defaultPullQty(pantryItem.unit);
       const available = parseFloat(pantryItem.qty) || 0;
       if(available <= 0){
-        flashPantry('Out of stock: ' + pantryItem.name + ' — add more to pantry before using it again');
+        flashPantry('Out of stock: ' + pantryItem.name + '. Add more to pantry before using it again');
         return;
       }
       const actualPull = Math.min(pullQty, available);
@@ -1737,7 +1737,7 @@
       dp.entries.push({text: pantryItem.name, hasPrice:true, price:null, pantryId: pantryItem.id, pullQty: actualPull, pullUnit: pantryItem.unit, unit: pantryItem.unit});
       persist(); renderEntries(); renderPantry(); flash(savedFlag3);
       if(actualPull < pullQty){
-        flashPantry('Only had ' + available.toFixed(1) + ' ' + pantryItem.unit + ' of ' + pantryItem.name + ' — pantry now at 0');
+        flashPantry('Only had ' + available.toFixed(1) + ' ' + pantryItem.unit + ' of ' + pantryItem.name + '. Pantry now at 0');
       } else {
         flashPantry('Pulled from pantry: ' + pantryItem.name + ' (' + pantryItem.qty.toFixed(1) + ' ' + pantryItem.unit + ' remaining)');
       }
@@ -1760,14 +1760,14 @@
           if(available <= 0){
             dp.entries.push({text: item.name, hasPrice:true, price:null, unit: item.unit});
             persist(); renderEntries(); flash(savedFlag3);
-            flashPantry('Out of stock: ' + item.name + ' — added to list without pulling from pantry');
+            flashPantry('Out of stock: ' + item.name + '. Added to list without pulling from pantry');
           } else {
             const actualPull = Math.min(pullQty, available);
             item.qty = Math.max(0, available - actualPull);
             dp.entries.push({text: item.name, hasPrice:true, price:null, pantryId: item.id, pullQty: actualPull, pullUnit: item.unit, unit: item.unit});
             persist(); renderEntries(); renderPantry(); flash(savedFlag3);
             if(actualPull < pullQty){
-              flashPantry('Only had ' + available.toFixed(1) + ' ' + item.unit + ' of ' + item.name + ' — pantry now at 0');
+              flashPantry('Only had ' + available.toFixed(1) + ' ' + item.unit + ' of ' + item.name + '. Pantry now at 0');
             } else {
               flashPantry('Pulled from pantry: ' + item.name + ' (' + item.qty.toFixed(1) + ' ' + item.unit + ' remaining)');
             }
@@ -1844,14 +1844,14 @@
   function collectExportEvents(){
     const events = [];
 
-    /* Itinerary: Ella / Alfie morning, work, evening blocks + notes */
+    /* Itinerary: Person 2 / Person 1 morning, work, evening blocks + notes */
     weekDates.forEach(function(d, idx){
       const iso = isoDate(d);
       const y = d.getFullYear(), mo = d.getMonth()+1, da = d.getDate();
       const dayItin = store.itinerary[iso] || {};
 
       ['personA', 'personB'].forEach(function(person){
-        const personLabel = person === 'personA' ? 'Ella' : 'Alfie';
+        const personLabel = person === 'personA' ? 'Person 2' : 'Person 1';
         const rows = dayItin[person] || {};
         ROWS_PERSON.forEach(function(row){
           const text = (rows[row.key] || '').trim();
@@ -1860,7 +1860,7 @@
           events.push(buildVEvent({
             start: icsDateTime(y, mo, da, w[0], w[1]),
             end: icsDateTime(y, mo, da, w[2], w[3]),
-            summary: personLabel + ' — ' + row.label,
+            summary: personLabel + ' - ' + row.label,
             description: text
           }));
         });
@@ -1873,18 +1873,18 @@
           allDay: true,
           start: icsDateOnly(iso),
           end: icsDateOnly(nextIso),
-          summary: 'Notes — ' + FULL_DAYS[idx],
+          summary: 'Notes - ' + FULL_DAYS[idx],
           description: notes
         }));
       }
 
-      /* Bath */
+      /* Swim */
       const hasBath = (idx === 1 || idx === 4 || idx === 6);
       if(hasBath && dayItin.bathtime){
         events.push(buildVEvent({
           start: icsDateTime(y, mo, da, 18, 0),
           end: icsDateTime(y, mo, da, 18, 30),
-          summary: 'Bath'
+          summary: 'Swim'
         }));
       }
     });
@@ -1907,10 +1907,10 @@
           if(e.pantryId){
             const pItem = store.pantry.find(function(p){ return p.id === e.pantryId; });
             if(pItem && pItem.pricePerUnit != null){
-              priceStr = ' — ' + currencyFmt((parseFloat(e.pullQty) || 0) * pItem.pricePerUnit);
+              priceStr = ' - ' + currencyFmt((parseFloat(e.pullQty) || 0) * pItem.pricePerUnit);
             }
           } else if(e.hasPrice && e.price !== null && e.price !== undefined && e.price !== ''){
-            priceStr = ' — ' + currencyFmt(e.price);
+            priceStr = ' - ' + currencyFmt(e.price);
           }
           return '- ' + (e.text || '') + qtyStr + priceStr;
         }).join('\n');
@@ -1922,7 +1922,7 @@
       events.push(buildVEvent({
         start: icsDateTime(y, mo, da, 18, 0),
         end: icsDateTime(y, mo, da, 19, 0),
-        summary: 'Meal — ' + dp.title + (costInfo.complete ? ' (' + currencyFmt(costInfo.total) + ')' : ''),
+        summary: 'Meal - ' + dp.title + (costInfo.complete ? ' (' + currencyFmt(costInfo.total) + ')' : ''),
         description: desc
       }));
     });
@@ -1955,7 +1955,7 @@
       'PRODID:-//ArPlan//Weekly Planner Export//EN',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
-      'X-WR-CALNAME:ArPlan — ' + isoDate(weekStart)
+      'X-WR-CALNAME:ArPlan - ' + isoDate(weekStart)
     ];
     events.forEach(function(ev){ lines.push(ev); });
     lines.push('END:VCALENDAR');
@@ -1974,7 +1974,7 @@
   async function exportWeekToCalendar(){
     const events = collectExportEvents();
     if(events.length === 0){
-      flashExport('Nothing to export yet — fill in itinerary, meals, bath or pantry expiries first');
+      flashExport('Nothing to export yet. Fill in itinerary, meals, swim or pantry expiries first');
       return;
     }
     const icsContent = buildICSCalendar(events);
@@ -1986,7 +1986,7 @@
     if(file && navigator.canShare && navigator.canShare({files: [file]})){
       try{
         await navigator.share({ files: [file], title: 'ArPlan week export' });
-        flashExport('Shared ' + events.length + ' event' + (events.length===1?'':'s') + ' — choose Calendar to import');
+        flashExport('Shared ' + events.length + ' event' + (events.length===1?'':'s') + '. Choose Calendar to import');
         return;
       }catch(err){
         if(err && err.name === 'AbortError') return;
@@ -2001,9 +2001,9 @@
       a.href = url; a.download = filename;
       document.body.appendChild(a); a.click(); document.body.removeChild(a);
       setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
-      flashExport('Downloaded ' + events.length + ' event' + (events.length===1?'':'s') + ' — open the file to import into Calendar');
+      flashExport('Downloaded ' + events.length + ' event' + (events.length===1?'':'s') + '. Open the file to import into Calendar');
     }catch{
-      flashExport('Export failed — please try again');
+      flashExport('Export failed, please try again');
     }
   }
 
