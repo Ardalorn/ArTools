@@ -51,7 +51,7 @@ No analytics, no cookies, no third-party tracking, no data collection of any kin
 
 Found a bug or have a suggestion? Open an issue on this repository.
 
-##Disclaimer
+**Disclaimer**
 Note: These are vibe-coded. Built iteratively with AI assistance rather than hand-crafted from a formal spec, so expect rough edges rather than polished, professionally audited software. Although , where possible I have performed UAT per tool and attempted to audit with the resources I have available.
 
 
