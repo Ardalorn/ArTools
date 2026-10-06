@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-<meta name="theme-color" content="#d5d0c0" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#EEF2EF">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
@@ -30,25 +30,32 @@
   "operatingSystem": "Any"
 }
 </script>
-<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjogIkFyQ2FudmFzIiwgInNob3J0X25hbWUiOiAiQXJDYW52YXMiLCAic3RhcnRfdXJsIjogIi4iLCAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwgImJhY2tncm91bmRfY29sb3IiOiAiI2Q1ZDBjMCIsICJ0aGVtZV9jb2xvciI6ICIjZDVkMGMwIiwgIm9yaWVudGF0aW9uIjogImFueSJ9">
+<link rel="manifest" href="data:application/json;base64,eyJuYW1lIjogIkFyQ2FudmFzIiwgInNob3J0X25hbWUiOiAiQXJDYW52YXMiLCAic3RhcnRfdXJsIjogIi4iLCAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwgImJhY2tncm91bmRfY29sb3IiOiAiI0VFRjJFRiIsICJ0aGVtZV9jb2xvciI6ICIjRUVGMkVGIiwgIm9yaWVudGF0aW9uIjogImFueSJ9">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,700;1,400;1,700&amp;family=Lato:wght@400;700&amp;display=swap">
 <style>
+  /* ── Tokens (from boilerplate-AA light theme). Locked to light: the device's dark setting is ignored. ── */
   :root {
-    --bg: #d5d0c0;
-    --charcoal: #3d404a;
-    --sage: #8fa882;
-    --slate: #7b91a3;
-    --terracotta: #c98b7a;
-    --ochre: #d1b47e;
-    --lavender: #a599b5;
+    color-scheme: light;
+
+    --paper: #EEF2EF;
+    --paper-2: #DEE7E2;
+    --ink: #12221E;
+    --soft: #3A4D47;
+    --edge: #5B736A;
+
+    --font-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-heading: Lato, var(--font-body);
+
+    --focus: var(--ink);
+    --radius: 4px;
 
     --sat: env(safe-area-inset-top, 0px);
     --sar: env(safe-area-inset-right, 0px);
     --sab: env(safe-area-inset-bottom, 0px);
     --sal: env(safe-area-inset-left, 0px);
     --touch-min: 44px;
-    --radius-sm: 12px;
-    --radius-md: 16px;
-    --radius-lg: 20px;
   }
 
   *, *::before, *::after {
@@ -61,11 +68,22 @@
   html, body {
     width: 100%; height: 100%;
     overflow: hidden;
-    background: var(--bg);
-    color: var(--charcoal);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-body);
     overscroll-behavior: none;
     touch-action: none;
+  }
+
+  button {
+    font: inherit;
+    letter-spacing: inherit;
+    word-spacing: inherit;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
   }
 
   #canvas {
@@ -82,13 +100,14 @@
     top: 0; left: 0; right: 0;
     z-index: 10;
     padding: calc(10px + var(--sat)) calc(14px + var(--sar)) 10px calc(14px + var(--sal));
-    background: rgba(213, 208, 192, 0.94);
+    background: var(--paper);
+    background: color-mix(in srgb, var(--paper) 94%, transparent);
     backdrop-filter: blur(12px) saturate(1.2);
     -webkit-backdrop-filter: blur(12px) saturate(1.2);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    border-bottom: 1px solid rgba(61, 64, 74, 0.06);
+    border-bottom: 2px solid var(--ink);
     transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.4s ease;
     transform: translateY(0);
     opacity: 1;
@@ -100,35 +119,39 @@
     pointer-events: none;
   }
   .header-title {
+    font-family: var(--font-heading);
     font-size: 17px;
     font-weight: 700;
     letter-spacing: -0.4px;
-    color: var(--charcoal);
+    color: var(--ink);
   }
   .focus-btn {
-    background: var(--charcoal);
-    color: #f4f1ea;
-    border: none;
-    border-radius: var(--radius-md);
-    padding: 8px 14px;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: opacity 0.2s ease, transform 0.15s ease;
-    min-height: var(--touch-min);
     display: flex;
     align-items: center;
+    justify-content: center;
+    min-height: var(--touch-min);
+    padding: 0.5rem 1rem;
+    border: 2px solid var(--ink);
+    border-radius: var(--radius);
+    background: var(--ink);
+    color: var(--paper);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
   }
-  .focus-btn:active { transform: scale(0.94); opacity: 0.8; }
+  .focus-btn:hover { background: var(--soft); border-color: var(--soft); }
+  .focus-btn:active { transform: scale(0.94); }
 
   .toolbar {
     position: fixed;
     left: 0; right: 0; bottom: 0;
     z-index: 10;
-    background: rgba(213, 208, 192, 0.96);
+    background: var(--paper);
+    background: color-mix(in srgb, var(--paper) 96%, transparent);
     backdrop-filter: blur(14px) saturate(1.1);
     -webkit-backdrop-filter: blur(14px) saturate(1.1);
-    border-top: 1px solid rgba(61, 64, 74, 0.06);
+    border-top: 2px solid var(--ink);
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -136,7 +159,7 @@
     gap: 10px;
     padding: 10px calc(12px + var(--sar)) calc(14px + var(--sab)) calc(12px + var(--sal));
     padding-bottom: max(14px, calc(8px + var(--sab)));
-    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-radius: var(--radius) var(--radius) 0 0;
     transition: transform 0.5s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.4s ease;
     transform: translateY(0);
     opacity: 1;
@@ -159,32 +182,33 @@
   .divider {
     width: 1px;
     height: 28px;
-    background: rgba(61, 64, 74, 0.1);
+    background: var(--edge);
     flex-shrink: 0;
   }
 
   .tool-slot {
     width: var(--touch-min);
     height: var(--touch-min);
-    border-radius: var(--radius-sm);
-    border: 2px solid rgba(61, 64, 74, 0.1);
+    border-radius: var(--radius);
+    border: 2px solid var(--edge);
     background: transparent;
+    color: var(--ink);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
     flex-shrink: 0;
     position: relative;
   }
-  .tool-slot:hover { border-color: rgba(61, 64, 74, 0.22); }
+  .tool-slot:hover { background: var(--paper-2); border-color: var(--ink); }
   .tool-slot:active { transform: scale(0.92); }
 
   .thickness-dot {
     border-radius: 50%;
-    background: var(--charcoal);
+    background: var(--ink);
     display: block;
-    transition: width 0.2s ease, height 0.2s ease, background 0.2s ease;
+    transition: width 0.2s ease, height 0.2s ease;
   }
   .thickness-dot.small  { width: 6px;  height: 6px; }
   .thickness-dot.medium { width: 14px; height: 14px; }
@@ -194,9 +218,9 @@
   .color-slot-inner {
     width: 28px;
     height: 28px;
+    border: 2px solid var(--ink);
     border-radius: 50%;
     transition: background 0.2s ease, transform 0.2s ease;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
   }
   .tool-slot:active .color-slot-inner { transform: scale(0.9); }
 
@@ -206,31 +230,31 @@
     stroke-linecap: round;
     stroke-linejoin: round;
     fill: none;
-    stroke: var(--charcoal);
-    transition: stroke 0.2s ease;
+    stroke: var(--ink);
   }
+  /* Selected tool: paper tint, ink edge and a heavier bottom edge, so it does not rely on colour alone. */
   .tool-slot.active {
-    border-color: var(--charcoal);
-    background: rgba(61, 64, 74, 0.07);
+    border-color: var(--ink);
+    background: var(--paper-2);
+    box-shadow: inset 0 -4px 0 var(--ink);
   }
-  .tool-slot.active svg { stroke: var(--charcoal); }
   #stampIconPath { stroke-width: 8; }
 
   .action-btn {
     width: var(--touch-min);
     height: var(--touch-min);
-    border-radius: var(--radius-sm);
-    border: none;
-    background: rgba(61, 64, 74, 0.08);
-    color: var(--charcoal);
+    border-radius: var(--radius);
+    border: 2px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: background-color 0.2s ease, transform 0.15s ease;
     flex-shrink: 0;
   }
-  .action-btn:hover { background: rgba(61, 64, 74, 0.14); }
+  .action-btn:hover { background: var(--paper-2); }
   .action-btn:active { transform: scale(0.92); }
   .action-btn svg {
     width: 20px; height: 20px;
@@ -264,12 +288,11 @@
   .island-btn {
     width: 32px; height: 16px;
     border-radius: 8px;
-    background: #1a1a1a;
+    background: var(--ink);
     border: none;
     cursor: pointer;
     position: relative;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08);
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease, background-color 0.3s ease;
   }
   .island-btn::after {
     content: '';
@@ -279,7 +302,6 @@
   }
   .island-btn:hover {
     transform: scale(1.15);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
   }
   .island-btn:active { transform: scale(0.95); }
   @keyframes island-breathe {
@@ -296,7 +318,7 @@
   }
   .island-btn.session-pulse {
     animation: island-urgent 1.2s ease-in-out infinite !important;
-    background: #3d404a;
+    background: var(--soft);
   }
 
   @media (min-width: 601px) {
@@ -305,10 +327,9 @@
       transform: translateY(-50%);
       flex-direction: column;
       padding: 18px calc(10px + var(--sal)) 18px calc(10px + var(--sal));
-      border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
-      border-top: none;
+      border: 2px solid var(--ink);
       border-left: none;
-      border-right: 1px solid rgba(61, 64, 74, 0.06);
+      border-radius: 0 var(--radius) var(--radius) 0;
     }
     .toolbar.hidden-ui {
       transform: translateY(-50%) translateX(-130%);
@@ -323,7 +344,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      color: rgba(61, 64, 74, 0.45);
+      color: var(--soft);
       margin-bottom: 2px;
       text-align: center;
     }
@@ -342,8 +363,23 @@
     position: fixed;
     inset: 0;
     z-index: 0;
-    background: var(--bg);
+    background: var(--paper);
     pointer-events: none;
+  }
+
+  /* Forced colours (Windows contrast themes and similar) */
+  @media (forced-colors: active) {
+    .tool-slot.active { border-color: Highlight; }
+  }
+
+  /* Motion preferences. 0.01ms rather than none, so anything waiting on transitionend still gets it. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      transition-duration: 0.01ms !important;
+      transition-delay: 0s !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
   }
 </style>
 </head>
@@ -369,7 +405,7 @@
   <div class="tool-group">
     <span class="tool-label">Color</span>
     <button class="tool-slot" id="colorBtn" aria-label="Change color">
-      <span class="color-slot-inner" id="colorSlotInner" style="background:#3d404a"></span>
+      <span class="color-slot-inner" id="colorSlotInner" style="background:var(--ink)"></span>
     </button>
   </div>
 
@@ -423,20 +459,28 @@
   const stampBtn = document.getElementById('stampBtn');
   const stampIconPath = document.getElementById('stampIconPath');
 
+  /* Theme tokens are read from CSS, so the canvas and ink use the page's paper and ink colours. */
+  const rootStyle = getComputedStyle(document.documentElement);
+  function themeVar(name) { return rootStyle.getPropertyValue(name).trim(); }
+
   const sizes = [
     { px: 6,  cls: 'small' },
     { px: 16, cls: 'medium' },
     { px: 32, cls: 'large' },
     { px: 48, cls: 'xlarge' }
   ];
+  /* The first colour is the theme's ink; the rest are fixed pastels. */
   const colors = [
-    { hex: '#3d404a', name: 'Charcoal' },
+    { token: '--ink', name: 'Ink' },
     { hex: '#8fa882', name: 'Sage' },
     { hex: '#7b91a3', name: 'Slate' },
     { hex: '#c98b7a', name: 'Terracotta' },
     { hex: '#d1b47e', name: 'Ochre' },
     { hex: '#a599b5', name: 'Lavender' }
   ];
+  function colorValue(c) { return c.token ? themeVar(c.token) : c.hex; }
+  function colorSwatch(c) { return c.token ? 'var(' + c.token + ')' : c.hex; }
+
   const stamps = [
     { name: 'star', d: 'M50,6 Q56,20 58,34 Q75,24 90,30 Q70,42 64,50 Q73,72 78,92 Q60,76 50,68 Q40,80 16,88 Q30,64 34,48 Q14,42 4,32 Q26,34 40,32 Q46,18 50,6 Z' },
     { name: 'happy face', d: 'M50,8 Q80,10 88,38 Q94,64 68,86 Q46,98 20,80 Q2,58 10,32 Q18,10 50,8 Z' },
@@ -449,7 +493,7 @@
   let colorIndex = 0;
   let stampIndex = 0;
   let brushSize = sizes[sizeIndex].px;
-  let brushColor = colors[colorIndex].hex;
+  let brushColor = colorValue(colors[colorIndex]);
   let tool = 'brush';
   let focusMode = false;
   let idleTimer = null;
@@ -483,14 +527,12 @@
     applyToolState();
   }
 
+  /* The canvas stays transparent: the page's themed paper shows through,
+     and the eraser simply removes ink. */
   resizeCanvas();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   applyToolState();
-  ctx.fillStyle = '#d5d0c0';
-  const w = canvas.width / (Math.min(window.devicePixelRatio || 1, 3));
-  const h = canvas.height / (Math.min(window.devicePixelRatio || 1, 3));
-  ctx.fillRect(0, 0, w, h);
 
   let resizeDebounce;
   window.addEventListener('resize', () => {
@@ -527,8 +569,8 @@
   /* ─── Color slot: tap to cycle ─── */
   colorBtn.addEventListener('click', () => {
     colorIndex = (colorIndex + 1) % colors.length;
-    brushColor = colors[colorIndex].hex;
-    colorSlotInner.style.background = brushColor;
+    brushColor = colorValue(colors[colorIndex]);
+    colorSlotInner.style.background = colorSwatch(colors[colorIndex]);
     colorBtn.setAttribute('aria-label', 'Color: ' + colors[colorIndex].name);
     if (tool === 'eraser') setTool('brush');
     else applyToolState();
@@ -652,17 +694,25 @@
     const cssH = canvas.height / (Math.min(window.devicePixelRatio || 1, 3));
     ctx.save();
     ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = '#d5d0c0';
-    ctx.fillRect(0, 0, cssW, cssH);
+    ctx.clearRect(0, 0, cssW, cssH);
     ctx.restore();
     applyToolState();
   });
 
   /* ─── Save ─── */
   saveBtn.addEventListener('click', () => {
+    /* The canvas is transparent, so flatten it onto the current paper colour first. */
+    const out = document.createElement('canvas');
+    out.width = canvas.width;
+    out.height = canvas.height;
+    const outCtx = out.getContext('2d');
+    outCtx.fillStyle = themeVar('--paper');
+    outCtx.fillRect(0, 0, out.width, out.height);
+    outCtx.drawImage(canvas, 0, 0);
+
     const link = document.createElement('a');
     link.download = 'calm-canvas-' + new Date().toISOString().slice(0,19).replace(/:/g,'-') + '.png';
-    link.href = canvas.toDataURL('image/png');
+    link.href = out.toDataURL('image/png');
     link.click();
   });
 
