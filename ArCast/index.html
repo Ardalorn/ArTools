@@ -3,12 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="color-scheme" content="light dark">
     <meta name="description" content="ArCast — a calm, accessible weather dashboard">
-    <meta name="theme-color" content="#16161a">
+    <meta name="theme-color" content="#EEF2EF" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#0E1614" media="(prefers-color-scheme: dark)">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; connect-src https://api.open-meteo.com https://api.postcodes.io; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self' 'unsafe-inline'; font-src 'self' https://fonts.gstatic.com;">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,700;1,400;1,700&amp;family=Lato:wght@400;700&amp;display=swap" rel="stylesheet">
     <link rel="preconnect" href="https://api.open-meteo.com">
     <link rel="preconnect" href="https://api.postcodes.io">
     <title>ArCast</title>
@@ -24,18 +26,43 @@
     <meta name="twitter:description" content="A calm, accessible weather dashboard.">
 
     <style>
+        /* ── Tokens (from boilerplate-AA). Light by default, dark follows the device. ── */
         :root {
-            --bg: #16161a;
-            --surface: #1f1f2e;
-            --surface-soft: rgba(255, 255, 255, 0.03);
-            --border-chill: rgba(255, 255, 255, 0.06);
-            --text: #f0f0f5;
-            --text-secondary: #c5c5d2;
-            --text-muted: #a9adc1;
-            --primary: #a5b4fc;
-            --primary-glow: rgba(165, 180, 252, 0.15);
-            --focus-ring: rgba(165, 180, 252, 0.6);
-            --night-glow: rgba(96, 165, 250, 0.08);
+            color-scheme: light dark;
+
+            --paper: #EEF2EF;
+            --paper-2: #DEE7E2;
+            --ink: #12221E;
+            --soft: #3A4D47;
+            --edge: #5B736A;
+            --error: #8C1818;
+            --warn: #7A4B00;
+            --wet: #1D4ED8;
+            --shimmer: #F3F7F5;
+            --moon-lit: #FFFFFF;
+            --moon-dark: #3A4D47;
+
+            --font-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            --font-heading: Lato, var(--font-body);
+
+            --focus: var(--ink);
+            --radius: 4px;
+            --target: 2.75rem;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --paper: #0E1614;
+                --paper-2: #1A2724;
+                --ink: #E8F0EC;
+                --soft: #AFC2BA;
+                --edge: #7F988E;
+                --error: #FF9C94;
+                --warn: #F0B429;
+                --wet: #60A5FA;
+                --shimmer: #26352F;
+                --moon-lit: #E8F0EC;
+                --moon-dark: #2A3A35;
+            }
         }
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after {
@@ -44,7 +71,7 @@
                 transition-duration: 0.01ms !important;
                 scroll-behavior: auto !important;
             }
-            .skeleton { animation: none !important; background: var(--surface) !important; }
+            .skeleton { animation: none !important; background: var(--paper-2) !important; }
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html {
@@ -52,9 +79,9 @@
             touch-action: manipulation;
         }
         body {
-            font-family: 'Source Sans 3', 'Noto Sans', 'Open Sans', sans-serif;
-            background: var(--bg);
-            color: var(--text);
+            font-family: var(--font-body);
+            background: var(--paper);
+            color: var(--ink);
             padding: 24px 16px;
             min-height: 100dvh;
             -webkit-font-smoothing: antialiased;
@@ -63,12 +90,22 @@
             word-spacing: 0.02em;
             line-height: 1.6;
         }
+        button, input, select, textarea {
+            font: inherit;
+            letter-spacing: inherit;
+            word-spacing: inherit;
+        }
+        ::placeholder { color: var(--soft); opacity: 1; }
+        :focus-visible {
+            outline: 3px solid var(--focus);
+            outline-offset: 3px;
+        }
         h1 {
-            font-family: 'Lato', 'Source Sans 3', sans-serif;
+            font-family: var(--font-heading);
             letter-spacing: +0.02em;
         }
         .hero-temp {
-            font-family: 'Lato', 'Source Sans 3', sans-serif;
+            font-family: var(--font-heading);
         }
         .container {
             max-width: 700px;
@@ -86,23 +123,26 @@
             letter-spacing: -0.02em;
         }
         .header-title p {
-            color: var(--text-secondary);
+            color: var(--soft);
             margin: 0 0 20px 0;
             font-size: 16px;
         }
         .status-message {
             padding: 12px 20px;
-            border-radius: 20px;
+            border: 2px solid currentColor;
+            border-radius: var(--radius);
+            background: var(--paper);
             margin: 16px 0;
             display: none;
             font-size: 14px;
+            font-weight: 700;
             text-align: center;
             will-change: opacity;
             transition: opacity 0.3s ease;
         }
         .privacy-note {
             font-size: 12px;
-            color: var(--text-muted);
+            color: var(--soft);
             margin-top: 12px;
         }
         .link-btn {
@@ -111,17 +151,16 @@
             padding: 0;
             font: inherit;
             font-size: 12px;
-            color: var(--primary);
+            color: var(--ink);
             text-decoration: underline;
+            text-decoration-thickness: 0.1em;
+            text-underline-offset: 0.2em;
             cursor: pointer;
         }
-        .link-btn:focus-visible {
-            outline: 2px solid var(--primary);
-            outline-offset: 2px;
-        }
-        .status-loading { background: var(--surface-soft); color: var(--primary); }
-        .status-error { background: rgba(241, 76, 76, 0.1); color: #f14c4c; }
-        .status-offline { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+        .link-btn:hover { text-decoration-thickness: 0.2em; }
+        .status-loading { color: var(--ink); border-color: var(--edge); }
+        .status-error { color: var(--error); }
+        .status-offline { color: var(--warn); }
         .show { display: block; }
         .controls-wrapper {
             display: flex;
@@ -134,61 +173,51 @@
         .search-input {
             flex: 1;
             min-width: 200px;
-            background: var(--surface-soft);
-            border: 1px solid var(--border-chill);
-            color: var(--text);
-            padding: 14px 22px;
-            border-radius: 24px;
+            min-height: var(--target);
+            background: var(--paper);
+            border: 2px solid var(--edge);
+            color: var(--ink);
+            padding: 0.5rem 0.75rem;
+            border-radius: var(--radius);
             font-size: 16px;
-            outline: none;
-            transition: all 0.2s ease;
-        }
-        .search-input:focus {
-            border-color: var(--primary);
-            background: var(--surface);
-        }
-        .search-input:focus-visible {
-            box-shadow: 0 0 0 2px var(--focus-ring);
         }
         .btn {
-            background: var(--surface-soft);
-            color: var(--text);
-            border: 1px solid var(--border-chill);
-            padding: 14px 24px;
-            border-radius: 24px;
-            cursor: pointer;
-            font-size: 15px;
-            font-weight: 600;
-            transition: all 0.2s ease;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 0.5rem;
+            min-height: var(--target);
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--ink);
+            border-radius: var(--radius);
+            background: var(--ink);
+            color: var(--paper);
+            font-weight: 700;
+            text-align: center;
+            text-decoration: none;
             white-space: nowrap;
-            will-change: transform, box-shadow;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
         }
-        .btn-primary {
-            background: var(--primary);
-            color: #16161a;
-            border-color: var(--primary);
-        }
-        .btn:hover:not(:disabled) { background: rgba(255,255,255,0.06); }
-        .btn-primary:hover:not(:disabled) { opacity: 0.9; background: var(--primary); box-shadow: 0 4px 12px var(--primary-glow); }
-        .btn:focus-visible {
-            outline: 2px solid var(--primary);
-            outline-offset: 2px;
-        }
-        .btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
+        .btn:hover { background: var(--soft); border-color: var(--soft); }
+        .btn-ghost { background: transparent; color: var(--ink); }
+        .btn-ghost:hover { background: var(--paper-2); border-color: var(--ink); color: var(--ink); }
+        /* aria-disabled keeps the button focusable; the dashed edge says "inactive" without relying on colour. */
+        .btn[aria-disabled="true"],
+        .btn[aria-disabled="true"]:hover {
+            background: transparent;
+            border-style: dashed;
+            border-color: var(--ink);
+            color: var(--ink);
+            cursor: default;
         }
         .spinner {
             display: none;
             width: 16px;
             height: 16px;
-            border: 2px solid rgba(255,255,255,.2);
+            border: 2px solid currentColor;
+            border-top-color: transparent;
             border-radius: 50%;
-            border-top-color: var(--primary);
             animation: spin 1s linear infinite;
             will-change: transform;
         }
@@ -196,8 +225,8 @@
         #emptyState {
             text-align: center;
             padding: 60px 20px;
-            background: var(--surface-soft);
-            border-radius: 24px;
+            background: var(--paper-2);
+            border-radius: var(--radius);
             margin-top: 20px;
         }
         #tabsContainer { display: none; }
@@ -212,16 +241,17 @@
             right: 0;
             bottom: 0;
             width: 32px;
-            background: linear-gradient(to right, transparent, var(--bg));
+            background: linear-gradient(to right, transparent, var(--paper));
             pointer-events: none;
         }
         #tabsHeaderWrap.at-end::after { opacity: 0; }
         #tabsHeader {
             display: flex;
-            gap: 10px;
+            gap: 0.25rem 0.5rem;
             margin-bottom: 0;
             overflow-x: auto;
-            padding: 4px 2px;
+            padding: 0 2px;
+            border-bottom: 1px solid var(--edge);
             scrollbar-width: none;
             justify-content: flex-start;
             touch-action: pan-x;
@@ -230,41 +260,37 @@
         }
         #tabsHeader::-webkit-scrollbar { display: none; }
         .tab-button {
-            padding: 10px 18px;
-            min-height: 44px;
-            min-width: 44px;
             flex: 0 0 auto;
             scroll-snap-align: start;
-            background: var(--surface-soft);
-            border: 1px solid var(--border-chill);
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 14px;
-            color: var(--text-secondary);
-            font-weight: 500;
+            min-height: 3rem;
+            min-width: var(--target);
+            padding: 0.5rem 0.875rem;
+            border: 0;
+            border-bottom: 4px solid transparent;
+            border-radius: 0;
+            background: transparent;
+            color: var(--ink);
+            font-size: 16px;
+            font-weight: 400;
             white-space: nowrap;
-            transition: all 0.2s ease;
-            will-change: transform, box-shadow;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
         }
-        .tab-button.active {
-            background: var(--primary);
-            color: #16161a;
-            border-color: var(--primary);
-            font-weight: 600;
-            box-shadow: 0 4px 12px var(--primary-glow);
+        .tab-button:hover { background: var(--paper-2); }
+        .tab-button[aria-selected="true"] {
+            font-weight: 700;
+            background: var(--paper-2);
+            border-bottom-color: var(--ink);
         }
-        .tab-button:hover:not(.active) { background: rgba(255,255,255,0.06); }
-        .tab-button:focus-visible {
-            outline: 2px solid var(--primary);
-            outline-offset: 2px;
-        }
+        /* Tabs sit inside a scroll container, so the focus ring is drawn inside to avoid clipping. */
+        .tab-button:focus-visible { outline-offset: -3px; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .skeleton {
-            background: linear-gradient(90deg, var(--surface) 25%, rgba(255,255,255,0.08) 50%, var(--surface) 75%);
+            background: linear-gradient(90deg, var(--paper-2) 25%, var(--shimmer) 50%, var(--paper-2) 75%);
             background-size: 200% 100%;
             animation: shimmer 1.5s infinite;
-            border-radius: 8px;
+            border-radius: var(--radius);
             color: transparent !important;
             border: none !important;
         }
@@ -285,18 +311,18 @@
         /* ── Content Blocks (Nothing.tech methodology, original styling) ── */
         .block {
             padding: 28px 0;
-            border-bottom: 1px solid var(--border-chill);
+            border-bottom: 1px solid var(--edge);
         }
         .block:last-child {
             border-bottom: none;
         }
         .block-label {
             font-size: 11px;
-            color: var(--text-muted);
+            color: var(--soft);
             text-transform: uppercase;
             letter-spacing: 0.08em;
             margin-bottom: 16px;
-            font-weight: 600;
+            font-weight: 700;
         }
         /* Hero Block */
         .hero-temp {
@@ -305,14 +331,14 @@
             line-height: 1;
             letter-spacing: -0.03em;
             margin-bottom: 6px;
-            color: var(--text);
+            color: var(--ink);
         }
         .hero-meta {
             font-size: 14px;
-            color: var(--text-secondary);
+            color: var(--soft);
         }
         .hero-meta .divider {
-            color: var(--text-muted);
+            color: var(--soft);
             margin: 0 8px;
         }
         /* Data Rows Block */
@@ -321,22 +347,22 @@
             justify-content: space-between;
             align-items: baseline;
             padding: 10px 0;
-            border-bottom: 1px solid var(--border-chill);
+            border-bottom: 1px solid var(--edge);
         }
         .data-row:last-child {
             border-bottom: none;
         }
         .data-row .label {
             font-size: 14px;
-            color: var(--text-secondary);
+            color: var(--soft);
         }
         .data-row .value {
             font-size: 14px;
-            color: var(--text);
-            font-weight: 600;
+            color: var(--ink);
+            font-weight: 700;
         }
         .data-row .value .at {
-            color: var(--text-muted);
+            color: var(--soft);
             font-weight: 400;
         }
         /* Hourly Block */
@@ -369,7 +395,7 @@
             text-align: center;
             transition: background-color 0.2s ease;
             scroll-snap-align: start;
-            border-right: 1px solid var(--border-chill);
+            border-right: 1px solid var(--edge);
             min-width: 76px;
             min-height: 44px;
         }
@@ -377,15 +403,19 @@
             border-right: none;
         }
         .hourly-item:hover {
-            background: rgba(255,255,255,0.03);
+            background: var(--paper-2);
         }
+        /* Current hour: tinted background plus an ink top edge, so it does not rely on colour alone. */
         .hourly-item.is-current {
-            background: var(--primary-glow);
+            background: var(--paper-2);
+            box-shadow: inset 0 4px 0 var(--ink);
         }
+        /* Items sit inside a scroll container, so the focus ring is drawn inside to avoid clipping. */
+        .hourly-item:focus-visible { outline-offset: -3px; }
         .hourly-item .time {
             font-size: 12px;
-            font-weight: 500;
-            color: var(--text-secondary);
+            font-weight: 400;
+            color: var(--soft);
             margin-bottom: 10px;
         }
         .hourly-item .icon {
@@ -395,16 +425,16 @@
         }
         .hourly-item .pop {
             font-size: 11px;
-            font-weight: 600;
-            color: var(--text-muted);
+            font-weight: 700;
+            color: var(--soft);
             margin-bottom: 8px;
             min-height: 14px;
         }
-        .hourly-item .pop.wet { color: #60a5fa; }
+        .hourly-item .pop.wet { color: var(--wet); }
         .hourly-item .temp {
             font-size: 15px;
             font-weight: 700;
-            color: var(--text);
+            color: var(--ink);
         }
         .sr-only {
             position: absolute;
@@ -438,9 +468,8 @@
         html.is-tv .btn {
             padding: 18px 28px;
             font-size: 18px;
-            border-radius: 28px;
         }
-        html.is-tv .status-message { font-size: 18px; padding: 16px 28px; border-radius: 24px; }
+        html.is-tv .status-message { font-size: 18px; padding: 16px 28px; }
         html.is-tv #emptyState { padding: 80px 24px; }
         html.is-tv #emptyState p { font-size: 20px; }
         html.is-tv #tabsHeader { gap: 16px; }
@@ -449,7 +478,6 @@
         html.is-tv .tab-button {
             padding: 14px 24px;
             font-size: 18px;
-            border-radius: 24px;
         }
         html.is-tv .block { padding: 36px 0; }
         html.is-tv .block-label { font-size: 14px; margin-bottom: 20px; }
@@ -476,15 +504,11 @@
         html.is-tv .moon-illumination,
         html.is-tv .moon-age { font-size: 16px; }
         html.is-tv :focus-visible {
-            outline: 4px solid var(--primary);
+            outline: 4px solid var(--focus);
             outline-offset: 6px;
-            box-shadow: 0 0 0 10px var(--primary-glow);
-            border-radius: 8px;
         }
-        html.is-tv .tab-button:focus-visible { border-radius: 24px; }
-        html.is-tv .hourly-item:focus-visible { border-radius: 12px; }
-        html.is-tv .btn:focus-visible,
-        html.is-tv .search-input:focus-visible { border-radius: 28px; }
+        html.is-tv .tab-button:focus-visible,
+        html.is-tv .hourly-item:focus-visible { outline-offset: -4px; }
 
         /* ── Lunar Block ── */
         .moon-block {
@@ -503,25 +527,30 @@
             display: block;
             width: 100%;
             height: 100%;
-            filter: drop-shadow(0 0 10px rgba(240, 240, 245, 0.08));
         }
         .moon-info {
             flex: 1;
         }
         .moon-phase-name {
             font-size: 16px;
-            font-weight: 600;
-            color: var(--text);
+            font-weight: 700;
+            color: var(--ink);
             margin-bottom: 4px;
         }
         .moon-illumination {
             font-size: 13px;
-            color: var(--text-muted);
+            color: var(--soft);
         }
         .moon-age {
             font-size: 12px;
-            color: var(--text-muted);
+            color: var(--soft);
             margin-top: 2px;
+        }
+
+        /* ── Forced colours (Windows contrast themes and similar) ── */
+        @media (forced-colors: active) {
+            .tab-button { border-bottom-color: Canvas; }
+            .tab-button[aria-selected="true"] { border-bottom-color: Highlight; }
         }
     </style>
     <script type="application/ld+json">
@@ -551,11 +580,11 @@
             </div>
             <div class="controls-wrapper">
                 <input type="text" id="locationInput" class="search-input" placeholder="Optional UK postcode..." aria-label="Enter UK postcode" autocomplete="postal-code">
-                <button class="btn btn-primary" id="searchBtn" onclick="window.handleSearch()" aria-label="Check weather by postcode">
+                <button class="btn" id="searchBtn" onclick="window.handleSearch()" aria-label="Check weather by postcode">
                     <span id="searchBtnText">Check weather</span>
                     <span id="searchSpinner" class="spinner" aria-hidden="true"></span>
                 </button>
-                <button class="btn" id="geoBtn" onclick="window.handleGeolocation()" aria-label="Near Me: use my current location" title="Use my current location">
+                <button class="btn btn-ghost" id="geoBtn" onclick="window.handleGeolocation()" aria-label="Near Me: use my current location" title="Use my current location">
                     <span id="geoBtnText">📍 Near Me</span>
                     <span id="geoSpinner" class="spinner" aria-hidden="true"></span>
                 </button>
@@ -565,17 +594,17 @@
         </header>
         <main id="mainScreen">
             <noscript>
-                <div style="padding:40px 20px;max-width:600px;margin:0 auto;color:var(--text-secondary);line-height:1.7;">
-                    <h2 style="color:var(--text);font-size:22px;margin-bottom:16px;">About ArCast</h2>
+                <div style="padding:40px 20px;max-width:600px;margin:0 auto;color:var(--soft);line-height:1.7;">
+                    <h2 style="color:var(--ink);font-size:22px;margin-bottom:16px;">About ArCast</h2>
                     <p style="margin-bottom:12px;">ArCast is a calm, accessible weather dashboard built for the UK. Enter a UK postcode, or share your location, and it pulls a live hourly forecast — temperature, precipitation chance, wind speed, and sky conditions — from the Open-Meteo weather API, with postcode lookups handled by postcodes.io.</p>
                     <p style="margin-bottom:12px;">Alongside the forecast, ArCast shows the current moon phase and illumination percentage for each day, calculated locally without any extra API calls.</p>
                     <p style="margin-bottom:12px;">The dashboard automatically adapts for TV and Google TV browsers, with larger touch targets and remote-friendly keyboard navigation.</p>
-                    <p style="font-size:20px;color:var(--text);margin-top:24px;">⚠️ This page requires JavaScript to fetch and display live forecast data. Please enable JavaScript in your browser settings to use ArCast.</p>
+                    <p style="font-size:20px;color:var(--ink);margin-top:24px;">⚠️ This page requires JavaScript to fetch and display live forecast data. Please enable JavaScript in your browser settings to use ArCast.</p>
                 </div>
             </noscript>
 
             <div id="emptyState">
-                <p style="color: var(--text-muted); margin: 0;">Enter a postcode or tap "Near Me" to grab the forecast.</p>
+                <p style="color: var(--soft); margin: 0;">Enter a postcode or tap "Near Me" to grab the forecast.</p>
             </div>
             <div id="tabsContainer">
                 <div id="tabsHeaderWrap">
@@ -681,15 +710,21 @@
                 statusEl.classList.remove('show');
                 statusEl.textContent = '';
             }
+            /* aria-disabled instead of disabled: the button keeps keyboard focus while busy.
+               handleSearch and handleGeolocation already return early while isLoading is true. */
+            function setBusy(btn, busy) {
+                if (busy) btn.setAttribute('aria-disabled', 'true');
+                else btn.removeAttribute('aria-disabled');
+            }
             function setLoading(loading, type) {
                 appState.isLoading = loading;
                 if (type === 'search' || type === 'both') {
-                    searchBtn.disabled = loading;
+                    setBusy(searchBtn, loading);
                     searchSpinner.style.display = loading ? 'inline-block' : 'none';
                     searchBtnText.textContent = loading ? 'Searching...' : 'Check weather';
                 }
                 if (type === 'geo' || type === 'both') {
-                    geoBtn.disabled = loading;
+                    setBusy(geoBtn, loading);
                     geoSpinner.style.display = loading ? 'inline-block' : 'none';
                     geoBtnText.textContent = loading ? 'Locating...' : '📍 Near Me';
                 }
@@ -1170,19 +1205,21 @@
                 const cx = s / 2;
                 const cy = s / 2;
                 const r = s * 0.38;
-                const darkColor = '#2a2a3a';
-                const lightColor = '#e8e8ee';
+                /* Colours come from the theme tokens, so the moon follows light and dark mode. */
+                const darkColor = 'var(--moon-dark)';
+                const lightColor = 'var(--moon-lit)';
+                const edge = 'stroke:var(--edge);stroke-width:1';
                 if (phase < 0.02 || phase > 0.98) {
                     return (
                         '<svg viewBox="0 0 ' + s + ' ' + s + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-                            '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + darkColor + '" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>' +
+                            '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" style="fill:' + darkColor + ';' + edge + '"/>' +
                         '</svg>'
                     );
                 }
                 if (Math.abs(phase - 0.5) < 0.02) {
                     return (
                         '<svg viewBox="0 0 ' + s + ' ' + s + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-                            '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + lightColor + '" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>' +
+                            '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" style="fill:' + lightColor + ';' + edge + '"/>' +
                         '</svg>'
                     );
                 }
@@ -1196,8 +1233,8 @@
                              ' A ' + rx + ',' + r + ' 0 0,' + innerSweep + ' ' + cx + ',' + (cy - r) + ' Z';
                 return (
                     '<svg viewBox="0 0 ' + s + ' ' + s + '" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">' +
-                        '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="' + lightColor + '" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>' +
-                        '<path d="' + path + '" fill="' + darkColor + '"/>' +
+                        '<circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" style="fill:' + lightColor + ';' + edge + '"/>' +
+                        '<path d="' + path + '" style="fill:' + darkColor + '"/>' +
                     '</svg>'
                 );
             }
@@ -1328,7 +1365,7 @@
             });
             initTVMode();
 
-                        const initialCached = loadFromCache();
+            const initialCached = loadFromCache();
             if (initialCached) {
                 appState.weatherData = initialCached.data;
                 appState.lastCoords = initialCached.coords;
