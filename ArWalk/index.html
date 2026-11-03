@@ -176,11 +176,21 @@ main { flex: 1 0 auto; inline-size: 100%; }
   .sheet { inset-inline: var(--s-3) auto; inset-block: 4.75rem auto; inline-size: 26rem; max-block-size: calc(100dvh - 8rem); border-block-end: var(--rule) solid var(--line-soft); border-radius: var(--r-3); }
   .is-nav .sheet { inset-block: auto 2.5rem; }
 }
+/* Start point dialog */
+.dlg { inline-size: min(28rem, calc(100% - 2 * var(--s-3))); max-block-size: calc(100dvh - 2 * var(--s-3)); overflow: auto; margin: auto; padding: var(--s-5); color: var(--ink); background: var(--surface); border: var(--rule) solid var(--line); border-radius: var(--r-3); }
+.dlg::backdrop { background: var(--scrim); }
+.dlg .results { max-block-size: 40dvh; margin: 0; box-shadow: none; }
+.dlg label { display: block; margin-block-end: var(--s-2); font-weight: 700; color: var(--heading); }
+.dlg > * { margin: 0; }
+.dlg > * + * { margin-block-start: var(--s-4); }
+.is-nav .top, .is-nav #start-btn { display: none; }
+#sp-form button { margin-block-start: var(--s-3); }
+#pick { inset: auto var(--s-3) 2.5rem; } /* Sits at the bottom so the search bar and its results stay usable while picking. */
 /* 6. User preferences and assistive modes */
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
 @media (forced-colors: active) {
   [role="alert"]:not(:empty)::before, button.toggle::before { forced-color-adjust: none; background-color: CanvasText; }
-  .panel, .sheet, .pill, .banner, .results, .perm { border: var(--rule) solid CanvasText; }
+  .panel, .sheet, .pill, .banner, .results, .perm, .dlg { border: var(--rule) solid CanvasText; }
   :focus-visible { outline-color: Highlight; box-shadow: none; }
 }
 @media print { .site-footer, .skip-link, .mapapp { display: none; } }
@@ -267,8 +277,28 @@ main { flex: 1 0 auto; inline-size: 100%; }
                     <button
                         type="button"
                         class="secondary"
+                        id="start-btn"
+                        aria-label="Set start point"
+                    >
+                        <svg
+                            class="icon"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                        >
+                            <path d="M6 21V4M6 5h11l-2 4 2 4H6"/>
+                        </svg>
+                    </button>
+                    <button
+                        type="button"
+                        class="secondary"
                         id="locate"
-                        aria-label="Show my location"
+                        aria-label="Centre on my location"
+                        hidden
                     >
                         <svg
                             class="icon"
@@ -349,6 +379,22 @@ main { flex: 1 0 auto; inline-size: 100%; }
                 </div>
                 <section
                     class="perm"
+                    id="pick"
+                    aria-labelledby="pick-h"
+                    hidden
+                >
+                    <h2 id="pick-h">Tap the map to set your start</h2>
+                    <p>Tap where your walks should begin. Zoom in first for a precise spot, or search above to jump to an area.</p>
+                    <div class="row">
+                        <button
+                            type="button"
+                            class="secondary"
+                            id="pick-cancel"
+                        >Cancel</button>
+                    </div>
+                </section>
+                <section
+                    class="perm"
                     id="perm"
                     aria-labelledby="perm-h"
                     hidden
@@ -359,9 +405,59 @@ main { flex: 1 0 auto; inline-size: 100%; }
                     aria-labelledby="sheet-h"
                     hidden
                 ></section>
-                <p class="attrib">Tiles © <a href="https://www.esri.com">Esri</a> · Data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a></p>
+                <p class="attrib">Map tiles © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></p>
                 <p id="app-error" role="alert"></p>
             </div>
+            <dialog
+                class="dlg"
+                id="start-dlg"
+                aria-labelledby="start-h"
+            >
+                <h2 id="start-h">Set your start point</h2>
+                <p class="hint" id="start-intro">Search for an address, choose a precise spot on the map, or use GPS to set your start point. When you press Start, GPS can then follow your progress along the route.</p>
+                <p
+                    class="hint"
+                    id="start-cur"
+                    hidden
+                ></p>
+                <form id="sp-form">
+                    <label for="sp-q">Search for an address or place</label>
+                    <input
+                        type="search"
+                        id="sp-q"
+                        name="sp-q"
+                        autocomplete="off"
+                        maxlength="120"
+                        placeholder="e.g. 123 Fake Street, Town"
+                    >
+                    <button type="submit">Search</button>
+                </form>
+                <ul
+                    id="sp-results"
+                    class="results"
+                    aria-label="Start point suggestions"
+                    hidden
+                ></ul>
+                <div class="row">
+                    <button
+                        type="button"
+                        class="secondary"
+                        id="sp-gps"
+                    >Use my GPS location</button>
+                    <button
+                        type="button"
+                        class="secondary"
+                        id="sp-map"
+                    >Choose on map</button>
+                    <button
+                        type="button"
+                        class="secondary"
+                        id="sp-cancel"
+                    >Not now</button>
+                </div>
+                <p id="sp-err" role="alert"></p>
+                <p id="sp-status" role="status"></p>
+            </dialog>
             <p
                 id="app-status"
                 role="status"
@@ -370,8 +466,9 @@ main { flex: 1 0 auto; inline-size: 100%; }
             <section class="about stack" aria-labelledby="about-heading">
                 <div class="panel stack" style="max-inline-size: var(--text-measure);">
                     <h2 id="about-heading">About ArWalk</h2>
-                    <p>ArWalk is a small map that finds a walking route and talks you along it. The map is drawn by this page itself on a canvas, with no mapping library. Drag to move, pinch or scroll to zoom, tap the map to drop a pin.</p>
-                    <p class="hint">Every service used is free and needs no key. Map pictures come from Esri (with HERE, Garmin and OpenStreetMap contributors), place search uses Photon from Komoot and walking routes use the OpenStreetMap Germany routing service, so what you search for and the start and end of a route are sent to them. Your live position is used on this device only and is never saved.</p>
+                    <p>ArWalk is a small map that finds a walking route and talks you along it. The map is drawn by this page itself on a canvas, with no mapping library. Drag to move, pinch or scroll to zoom, tap the map to drop a pin. Your default start point is saved on this device; GPS is only used once you press Start, to follow you along the route.</p>
+                    <p class="hint">Map tiles use the OpenStreetMap standard layer. Place suggestions use Photon, exact address searches use Nominatim, numbered-building lookups use OpenStreetMap Overpass, and walking routes use the OpenStreetMap Germany routing service. Search terms and route endpoints are sent to those services. GPS is used only when you choose it as your start point or press Start to follow a walk. A chosen start point is saved locally on this device; live tracking fixes are not saved.</p>
+                    <p class="hint"><a href="https://www.openstreetmap.org/fixthemap">Report or correct a map issue</a>.</p>
                     <p><a href="#map">Back to the map</a></p>
                 </div>
             </section>
@@ -420,6 +517,7 @@ const START_LAT = 51.5074; // Where the map opens before you search: latitude.
 const START_LNG = -0.1278; // Where the map opens before you search: longitude.
 const START_Z = 12; // Zoom the map opens at.
 const TILE_CACHE_MAX = 500; // Most map tile pictures kept in memory.
+const TILE_MEMORY_TTL_MS = 900000; // Reuse an in-memory tile for 15 minutes; the browser still honours the tile server's HTTP cache headers.
 const TAP_MOVE_PX = 8; // Finger or mouse movement that turns a tap into a drag.
 const TAP_MS = 400; // Longest press that still counts as a tap.
 const DOUBLE_TAP_MS = 280; // Two taps this close together zoom in instead of dropping a pin.
@@ -436,9 +534,19 @@ const REROUTE_MIN_MS = 10000; // Shortest gap between two new routes.
 const ARRIVE_M = 20; // Distance from the end that counts as arrived.
 const SIM_STEP_M = 14; // Metres a preview walk moves each tick.
 const SIM_TICK_MS = 1000; // Time between preview walk ticks.
-const TILE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/'; // Map pictures: free, no key.
+const TILE_URL = 'https://tile.openstreetmap.org/'; // Current OpenStreetMap standard raster tiles; XYZ order, free, no key.
+const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search'; // Exact address search (free, no key): finds house numbers. Used only when a search is submitted, never while typing.
+const OVERPASS_URL = 'https://overpass-api.de/api/interpreter'; // Looks up one numbered building on a street straight from OpenStreetMap (free, no key).
+const OVERPASS_AROUND_M = 1500; // How far from the street's middle to look for the house number.
+const OVERPASS_TIMEOUT_MS = 12000; // Longest wait for that lookup.
+const NOMINATIM_TIMEOUT_MS = 8000; // Longest wait for the exact address search.
 const GEOCODE_URL = 'https://photon.komoot.io/api/'; // Place search (Photon: free, no key, made for search as you type).
 const SEARCH_FETCH_LIMIT = 20; // Places requested when results are limited to one country, so enough are left after filtering.
+const START_KEY = 'arwalk-start'; // Saved default start point: every walk is planned from here, never from GPS.
+const REVERSE_URL = 'https://photon.komoot.io/reverse'; // First reverse lookup for a picked or GPS start point.
+const REVERSE_NOMINATIM_URL = 'https://nominatim.openstreetmap.org/reverse'; // Address-level fallback when Photon does not return a house number.
+const REVERSE_TIMEOUT_MS = 6000; // Longest wait for Photon reverse lookup.
+const REVERSE_NOMINATIM_TIMEOUT_MS = 8000; // Longest wait for Nominatim reverse lookup.
 const LOCAL_KEY = 'arwalk-local'; // Saved choice to show only places in your own country.
 const SUGGEST_MIN = 3; // Letters typed before places are suggested.
 const SUGGEST_DEBOUNCE_MS = 350; // Pause in typing before a search starts.
@@ -469,10 +577,9 @@ const ME_DOT_R = 8; // Radius of your-location dot.
 const START_DOT_R = 8; // Radius of the route's start marker.
 const ROUTE_CASING_PX = 4; // Extra width of the white edge round the route line.
 const ACCURACY_MIN_R = 12; // Smallest accuracy circle, in pixels, worth drawing.
-const GOOD_ACC_M = 25; // A fix this accurate (metres) is good enough to stop refining.
-const REFINE_MAX_MS = 12000; // Longest wait for a good fix before the best one so far is used.
-const FRESH_FIX_MS = 20000; // A saved fix older than this is not reused for a new route.
-const FRESH_FIX_ACC_M = 50; // A saved fix must be at least this accurate to be reused.
+const GOOD_ACC_M = 30; // A fix this accurate (metres) is good enough to stop refining.
+const REFINE_MAX_MS = 20000; // Longest wait for a good fix before the best one so far is used.
+const MAX_FIX_AGE_MS = 10000; // A fix the browser stamped older than this is a cached position and is ignored.
 const MAX_NAV_ACC_M = 100; // While walking, fixes less accurate than this are ignored.
 
 /* ---------- Helpers ---------- */
@@ -550,6 +657,11 @@ function cachedPromise(map, key, loader, hasValue) {
   let me = null, orig = null, dest = null, route = null, nav = null, found = [], picking = false, follow = false;
   let moved = 99, t0 = 0, pinch = 0, tapTimer = 0, voice = store.get(VOICE_KEY, true) !== false, wake = null;
   let C = {};
+  /* Default start point: saved on this device. Empty on a first visit or after the browser's data is cleared. */
+  const savedStart = store.get(START_KEY, null);
+  let start = savedStart && Number.isFinite(savedStart.lat) && Number.isFinite(savedStart.lng) ? savedStart : null;
+  let startCb = null;
+  if (start) { Object.assign(v, { lat: start.lat, lng: start.lng, z: PLACE_ZOOM }); }
 
   /* Colours come from the tokens: a probe element resolves light-dark() for us. */
   const probe = document.createElement('i');
@@ -566,14 +678,21 @@ function cachedPromise(map, key, loader, hasValue) {
 
   /* Tiles */
   const tk = (z, x, y) => z + '/' + x + '/' + y;
+  function cachedTile(z, x, y) {
+    const key = tk(z, x, y), img = tiles.get(key);
+    if (img && Date.now() - img.arwalkCreatedAt > TILE_MEMORY_TTL_MS) { tiles.delete(key); return null; }
+    return img || null;
+  }
   function tile(z, x, y) {
     const key = tk(z, x, y);
-    let img = tiles.get(key);
+    let img = cachedTile(z, x, y);
     if (img) { return img; }
     img = document.createElement('img');
+    img.arwalkCreatedAt = Date.now();
     img.onload = () => { if (tileErr) { tileErr = false; clear(er); } redraw(); };
-    img.onerror = () => { if (!tileErr) { tileErr = true; fail(er, 'Map pictures could not load. Check your connection.'); } };
-    img.src = TILE_URL + z + '/' + y + '/' + x;
+    img.onerror = () => { if (tiles.get(key) === img) { tiles.delete(key); } if (!tileErr) { tileErr = true; fail(er, 'Map pictures could not load. Check your connection.'); } };
+    /* OpenStreetMap's standard raster service uses XYZ ordering: z/x/y. */
+    img.src = TILE_URL + z + '/' + x + '/' + y + '.png';
     tiles.set(key, img);
     if (tiles.size > TILE_CACHE_MAX) { tiles.delete(tiles.keys().next().value); }
     return img;
@@ -582,7 +701,7 @@ function cachedPromise(map, key, loader, hasValue) {
   function drawTile(z, x, y, dx, dy, size) {
     const img = tile(z, x, y);
     if (ready(img)) { ctx.drawImage(img, dx, dy, size, size); return; }
-    const p = z > MIN_Z ? tiles.get(tk(z - 1, x >> 1, y >> 1)) : null; /* show the blurry parent while the sharp one loads */
+    const p = z > MIN_Z ? cachedTile(z - 1, x >> 1, y >> 1) : null; /* show a fresh blurry parent while the sharp tile loads */
     if (ready(p)) { const hw = p.naturalWidth * HALF, hh = p.naturalHeight * HALF; ctx.drawImage(p, (x & 1) * hw, (y & 1) * hh, hw, hh, dx, dy, size, size); }
   }
 
@@ -618,8 +737,9 @@ function cachedPromise(map, key, loader, hasValue) {
       ctx.strokeStyle = C.route; ctx.lineWidth = ROUTE_W; ctx.stroke();
       if (orig && !nav) { const [x, y] = sc(orig.lat, orig.lng); ctx.beginPath(); ctx.arc(x, y, START_DOT_R, 0, TAU); ctx.fillStyle = C.ring; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = C.route; ctx.stroke(); }
     }
+    if (start && !nav) { const [x, y] = sc(start.lat, start.lng); ctx.beginPath(); ctx.arc(x, y, START_DOT_R, 0, TAU); ctx.fillStyle = C.ring; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = C.route; ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, START_DOT_R * HALF, 0, TAU); ctx.fillStyle = C.route; ctx.fill(); }
     if (me) {
-      const [x, y] = sc(me.lat, me.lng), r = (me.acc || 0) / (EARTH_CIRCUMFERENCE_M * Math.cos(me.lat * Math.PI / HALF_TURN_DEGREES) / (TILE * ZOOM_BASE ** v.z));
+      const [x, y] = sc(me.lat, me.lng), r = (Number.isFinite(me.acc) ? me.acc : 0) / (EARTH_CIRCUMFERENCE_M * Math.cos(me.lat * Math.PI / HALF_TURN_DEGREES) / (TILE * ZOOM_BASE ** v.z));
       if (r > ACCURACY_MIN_R) { ctx.globalAlpha = 0.15; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fillStyle = C.route; ctx.fill(); ctx.globalAlpha = 1; }
       dot(x, y, ME_DOT_R);
     }
@@ -696,6 +816,7 @@ function cachedPromise(map, key, loader, hasValue) {
   cv.addEventListener('pointercancel', lift);
   cv.addEventListener('wheel', (e) => { e.preventDefault(); const [x, y] = pos(e); zoomAt(x, y, v.z - e.deltaY * (e.deltaMode === 1 ? WHEEL_LINE_PX : 1) * WHEEL_ZOOM * (e.ctrlKey ? WHEEL_CTRL_BOOST : 1)); }, { passive: false });
   cv.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && picking) { endPick(true); return; }
     const k = { ArrowLeft: [KEY_PAN_PX, 0], ArrowRight: [-KEY_PAN_PX, 0], ArrowUp: [0, KEY_PAN_PX], ArrowDown: [0, -KEY_PAN_PX] }[e.key];
     if (k) { e.preventDefault(); follow = false; panBy(k[0], k[1]); }
     else if (e.key === '+' || e.key === '=') { zoomCentre(ZOOM_STEP); }
@@ -708,7 +829,7 @@ function cachedPromise(map, key, loader, hasValue) {
   scheme.addEventListener('change', onScheme);
 
   /* Location */
-  const GEO = { enableHighAccuracy: true, timeout: GEO_TIMEOUT_MS, maximumAge: 5000 };
+  const GEO = { enableHighAccuracy: true, timeout: GEO_TIMEOUT_MS, maximumAge: 0 };
   /* Permission state: 'granted', 'prompt', 'denied', or 'unknown' when the browser cannot say. */
   const permBox = $('perm');
   let geoState = 'unknown', permCb = null, permFrom = null;
@@ -730,15 +851,15 @@ function cachedPromise(map, key, loader, hasValue) {
   function showPerm(denied) {
     permBox.hidden = false;
     permBox.innerHTML = denied
-      ? '<h2 id="perm-h">Location is blocked</h2><p>Your browser is blocking location for this site. To turn it on, open the padlock or settings icon beside the address bar, set Location to Allow, then try again.</p><div class="row"><button type="button" data-perm="allow">Try again</button><button type="button" class="secondary" data-perm="skip">Choose start on map</button></div>'
-      : '<h2 id="perm-h">Allow location?</h2><p>ArWalk uses your position to start the route from where you are and to guide you as you walk. It stays on this device and is never saved. Your browser will ask you to confirm.</p><div class="row"><button type="button" data-perm="allow">Allow location</button><button type="button" class="secondary" data-perm="skip">Not now</button></div>';
+      ? '<h2 id="perm-h">Location is blocked</h2><p>Your browser is blocking location for this site. To turn it on, open the padlock or settings icon beside the address bar, set Location to Allow, then try again.</p><div class="row"><button type="button" data-perm="allow">Try again</button><button type="button" class="secondary" data-perm="skip">Close</button></div>'
+      : '<h2 id="perm-h">Allow location?</h2><p>ArWalk uses your position only while you walk, to follow your progress along the route. Routes are planned from your saved start point. Your position stays on this device and is never saved. Your browser will ask you to confirm.</p><div class="row"><button type="button" data-perm="allow">Allow location</button><button type="button" class="secondary" data-perm="skip">Not now</button></div>';
     say(st, denied ? 'Location is blocked for this site.' : 'ArWalk would like to use your location.');
     focusHeading($('perm-h'));
   }
   permBox.addEventListener('click', (e) => {
     const b = e.target.closest('[data-perm]');
     if (!b) { return; }
-    if (b.dataset.perm === 'skip') { closePerm(null); say(st, 'Tap the map to choose a start point instead.'); return; }
+    if (b.dataset.perm === 'skip') { closePerm(null); say(st, 'Location stays off. You can still use Preview to try the walk.'); return; }
     clear(er); b.disabled = true; b.textContent = 'Waiting for your browser…';
     fetchPos(closePerm, true);
   });
@@ -746,38 +867,213 @@ function cachedPromise(map, key, loader, hasValue) {
   /* Ask the browser for one fix. fromCard keeps the permission card open if access is refused. */
   /* The first fix after permission is granted is often a coarse, cached network position.
      So watch for fixes (never cached) and keep the most accurate until one is good enough or time runs out. */
+  /* Turn a browser reading into a fix. A missing or zero accuracy means unknown, not perfect. */
+  function readFix(p) {
+    const a = p.coords.accuracy;
+    return { lat: p.coords.latitude, lng: p.coords.longitude, acc: Number.isFinite(a) && a > 0 ? a : Infinity, t: Date.now() };
+  }
+  const isCached = (p) => Boolean(p.timestamp) && Date.now() - p.timestamp > MAX_FIX_AGE_MS;
   function fetchPos(cb, fromCard) {
-    let best = null, done = false, watchId = 0, timer = 0;
+    let best = null, done = false, ids = [], timer = 0;
+    const stop = () => { done = true; clearTimeout(timer); ids.forEach((i) => navigator.geolocation.clearWatch(i)); };
     const finish = (result) => {
       if (done) { return; }
-      done = true; clearTimeout(timer); navigator.geolocation.clearWatch(watchId);
+      stop();
       if (result) { me = result; redraw(); }
       cb(result);
     };
-    watchId = navigator.geolocation.watchPosition((p) => {
+    const onPos = (p) => {
+      if (done || isCached(p)) { return; }
       geoState = 'granted';
-      const fix = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy || 0, t: Date.now() };
-      if (!best || fix.acc <= best.acc) { best = fix; me = fix; redraw(); }
+      const fix = readFix(p);
+      if (!best || fix.acc < best.acc || (fix.acc === best.acc && fix.t > best.t)) { best = fix; me = fix; redraw(); }
       if (best.acc <= GOOD_ACC_M) { finish(best); }
-    }, (e) => {
-      if (done) { return; }
-      if (best && e.code !== 1) { finish(best); return; }
-      done = true; clearTimeout(timer); navigator.geolocation.clearWatch(watchId);
+    };
+    const onErr = (e) => {
+      if (done || e.code === 3) { return; } /* a timeout only means no new reading yet: the overall timer decides */
+      if (best && e.code !== 1) { return; }
+      if (e.code !== 1 && ids.length > 1) { return; } /* the other watch may still deliver */
+      stop();
       if (e.code === 1) { geoState = 'denied'; if (fromCard) { showPerm(true); return; } }
-      fail(er, e.code === 1 ? 'Location permission was refused. Allow it for this site, or tap the map to choose a start point.' : 'Your location is not available right now.'); cb(null);
-    }, { ...GEO, maximumAge: 0 });
-    timer = setTimeout(() => { if (best) { finish(best); } else { done = true; navigator.geolocation.clearWatch(watchId); fail(er, 'Your location is not available right now.'); cb(null); } }, REFINE_MAX_MS);
+      fail(er, e.code === 1 ? 'Location permission was refused. Allow it for this site to follow your walk, or use Preview.' : 'Your location is not available right now.'); cb(null);
+    };
+    /* Two sources at once: GPS (precise, slow, needs sky) and network (fast, rough). The most accurate reading wins. */
+    ids = [
+      navigator.geolocation.watchPosition(onPos, onErr, { ...GEO, enableHighAccuracy: true, maximumAge: 0 }),
+      navigator.geolocation.watchPosition(onPos, onErr, { ...GEO, enableHighAccuracy: false, maximumAge: 0 })
+    ];
+    /* Out of time: use the best fix, however rough. Callers decide whether it is good enough to start from. */
+    timer = setTimeout(() => { if (best) { finish(best); } else { stop(); fail(er, 'Your location is not available right now.'); cb(null); } }, REFINE_MAX_MS);
   }
   function locate(cb) {
-    if (!navigator.geolocation || !window.isSecureContext) { fail(er, 'Your location is not available right now. Tap the map to choose a start point instead.'); cb(null); return; }
+    if (!navigator.geolocation || !window.isSecureContext) { fail(er, 'Your location is not available right now. Use Preview to try the walk without it.'); cb(null); return; }
     if (geoState === 'granted') { fetchPos(cb); return; }
     permCb = cb; permFrom = document.activeElement; showPerm(geoState === 'denied');
   }
+  /* The locate button only exists while walking: it re-centres the map on your GPS position. */
   $('locate').addEventListener('click', () => {
     clear(er);
-    if (nav) { follow = true; if (me) { flyTo(me.lat, me.lng, Math.max(v.z, NAV_ZOOM)); } return; }
-    locate((m) => { if (m) { flyTo(m.lat, m.lng, Math.max(v.z, PLACE_ZOOM)); say(st, 'Centred on your location.'); } });
+    if (nav) { follow = true; if (me) { flyTo(me.lat, me.lng, Math.max(v.z, NAV_ZOOM)); } }
   });
+
+  /* Start point: where every walk begins. Set by address search, GPS or a precise map pin. */
+  const dlg = $('start-dlg'), spq = $('sp-q'), spRes = $('sp-results'), spErr = $('sp-err'), spSt = $('sp-status'), pickBox = $('pick');
+  let spFound = [], spSeq = 0, spDeb = 0, spFrom = null;
+  const startLabel = (p) => p.fullAddress || [p.name, p.addr].filter(Boolean).join(', ');
+  function placeRecord(lat, lng, preferredName, houseNumber, street, details = [], approx = false) {
+    const number = String(houseNumber || '').trim();
+    const road = String(street || '').trim();
+    const numberedStreet = [number, road].filter(Boolean).join(' ');
+    const preferred = String(preferredName || '').trim();
+    const name = numberedStreet && (!preferred || preferred === road || preferred === number)
+      ? numberedStreet
+      : preferred || numberedStreet || details.find((part) => String(part || '').trim()) || 'Unnamed place';
+    const addressParts = [];
+    [name === numberedStreet ? '' : numberedStreet, ...details].forEach((part) => {
+      const value = String(part || '').trim();
+      if (value && value !== name && !addressParts.includes(value)) { addressParts.push(value); }
+    });
+    const fullAddress = [name, ...addressParts].filter(Boolean).join(', ');
+    return {
+      lat: Number(lat), lng: Number(lng), name,
+      addr: addressParts.join(', ').slice(0, ADDR_MAX), fullAddress,
+      houseNumber: number, street: road, approx: Boolean(approx)
+    };
+  }
+  function openStart(cb) {
+    if (nav) { return; }
+    startCb = cb || null; spFrom = document.activeElement;
+    clear(spErr, spSt); spq.value = ''; spFound = []; spRes.hidden = true; spRes.innerHTML = '';
+    $('start-h').textContent = start ? 'Change your start point' : 'Set your start point';
+    $('start-cur').hidden = !start; if (start) { $('start-cur').textContent = 'Current start point: ' + startLabel(start) + (start.approx ? ' (house number not verified)' : ''); }
+    $('sp-cancel').textContent = start ? 'Cancel' : 'Not now';
+    if (!dlg.open) { dlg.showModal(); }
+  }
+  dlg.addEventListener('close', () => {
+    if (picking) { return; }
+    startCb = null;
+    if (!start) { say(st, 'No start point is set yet. Use the flag button to set one.'); }
+    if (spFrom && document.contains(spFrom) && spFrom !== document.body) { spFrom.focus(); }
+  });
+  /* Reverse lookup prefers a numbered building address over a generic POI or street label. */
+  async function reversePlace(spot) {
+    let photonPlace = null;
+    try {
+      const r = await fetchRetry(REVERSE_URL + '?lat=' + spot.lat + '&lon=' + spot.lng + '&lang=en', { tries: 1, timeout: REVERSE_TIMEOUT_MS });
+      const p = (((await r.json()).features || [])[0] || {}).properties || {};
+      if (p.street || p.housenumber || p.name) {
+        photonPlace = placeRecord(spot.lat, spot.lng, p.housenumber ? '' : p.name, p.housenumber, p.street,
+          [p.district, p.city, p.county, p.postcode, p.country], !p.housenumber && Boolean(p.street));
+        if (photonPlace.houseNumber) { return photonPlace; }
+      }
+    } catch { /* try the address-focused reverse service below */ }
+    try {
+      const url = REVERSE_NOMINATIM_URL + '?format=jsonv2&addressdetails=1&zoom=18&accept-language=en&lat=' + spot.lat + '&lon=' + spot.lng;
+      const r = await fetchRetry(url, { headers: { Accept: 'application/json' }, tries: 1, timeout: REVERSE_NOMINATIM_TIMEOUT_MS });
+      const f = await r.json(), a = f.address || {};
+      const street = a.road || a.pedestrian || a.residential || a.footway || a.path || '';
+      const houseNumber = a.house_number || '';
+      const nominatimPlace = placeRecord(spot.lat, spot.lng, houseNumber ? '' : (f.name || ''), houseNumber, street,
+        [a.suburb, a.neighbourhood, a.city || a.town || a.village || a.hamlet, a.county, a.postcode, a.country], !houseNumber && Boolean(street));
+      if (nominatimPlace.houseNumber || !photonPlace || (nominatimPlace.street && !photonPlace.street)) { return nominatimPlace; }
+    } catch { /* retain the Photon result, if one was available */ }
+    return photonPlace;
+  }
+  async function nameSpot(spot) {
+    try {
+      const place = await reversePlace(spot);
+      if (start !== spot) { return; }
+      if (!place || (place.name === 'Unnamed place' && !place.addr)) {
+        say(st, 'The start coordinates were saved, but map data did not return a usable address or house number.');
+        return;
+      }
+      const previousName = spot.name;
+      const houseNumber = place.houseNumber || spot.houseNumber || '';
+      const street = place.street || spot.street || '';
+      const keepExistingHouse = Boolean(spot.houseNumber && !place.houseNumber);
+      const name = keepExistingHouse ? spot.name : (place.name || spot.name);
+      const addr = keepExistingHouse ? (spot.addr || place.addr || '') : (place.addr || spot.addr || '');
+      const fullAddress = keepExistingHouse ? (spot.fullAddress || [name, addr].filter(Boolean).join(', ')) : (place.fullAddress || [name, addr].filter(Boolean).join(', '));
+      Object.assign(spot, { name, addr, fullAddress, houseNumber, street, approx: !houseNumber && Boolean(place.approx) });
+      start = spot;
+      store.set(START_KEY, start); redraw();
+      if (route && route.from === previousName) {
+        route.from = startLabel(start);
+        const fromLine = sheet.querySelector('p.hint');
+        if (fromLine && fromLine.textContent.startsWith('From ')) { fromLine.textContent = 'From ' + route.from + ' to ' + (dest ? dest.name : 'destination'); }
+      }
+      if ($('start-cur') && ! $('start-cur').hidden) { $('start-cur').textContent = 'Current start point: ' + startLabel(start) + (start.approx ? ' (house number not verified)' : ''); }
+      say(st, houseNumber ? 'Start point address updated: ' + startLabel(start) + '.' : 'Only a street-level address was returned; the house number could not be verified from the map data.');
+    } catch { /* keep the chosen coordinates and label */ }
+  }
+  function saveStart(p, lookup, callbackOverride = undefined) {
+    start = {
+      lat: Number(p.lat), lng: Number(p.lng), name: p.name || 'Pinned location', addr: p.addr || '',
+      fullAddress: p.fullAddress || [p.name, p.addr].filter(Boolean).join(', '),
+      houseNumber: p.houseNumber || '', street: p.street || '', approx: Boolean(p.approx)
+    };
+    store.set(START_KEY, start);
+    const cb = callbackOverride === undefined ? startCb : callbackOverride, spot = start; startCb = null;
+    pickBox.hidden = true; if (dlg.open) { dlg.close(); }
+    endSearch();
+    say(st, 'Start point set to ' + startLabel(start) + (start.approx ? ' (street only; house number not verified).' : '.'));
+    if (lookup && !start.houseNumber) { nameSpot(spot); }
+    flyTo(start.lat, start.lng, PLACE_ZOOM); redraw();
+    if (cb) { cb(); } else if (dest && route && !nav) { directions(); }
+  }
+  function endPick(back) {
+    if (!picking) { return; }
+    picking = false; pickBox.hidden = true; clear(st);
+    if (sheet.innerHTML && !nav) { sheet.hidden = false; }
+    if (back) { openStart(startCb); }
+  }
+  async function spSearch(t, exact) {
+    const mine = ++spSeq;
+    spRes.hidden = false; spRes.innerHTML = '<li class="hint" aria-hidden="true">Searching…</li>';
+    try {
+      const list = await cachedPromise(searchCache, (filtering() ? home : '*') + (exact ? '!' : '') + t.toLowerCase(), () => geocode(t, exact), (x) => x.length > 0);
+      if (mine !== spSeq) { return; }
+      spFound = list; clear(spErr);
+      spRes.innerHTML = list.length
+        ? noteHtml(list) + list.map((p, i) => '<li><button type="button" class="secondary" data-i="' + i + '"><strong>' + esc(p.name) + '</strong>' + (p.addr ? '<span class="hint">' + esc(p.addr) + '</span>' : '') + (p.approx ? '<span class="hint">Street only: house number not found</span>' : '') + '</button></li>').join('')
+        : '<li class="hint">No places found for “' + esc(t) + '”. Try another spelling' + (filtering() ? ', or turn off “Only in ' + esc(homeName) + '”' : '') + '.</li>';
+      say(spSt, list.length ? list.length + ' places found.' : 'No places found.');
+    } catch { if (mine === spSeq) { spRes.hidden = true; clear(spSt); fail(spErr, 'Search failed. Check your connection and try again.'); } }
+  }
+  spq.addEventListener('input', () => {
+    clearTimeout(spDeb);
+    const t = spq.value.trim();
+    if (t.length < SUGGEST_MIN) { spSeq++; spRes.hidden = true; spRes.innerHTML = ''; clear(spSt); return; }
+    if (wantsNumber(t)) { spSeq++; spRes.hidden = false; spRes.innerHTML = '<li class="hint">Press Search to find this exact address.</li>'; return; }
+    spDeb = setTimeout(() => spSearch(t, false), SUGGEST_DEBOUNCE_MS);
+  });
+  $('sp-form').addEventListener('submit', (e) => {
+    e.preventDefault(); clearTimeout(spDeb);
+    const t = spq.value.trim();
+    if (t.length >= MIN_SUBMIT_CHARS) { spSearch(t, true); }
+  });
+  spRes.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-i]');
+    if (b && spFound[+b.dataset.i]) { saveStart(spFound[+b.dataset.i]); }
+  });
+  $('sp-cancel').addEventListener('click', () => dlg.close());
+  $('sp-gps').addEventListener('click', () => {
+    clear(spErr, spSt, er);
+    const resume = startCb;
+    startCb = null;
+    if (dlg.open) { dlg.close(); }
+    say(st, 'Getting your GPS position…');
+    locate((fix) => {
+      if (!fix) { fail(er, 'GPS could not provide a usable position. Your saved start point has not changed.'); return; }
+      saveStart({ lat: fix.lat, lng: fix.lng, name: 'Current location' }, true, resume);
+    });
+  });
+  $('sp-map').addEventListener('click', () => {
+    picking = true; dlg.close(); pickBox.hidden = false; sheet.hidden = true; clear(er);
+    say(st, 'Tap the map where your walks should begin.'); focusHeading($('pick-h'));
+  });
+  $('pick-cancel').addEventListener('click', () => endPick(true));
+  $('start-btn').addEventListener('click', () => openStart());
 
   /* Formatting */
   const fmtDist = (m, spoken) => (m < METRES_PER_KM ? Math.max(ROUND_TO_M, Math.round(m / ROUND_TO_M) * ROUND_TO_M) + (spoken ? ' metres' : ' m') : (m / METRES_PER_KM).toFixed(1) + (spoken ? ' kilometres' : ' km'));
@@ -813,43 +1109,118 @@ function cachedPromise(map, key, loader, hasValue) {
   });
 
   /* Search: suggestions appear as you type, and clearing the box clears them. */
+  const wantsNumber = (t) => /^\s*\d+[a-z]?(?:[-/]\d+[a-z]?)?[\s,]/i.test(t); /* house number, suffix, range or split number at the start */
   let seq = 0, deb = 0;
-  async function geocode(t) {
+  async function photon(t) {
     const r = await fetchRetry(GEOCODE_URL + '?limit=' + (filtering() ? SEARCH_FETCH_LIMIT : SEARCH_LIMIT) + '&lang=en&q=' + encodeURIComponent(t), { headers: { Accept: 'application/json' } });
     const seen = new Set(), out = [];
     ((await r.json()).features || []).forEach((f) => {
       const p = f.properties || {}, c = f.geometry.coordinates;
       if ((filtering() && p.countrycode !== home) || out.length >= SEARCH_LIMIT) { return; }
-      const street = p.street ? (p.housenumber ? p.housenumber + ' ' : '') + p.street : '';
-      const name = p.name || street || p.city || 'Unnamed place';
-      const addr = [p.name ? street : '', p.district, p.city, p.county, p.state, p.country].filter((x) => x && x !== name).join(', ');
-      const key = name + '|' + addr;
-      if (!seen.has(key)) { seen.add(key); out.push({ lat: +c[1], lng: +c[0], name, addr: addr.slice(0, ADDR_MAX) }); }
+      const place = placeRecord(c[1], c[0], p.name || '', p.housenumber, p.street,
+        [p.district, p.city, p.county, p.state, p.country], wantsNumber(t) && !p.housenumber);
+      const key = place.name + '|' + place.fullAddress;
+      if (!seen.has(key)) { seen.add(key); out.push(place); }
     });
     return out;
   }
+  /* Nominatim knows house numbers, so a submitted search uses it first. Photon is the fallback and the as-you-type source. */
+  async function nominatim(t) {
+    const cc = filtering() ? '&countrycodes=' + home.toLowerCase() : '';
+    const r = await fetchRetry(NOMINATIM_URL + '?format=jsonv2&addressdetails=1&limit=' + SEARCH_LIMIT + '&accept-language=en' + cc + '&q=' + encodeURIComponent(t), { headers: { Accept: 'application/json' }, tries: 1, timeout: NOMINATIM_TIMEOUT_MS });
+    const seen = new Set(), out = [];
+    (await r.json()).forEach((f) => {
+      const a = f.address || {};
+      const street = a.road || a.pedestrian || a.residential || a.footway || a.path || '';
+      const place = placeRecord(f.lat, f.lon, f.name || '', a.house_number, street,
+        [a.suburb, a.neighbourhood, a.city || a.town || a.village || a.hamlet, a.county, a.postcode, a.country],
+        wantsNumber(t) && !a.house_number);
+      const key = place.name + '|' + place.fullAddress;
+      if (!seen.has(key) && out.length < SEARCH_LIMIT) { seen.add(key); out.push(place); }
+    });
+    return out;
+  }
+  
+  async function overpassHouse(num, street, spot) {
+    const quoteRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const n = quoteRegex(num.trim()), name = quoteRegex(street.trim());
+    const query = '[out:json][timeout:10];nwr["addr:housenumber"~"^' + n + '$",i]["addr:street"~"^' + name + '$",i](around:' + OVERPASS_AROUND_M + ',' + spot.lat + ',' + spot.lng + ');out center;';
+    const r = await fetchRetry(OVERPASS_URL + '?data=' + encodeURIComponent(query), { tries: 1, timeout: OVERPASS_TIMEOUT_MS });
+    const hits = ((await r.json()).elements || []).map((e) => ({ lat: e.lat === undefined ? (e.center || {}).lat : e.lat, lng: e.lon === undefined ? (e.center || {}).lon : e.lon }))
+      .filter((h) => Number.isFinite(h.lat) && Number.isFinite(h.lng));
+    const k = 111320, cos = Math.cos(spot.lat * Math.PI / HALF_TURN_DEGREES);
+    hits.sort((a, b) => {
+      const ax = (a.lng - spot.lng) * k * cos, ay = (a.lat - spot.lat) * k;
+      const bx = (b.lng - spot.lng) * k * cos, by = (b.lat - spot.lat) * k;
+      return ax * ax + ay * ay - (bx * bx + by * by);
+    });
+    return hits[0] || null;
+  }
+  async function houseFromStreets(t) {
+    const m = t.match(/^\s*(\d+[a-z]?(?:[-/]\d+[a-z]?)?)[\s,]+(.+)$/i);
+    if (!m) { return []; }
+    const streets = (await photon(m[2])).slice(0, 3);
+    const hits = await Promise.all(streets.map(async (st) => {
+      try {
+        const h = await overpassHouse(m[1], st.street || st.name, st);
+        return h ? placeRecord(h.lat, h.lng, '', m[1], st.street || st.name,
+          String(st.addr || '').split(',').map((part) => part.trim()).filter(Boolean), false) : null;
+      } catch { return null; }
+    }));
+    return hits.filter(Boolean);
+  }
+  async function geocode(t, exact) {
+    if (!exact) { return photon(t); }
+    let list = [], photonList = [], note = '';
+    try { list = await nominatim(t); } catch { note = 'The exact address service did not answer; checking other map data sources.'; }
+    if (!wantsNumber(t)) {
+      if (!list.length) { list = await photon(t); }
+      if (note) { list.note = note; }
+      return list;
+    }
+    try { photonList = await photon(t); } catch { /* Nominatim matches may still be usable */ }
+    const combined = [...list, ...photonList];
+    const exactMatches = combined.filter((place) => place.houseNumber);
+    if (exactMatches.length) {
+      const seenExact = new Set();
+      const exactOnly = exactMatches.filter((place) => {
+        const key = place.name + '|' + place.fullAddress;
+        if (seenExact.has(key)) { return false; }
+        seenExact.add(key); return true;
+      }).slice(0, SEARCH_LIMIT);
+      if (note) { exactOnly.note = note; }
+      return exactOnly;
+    }
+    let houses = [];
+    try { houses = await houseFromStreets(t); } catch { /* retain the street-level matches */ }
+    const out = [...houses, ...combined].slice(0, SEARCH_LIMIT);
+    if (!houses.length) { out.note = note || 'The map data has no exact house-number match. These are street-level results; use Choose on map to pin the entrance precisely.'; }
+    return out;
+  }
+  const noteHtml = (list) => (list.note ? '<li class="hint">' + esc(list.note) + '</li>' : '');
   async function runSearch(t, typed) {
-    const mine = ++seq;
+    const mine = ++seq, exact = !typed;
     if (!typed) { clear(er); say(st, 'Searching…'); }
     sheet.hidden = true; resBox.hidden = false;
     if (!found.length || !typed) { resBox.innerHTML = '<li class="hint" aria-hidden="true">Searching…</li>'; }
     try {
-      const list = await cachedPromise(searchCache, (filtering() ? home : '*') + t.toLowerCase(), () => geocode(t), (x) => x.length > 0);
+      const list = await cachedPromise(searchCache, (filtering() ? home : '*') + (exact ? '!' : '') + t.toLowerCase(), () => geocode(t, exact), (x) => x.length > 0);
       if (mine !== seq) { return; }
       found = list; clear(er);
       if (!list.length) { resBox.innerHTML = '<li class="hint">No places found for “' + esc(t) + '”. Try another spelling' + (filtering() ? ', or turn off “Only in ' + esc(homeName) + '”' : '') + '.</li>'; say(st, 'No places found for “' + t + '”.'); return; }
-      resBox.innerHTML = list.map((p, i) => '<li><button type="button" class="secondary" data-i="' + i + '"><strong>' + esc(p.name) + '</strong>' + (p.addr ? '<span class="hint">' + esc(p.addr) + '</span>' : '') + '</button></li>').join('');
+      resBox.innerHTML = noteHtml(list) + list.map((p, i) => '<li><button type="button" class="secondary" data-i="' + i + '"><strong>' + esc(p.name) + '</strong>' + (p.addr ? '<span class="hint">' + esc(p.addr) + '</span>' : '') + (p.approx ? '<span class="hint">Street only: house number not found</span>' : '') + '</button></li>').join('');
       say(st, list.length + ' places found.');
     } catch { if (mine === seq) { resBox.hidden = true; clear(st); fail(er, 'Search failed. Check your connection and try again.'); } }
   }
   function endSearch() {
     clearTimeout(deb); seq++; found = []; resBox.hidden = true; resBox.innerHTML = ''; clear(st);
-    if (sheet.innerHTML && !nav) { sheet.hidden = false; }
+    if (sheet.innerHTML && !nav && !picking) { sheet.hidden = false; }
   }
   q.addEventListener('input', () => {
     clearTimeout(deb);
     const t = q.value.trim();
     if (t.length < SUGGEST_MIN) { endSearch(); return; }
+    if (wantsNumber(t)) { seq++; sheet.hidden = true; resBox.hidden = false; resBox.innerHTML = '<li class="hint">Press Search to find this exact address.</li>'; return; }
     deb = setTimeout(() => runSearch(t, true), SUGGEST_DEBOUNCE_MS);
   });
   form.addEventListener('submit', (e) => {
@@ -862,6 +1233,7 @@ function cachedPromise(map, key, loader, hasValue) {
   resBox.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-i]');
     if (!b) { return; }
+    if (picking) { const hit = found[+b.dataset.i]; q.value = hit.name; endSearch(); flyTo(hit.lat, hit.lng, PLACE_ZOOM); say(st, 'Now tap the map where your walks should begin.'); return; } /* choosing a start: just move the map there */
     dest = found[+b.dataset.i]; q.value = dest.name; endSearch(); sheet.hidden = false; route = null; orig = null;
     showPlace(); flyTo(dest.lat, dest.lng, PLACE_ZOOM);
   });
@@ -875,7 +1247,7 @@ function cachedPromise(map, key, loader, hasValue) {
   function showRoute() {
     const speed = route.dist / Math.max(1, route.dur);
     sheet.hidden = false;
-    sheet.innerHTML = '<h2 id="sheet-h">' + fmtTime(route.dur) + ' <span class="hint">(' + fmtDist(route.dist) + ') walking</span></h2><p class="hint">To ' + esc(dest.name) + '</p>' +
+    sheet.innerHTML = '<h2 id="sheet-h">' + fmtTime(route.dur) + ' <span class="hint">(' + fmtDist(route.dist) + ') walking</span></h2><p class="hint">From ' + esc(route.from) + ' to ' + esc(dest.name) + '</p>' +
       '<div class="row"><button type="button" data-act="start">Start</button><button type="button" class="secondary" data-act="preview" aria-label="Preview the walk without GPS">Preview</button><button type="button" class="secondary toggle" aria-pressed="false" data-act="steps">Steps</button><button type="button" class="secondary" data-act="close">Close</button></div>' +
       '<ol class="steps" aria-label="Walking directions" hidden>' + route.steps.map((s) => '<li><span class="arr" aria-hidden="true">' + arrow(s) + '</span><span>' + esc(instr(s)) + (s.d ? '<span class="hint"> · ' + fmtDist(s.d) + ' · ' + fmtTime(s.d / speed) + '</span>' : '') + '</span></li>').join('') + '</ol>';
     say(st, 'Walking route found. ' + fmtTime(route.dur) + ', ' + fmtDist(route.dist, true) + '.');
@@ -892,35 +1264,26 @@ function cachedPromise(map, key, loader, hasValue) {
       let acc = 0;
       const steps = r.legs[0].steps.map((s) => ({ d: s.distance, name: s.name, type: s.maneuver.type, mod: s.maneuver.modifier }));
       const starts = steps.map((s) => { const a = acc; acc += s.d; return a; });
-      route = { pts, cum, steps, starts, dist: r.distance, dur: r.duration, total: cum[cum.length - 1] };
+      route = { pts, cum, steps, starts, dist: r.distance, dur: r.duration, total: cum[cum.length - 1], from: from.name || 'Your location' };
       orig = { lat: from.lat, lng: from.lng }; redraw();
       return true;
     } catch { fail(er, 'No walking route could be found between those points.'); clear(st); return false; }
   }
+  /* Routes always begin at the saved start point. */
   function directions() {
     clear(er);
-    const go = async (from) => { if (await getRoute(from)) { showRoute(); } else { showPlace(); } };
-    if (me && me.t && Date.now() - me.t < FRESH_FIX_MS && me.acc <= FRESH_FIX_ACC_M) { go(me); return; }
-    say(st, 'Finding your location…');
-    locate((m) => {
-      if (m) { go(m); return; }
-      picking = true; say(st, 'Tap the map to choose where to start walking from.');
-      sheet.innerHTML = '<h2 id="sheet-h">Choose a start point</h2><p class="hint">Tap the map where you will start walking.</p><div class="row"><button type="button" class="secondary" data-act="close">Cancel</button></div>';
-    });
+    if (!start) { say(st, 'Set a start point to get directions.'); openStart(directions); return; }
+    (async () => { if (await getRoute(start)) { showRoute(); } else { showPlace(); } })();
   }
   function onTap(x, y) {
     if (nav) { return; }
     const g = geoAt(x, y);
-    if (picking) {
-      picking = false; clear(er);
-      getRoute(g).then((ok) => { if (ok) { showRoute(); } else { showPlace(); } });
-      return;
-    }
+    if (picking) { picking = false; clear(er); saveStart({ lat: g.lat, lng: g.lng, name: 'Pinned location' }, true); return; }
     dest = { lat: g.lat, lng: g.lng, name: 'Dropped pin', addr: g.lat.toFixed(DECIMAL_PLACES) + ', ' + g.lng.toFixed(DECIMAL_PLACES) };
     route = null; orig = null; resBox.hidden = true; clear(er); showPlace();
   }
   function clearAll() {
-    dest = orig = route = null; picking = false; sheet.hidden = true; sheet.innerHTML = ''; clear(st, er); redraw();
+    dest = orig = route = null; endPick(false); sheet.hidden = true; sheet.innerHTML = ''; clear(st, er); redraw();
   }
 
   /* Turn by turn */
@@ -962,9 +1325,19 @@ function cachedPromise(map, key, loader, hasValue) {
     $('eta-d').textContent = fmtDist(rem) + ' · arrive ' + new Date(Date.now() + rem / speed * MS_PER_SECOND).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   }
   function onFix(lat, lng, acc) {
-    if (!nav.sim && acc > MAX_NAV_ACC_M) { return; } /* ignore coarse fixes while walking */
+    if (!nav.sim && acc > MAX_NAV_ACC_M) { if (!nav.lowAcc) { nav.lowAcc = true; say(st, 'Waiting for a more accurate location…'); } return; } /* ignore coarse fixes while walking */
+    nav.lowAcc = false;
     me = { lat, lng, acc, t: Date.now() };
     const s = snap(lat, lng);
+    if (!nav.sim && !nav.joined) { /* not on the route yet: no new route from GPS, just point to the start */
+      if (s.d > REROUTE_M) {
+        $('b-arrow').textContent = '⚑'; $('b-text').textContent = 'Head to the route'; $('b-dist').textContent = fmtDist(s.d) + ' away';
+        $('eta').textContent = ''; $('eta-d').textContent = '';
+        if (!nav.away) { nav.away = true; follow = false; say(st, 'You are ' + fmtDist(s.d, true) + ' from the route. Walk to its start to begin.'); fit(route.pts.concat([[lat, lng]])); }
+        redraw(); return;
+      }
+      nav.joined = true; nav.away = false; follow = true;
+    }
     if (s.d > REROUTE_M && !nav.sim && performance.now() - nav.re > REROUTE_MIN_MS) { nav.re = performance.now(); reroute(); return; }
     nav.along = s.along;
     const rem = route.total - s.along;
@@ -986,8 +1359,8 @@ function cachedPromise(map, key, loader, hasValue) {
       return;
     }
     clear(er); stopNav();
-    nav = { idx: -1, along: 0, sim, re: performance.now(), timer: 0, watch: 0 };
-    mapapp.classList.add('is-nav'); banner.hidden = false; follow = true; resBox.hidden = true;
+    nav = { idx: -1, along: 0, sim, re: performance.now(), timer: 0, watch: 0, joined: false, away: false };
+    mapapp.classList.add('is-nav'); $('locate').hidden = false; $('start-btn').hidden = true; banner.hidden = false; follow = true; resBox.hidden = true;
     sheet.hidden = false;
     sheet.innerHTML = '<h2 id="sheet-h" class="vh">Navigation</h2><p class="eta"><strong id="eta"></strong> <span class="hint" id="eta-d"></span></p><div class="row"><button type="button" class="secondary toggle" aria-pressed="' + voice + '" data-act="voice">Voice</button><button type="button" data-act="end">End</button></div>';
     keepAwake(true);
@@ -996,14 +1369,14 @@ function cachedPromise(map, key, loader, hasValue) {
       const tick = () => { const p = pointAt(d); d += SIM_STEP_M; onFix(p[0], p[1], 0); };
       tick(); if (nav) { nav.timer = setInterval(tick, SIM_TICK_MS); }
     } else {
-      nav.watch = navigator.geolocation.watchPosition((p) => onFix(p.coords.latitude, p.coords.longitude, p.coords.accuracy), () => fail(er, 'Lost your location signal.'), GEO);
+      nav.watch = navigator.geolocation.watchPosition((p) => { if (isCached(p)) { return; } const f = readFix(p); onFix(f.lat, f.lng, f.acc); }, (e) => { if (e.code !== 3) { fail(er, 'Lost your location signal.'); } }, GEO);
     }
     if (me) { flyTo(me.lat, me.lng, NAV_ZOOM); }
   }
   function stopNav() {
     if (!nav) { return; }
     clearInterval(nav.timer); if (nav.watch) { navigator.geolocation.clearWatch(nav.watch); }
-    nav = null; keepAwake(false); mapapp.classList.remove('is-nav'); banner.hidden = true; follow = false;
+    nav = null; me = null; keepAwake(false); mapapp.classList.remove('is-nav'); $('locate').hidden = true; $('start-btn').hidden = false; banner.hidden = true; follow = false; redraw();
     if (window.speechSynthesis) { window.speechSynthesis.cancel(); }
   }
   function arrive() {
@@ -1025,6 +1398,8 @@ function cachedPromise(map, key, loader, hasValue) {
   });
 
   loadColors(); fitCanvas();
+  if (start && (!start.addr || !start.houseNumber)) { nameSpot(start); } /* enrich older saved coordinates with house-level address data when available */
+  if (!start) { openStart(); } /* first visit or cleared storage: ask for a default start point */
 })();
         </script>
     </body>
