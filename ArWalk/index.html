@@ -146,6 +146,8 @@ main { flex: 1 0 auto; inline-size: 100%; }
 .pill input:focus-visible { outline: 0; box-shadow: none; }
 .pill button { border-radius: 50%; inline-size: var(--target); padding: 0; }
 .results { list-style: none; display: grid; gap: var(--s-1); margin: var(--s-2) 0 0; padding: var(--s-2); max-block-size: 55dvh; overflow: auto; background: var(--surface); border: var(--rule) solid var(--line-soft); border-radius: var(--r-3); box-shadow: 0 0.125rem 0.75rem rgb(0 0 0 / 0.3); }
+.top, .top search { pointer-events: none; } /* The wrapper spans the width and overlaps the flag button; only its real controls take taps. */
+.top .pill, .top .toggle, .top .results { pointer-events: auto; }
 .top .toggle { margin-block-start: var(--s-2); padding-block: var(--s-1); box-shadow: 0 0.125rem 0.5rem rgb(0 0 0 / 0.3); }
 .results li { margin: 0; padding: 0; }
 .results button { display: grid; grid-template-columns: minmax(0, 1fr); align-content: center; justify-content: stretch; justify-items: start; gap: var(--s-1); inline-size: 100%; margin: 0; padding: var(--s-3) var(--s-4); text-align: start; font-weight: 400; line-height: 1.35; }
@@ -165,6 +167,9 @@ main { flex: 1 0 auto; inline-size: 100%; }
 .eta { font-size: var(--t-md); }
 .steps { list-style: none; display: grid; gap: var(--s-2); padding: 0; }
 .steps li { display: flex; align-items: center; gap: var(--s-3); padding-block: var(--s-1); border-block-start: 1px solid var(--line-soft); }
+.steps.nav-steps { position: relative; max-block-size: 35dvh; overflow: auto; overscroll-behavior: contain; }
+.steps li.done, .steps li.done .hint { color: var(--ink-soft); }
+.steps li[aria-current="step"] { font-weight: 700; background: var(--surface-2); border-inline-start: 0.375rem solid var(--route); padding-inline: var(--s-2); }
 .attrib { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; position: absolute; inset-inline: 0; inset-block-end: 0; z-index: 4; margin: 0; padding: 0 var(--s-3); font-size: var(--t-sm); line-height: 2rem; color: var(--ink-soft); background: var(--surface); border-block-start: 1px solid var(--line-soft); }
 .mapapp > [role="alert"]:not(:empty) { position: absolute; inset: 4.75rem 4.5rem auto var(--s-3); z-index: 6; max-inline-size: 26rem; }
 .is-nav .mapapp > [role="alert"]:not(:empty) { inset-block-start: 8rem; }
@@ -566,7 +571,16 @@ const FIT_PAD_SHEET_SIDE = 50; // Space kept clear beside the sheet on a wide sc
 const FIT_MIN_AREA = 60; // Smallest room, in pixels, a fitted route may be squeezed into.
 const FIT_MAX_Z = 18; // Closest zoom a fitted route may use.
 const MIN_SUBMIT_CHARS = 2; // Fewest letters a submitted search needs.
-const ANNOUNCE_MIN_M = 30; // Further than this from a turn, the voice says "In 200 metres".
+const ANNOUNCE_FAR_M = 200; // Within this distance of a turn, the voice warns "In 150 metres, turn left".
+const ANNOUNCE_NEAR_M = 40; // Within this distance of a turn, the voice says "Turn left" with no distance.
+const SNAP_BACK_M = 30; // While walking, the position may only slip back this far along the route (stops GPS jitter undoing progress).
+const GEO_CODE_TIMEOUT = 3; // Geolocation error code for "no new reading yet".
+const STAGE_FAR = 0; // Turn announcement stage: far from the turn.
+const STAGE_NEAR = 1; // Turn announcement stage: close to the turn.
+const STAGE_TURN = 2; // Turn announcement stage: at the turn.
+const STREET_MATCH_GROUP = 2; // Regex group holding the street name in "12 High Street".
+const STREET_CANDIDATES = 3; // Streets checked for a numbered building.
+const SPEAK_DELAY_MS = 60; // Pause between cancelling old speech and starting new speech; Chrome drops speech started instantly after a cancel.
 const PIN_HEAD_OFFSET = 26; // Pixels from the pin's tip up to the middle of its head.
 const PIN_HEAD_R = 13; // Radius of the pin's head.
 const PIN_ARC_START = 0.65; // Where the head's arc starts, as a fraction of pi.
@@ -890,7 +904,7 @@ function cachedPromise(map, key, loader, hasValue) {
       if (best.acc <= GOOD_ACC_M) { finish(best); }
     };
     const onErr = (e) => {
-      if (done || e.code === 3) { return; } /* a timeout only means no new reading yet: the overall timer decides */
+      if (done || e.code === GEO_CODE_TIMEOUT) { return; } /* a timeout only means no new reading yet: the overall timer decides */
       if (best && e.code !== 1) { return; }
       if (e.code !== 1 && ids.length > 1) { return; } /* the other watch may still deliver */
       stop();
@@ -1073,7 +1087,7 @@ function cachedPromise(map, key, loader, hasValue) {
     say(st, 'Tap the map where your walks should begin.'); focusHeading($('pick-h'));
   });
   $('pick-cancel').addEventListener('click', () => endPick(true));
-  $('start-btn').addEventListener('click', () => openStart());
+  $('start-btn').addEventListener('click', () => { if (picking) { endPick(false); } openStart(); });
 
   /* Formatting */
   const fmtDist = (m, spoken) => (m < METRES_PER_KM ? Math.max(ROUND_TO_M, Math.round(m / ROUND_TO_M) * ROUND_TO_M) + (spoken ? ' metres' : ' m') : (m / METRES_PER_KM).toFixed(1) + (spoken ? ' kilometres' : ' km'));
@@ -1159,12 +1173,12 @@ function cachedPromise(map, key, loader, hasValue) {
   async function houseFromStreets(t) {
     const m = t.match(/^\s*(\d+[a-z]?(?:[-/]\d+[a-z]?)?)[\s,]+(.+)$/i);
     if (!m) { return []; }
-    const streets = (await photon(m[2])).slice(0, 3);
-    const hits = await Promise.all(streets.map(async (st) => {
+    const streets = (await photon(m[STREET_MATCH_GROUP])).slice(0, STREET_CANDIDATES);
+    const hits = await Promise.all(streets.map(async (cand) => {
       try {
-        const h = await overpassHouse(m[1], st.street || st.name, st);
-        return h ? placeRecord(h.lat, h.lng, '', m[1], st.street || st.name,
-          String(st.addr || '').split(',').map((part) => part.trim()).filter(Boolean), false) : null;
+        const h = await overpassHouse(m[1], cand.street || cand.name, cand);
+        return h ? placeRecord(h.lat, h.lng, '', m[1], cand.street || cand.name,
+          String(cand.addr || '').split(',').map((part) => part.trim()).filter(Boolean), false) : null;
       } catch { return null; }
     }));
     return hits.filter(Boolean);
@@ -1244,12 +1258,15 @@ function cachedPromise(map, key, loader, hasValue) {
     sheet.innerHTML = '<h2 id="sheet-h">' + esc(dest.name) + '</h2><p class="hint">' + esc(dest.addr) + '</p><div class="row"><button type="button" data-act="dir">Directions</button><button type="button" class="secondary" data-act="close">Close</button></div>';
     say(st, dest.name + ' selected.'); redraw();
   }
-  function showRoute() {
+  function stepsHtml() {
     const speed = route.dist / Math.max(1, route.dur);
+    return route.steps.map((s) => '<li><span class="arr" aria-hidden="true">' + arrow(s) + '</span><span>' + esc(instr(s)) + (s.d ? '<span class="hint"> · ' + fmtDist(s.d) + ' · ' + fmtTime(s.d / speed) + '</span>' : '') + '</span></li>').join('');
+  }
+  function showRoute() {
     sheet.hidden = false;
     sheet.innerHTML = '<h2 id="sheet-h">' + fmtTime(route.dur) + ' <span class="hint">(' + fmtDist(route.dist) + ') walking</span></h2><p class="hint">From ' + esc(route.from) + ' to ' + esc(dest.name) + '</p>' +
       '<div class="row"><button type="button" data-act="start">Start</button><button type="button" class="secondary" data-act="preview" aria-label="Preview the walk without GPS">Preview</button><button type="button" class="secondary toggle" aria-pressed="false" data-act="steps">Steps</button><button type="button" class="secondary" data-act="close">Close</button></div>' +
-      '<ol class="steps" aria-label="Walking directions" hidden>' + route.steps.map((s) => '<li><span class="arr" aria-hidden="true">' + arrow(s) + '</span><span>' + esc(instr(s)) + (s.d ? '<span class="hint"> · ' + fmtDist(s.d) + ' · ' + fmtTime(s.d / speed) + '</span>' : '') + '</span></li>').join('') + '</ol>';
+      '<ol class="steps" aria-label="Walking directions" hidden>' + stepsHtml() + '</ol>';
     say(st, 'Walking route found. ' + fmtTime(route.dur) + ', ' + fmtDist(route.dist, true) + '.');
     fit(route.pts);
   }
@@ -1263,7 +1280,9 @@ function cachedPromise(map, key, loader, hasValue) {
       for (let i = 1; i < pts.length; i++) { cum.push(cum[i - 1] + hav(pts[i - 1], pts[i])); }
       let acc = 0;
       const steps = r.legs[0].steps.map((s) => ({ d: s.distance, name: s.name, type: s.maneuver.type, mod: s.maneuver.modifier }));
-      const starts = steps.map((s) => { const a = acc; acc += s.d; return a; });
+      /* Step lengths come from the router and the drawn line from our own sums, so scale one onto the other to keep turns where they are drawn. */
+      const scale = cum[cum.length - 1] / (r.distance || 1);
+      const starts = steps.map((s) => { const a = acc * scale; acc += s.d; return a; });
       route = { pts, cum, steps, starts, dist: r.distance, dur: r.duration, total: cum[cum.length - 1], from: from.name || 'Your location' };
       orig = { lat: from.lat, lng: from.lng }; redraw();
       return true;
@@ -1287,10 +1306,11 @@ function cachedPromise(map, key, loader, hasValue) {
   }
 
   /* Turn by turn */
-  function snap(lat, lng) {
+  function snap(lat, lng, from = 0) {
     const k = 111320, kx = k * Math.cos(lat * Math.PI / HALF_TURN_DEGREES), p = route.pts, cum = route.cum;
     let best = { d: Infinity, along: 0 };
     for (let i = 1; i < p.length; i++) {
+      if (cum[i] < from) { continue; } /* only look forward (and a little back), so a route that doubles back cannot confuse progress */
       const ax = (p[i - 1][1] - lng) * kx, ay = (p[i - 1][0] - lat) * k, bx = (p[i][1] - lng) * kx, by = (p[i][0] - lat) * k;
       const dx = bx - ax, dy = by - ay, len2 = dx * dx + dy * dy || EPSILON, t = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2));
       const d = Math.hypot(ax + t * dx, ay + t * dy);
@@ -1305,18 +1325,55 @@ function cachedPromise(map, key, loader, hasValue) {
     const t = c[i] === c[i - 1] ? 0 : Math.max(0, Math.min(1, (dist - c[i - 1]) / (c[i] - c[i - 1])));
     return [p[i - 1][0] + (p[i][0] - p[i - 1][0]) * t, p[i - 1][1] + (p[i][1] - p[i - 1][1]) * t];
   };
+  /* Speech. Browsers only allow it after a tap, drop speech started straight after a cancel, and
+     discard an utterance nothing refers to, so: prime on the tap, wait a moment after cancelling, keep a reference. */
+  let utter = null, speakTimer = 0;
+  if (window.speechSynthesis) { window.speechSynthesis.getVoices(); } /* starts loading the voice list */
+  function primeVoice() {
+    const synth = window.speechSynthesis, Utterance = window.SpeechSynthesisUtterance;
+    if (!synth || !Utterance) { return; }
+    try { const u = new Utterance(' '); u.volume = 0; synth.speak(u); } catch { /* speech is optional */ }
+  }
+  function pickVoice(synth) {
+    const all = synth.getVoices(), lang = (x) => String(x.lang).replace('_', '-').toLowerCase();
+    return all.find((x) => lang(x) === 'en-gb') || all.find((x) => lang(x).startsWith('en')) || null;
+  }
+  function stopSpeech() {
+    clearTimeout(speakTimer); speakTimer = 0; utter = null;
+    if (window.speechSynthesis) { window.speechSynthesis.cancel(); }
+  }
   function speak(t) {
     const synth = window.speechSynthesis, Utterance = window.SpeechSynthesisUtterance;
     if (!voice || !synth || !Utterance) { return; }
-    synth.cancel(); const u = new Utterance(t); u.lang = 'en-GB'; synth.speak(u);
+    try {
+      clearTimeout(speakTimer);
+      synth.cancel();
+      const u = new Utterance(t), vo = pickVoice(synth);
+      u.lang = vo ? vo.lang : 'en-GB'; if (vo) { u.voice = vo; }
+      u.onend = u.onerror = () => { if (utter === u) { utter = null; } };
+      utter = u;
+      speakTimer = setTimeout(() => { speakTimer = 0; if (utter === u) { if (synth.paused) { synth.resume(); } synth.speak(u); } }, SPEAK_DELAY_MS);
+    } catch { /* speech is optional */ }
   }
   async function keepAwake(on) {
     try { if (on && navigator.wakeLock) { wake = await navigator.wakeLock.request('screen'); } else if (wake) { await wake.release(); wake = null; } } catch { wake = null; }
   }
-  function announce() {
-    const s = route.steps[Math.min(nav.idx + 1, route.steps.length - 1)], d = route.starts[Math.min(nav.idx + 1, route.steps.length - 1)] - nav.along;
-    const t = d > ANNOUNCE_MIN_M ? 'In ' + fmtDist(d, true) + ', ' + instr(s).toLowerCase() : instr(s);
-    say(st, t); speak(t);
+  /* Wording for the next turn: far ("In 450 metres, turn left"), close ("In 150 metres, ...") and at the turn ("Turn left"). */
+  function spokenStep(i, d, stage) {
+    const s = route.steps[i], lead = nav.lead; nav.lead = '';
+    if (stage >= STAGE_TURN) { return lead ? lead + 'Then ' + instr(s).toLowerCase() : instr(s); }
+    return lead + (lead ? 'Then in ' : 'In ') + fmtDist(Math.max(0, d), true) + ', ' + instr(s).toLowerCase();
+  }
+  function markSteps() {
+    const ol = sheet.querySelector('.steps');
+    if (!ol || !nav) { return; }
+    const next = Math.min(nav.idx + 1, route.steps.length - 1);
+    let cur = null;
+    ol.querySelectorAll('li').forEach((li, i) => {
+      li.classList.toggle('done', i <= nav.idx);
+      if (i === next) { li.setAttribute('aria-current', 'step'); cur = li; } else { li.removeAttribute('aria-current'); }
+    });
+    if (cur && !ol.hidden) { ol.scrollTop = cur.offsetTop; }
   }
   function paint(rem) {
     const i = Math.min(nav.idx + 1, route.steps.length - 1), s = route.steps[i], speed = route.dist / Math.max(1, route.dur);
@@ -1328,12 +1385,13 @@ function cachedPromise(map, key, loader, hasValue) {
     if (!nav.sim && acc > MAX_NAV_ACC_M) { if (!nav.lowAcc) { nav.lowAcc = true; say(st, 'Waiting for a more accurate location…'); } return; } /* ignore coarse fixes while walking */
     nav.lowAcc = false;
     me = { lat, lng, acc, t: Date.now() };
-    const s = snap(lat, lng);
+    let s = snap(lat, lng, Math.max(0, nav.along - SNAP_BACK_M));
+    if (s.d > REROUTE_M && nav.along > 0) { const g = snap(lat, lng); if (g.d < s.d) { s = g; } } /* forward search found nothing near: look everywhere */
     if (!nav.sim && !nav.joined) { /* not on the route yet: no new route from GPS, just point to the start */
       if (s.d > REROUTE_M) {
         $('b-arrow').textContent = '⚑'; $('b-text').textContent = 'Head to the route'; $('b-dist').textContent = fmtDist(s.d) + ' away';
         $('eta').textContent = ''; $('eta-d').textContent = '';
-        if (!nav.away) { nav.away = true; follow = false; say(st, 'You are ' + fmtDist(s.d, true) + ' from the route. Walk to its start to begin.'); fit(route.pts.concat([[lat, lng]])); }
+        if (!nav.away) { nav.away = true; follow = false; const t = 'You are ' + fmtDist(s.d, true) + ' from the route. Walk to its start to begin.'; say(st, t); speak(t); fit(route.pts.concat([[lat, lng]])); }
         redraw(); return;
       }
       nav.joined = true; nav.away = false; follow = true;
@@ -1344,13 +1402,22 @@ function cachedPromise(map, key, loader, hasValue) {
     if (rem <= ARRIVE_M) { arrive(); return; }
     let i = 0;
     route.starts.forEach((d, j) => { if (d <= s.along) { i = j; } });
-    if (i !== nav.idx) { nav.idx = i; announce(); }
+    i = Math.max(i, nav.idx); /* never step backwards */
+    if (i !== nav.idx) { nav.idx = i; markSteps(); }
+    const ni = Math.min(nav.idx + 1, route.steps.length - 1), dn = route.starts[ni] - nav.along;
+    const stage = dn <= ANNOUNCE_NEAR_M ? STAGE_TURN : dn <= ANNOUNCE_FAR_M ? STAGE_NEAR : STAGE_FAR;
+    if (nav.said.step !== ni) { nav.said = { step: ni, stage: -1 }; }
+    if (stage > nav.said.stage) { nav.said.stage = stage; const t = spokenStep(ni, dn, stage); say(st, t); speak(t); }
     paint(rem);
     if (follow) { v.lat = lat; v.lng = lng; }
     redraw();
   }
   async function reroute() {
-    if (await getRoute(me, true) && nav) { nav.idx = -1; say(st, 'Rerouted.'); onFix(me.lat, me.lng, me.acc); }
+    if (await getRoute(me, true) && nav) {
+      nav.idx = -1; nav.along = 0; nav.said = { step: -1, stage: -1 }; nav.lead = 'Rerouted. ';
+      const ol = sheet.querySelector('.steps'); if (ol) { ol.innerHTML = stepsHtml(); }
+      onFix(me.lat, me.lng, me.acc);
+    }
   }
   function startNav(sim) {
     if (!sim && (!navigator.geolocation || !window.isSecureContext)) { fail(er, 'Your location is not available right now. Use Preview to try the walk without it.'); return; }
@@ -1359,17 +1426,17 @@ function cachedPromise(map, key, loader, hasValue) {
       return;
     }
     clear(er); stopNav();
-    nav = { idx: -1, along: 0, sim, re: performance.now(), timer: 0, watch: 0, joined: false, away: false };
+    nav = { idx: -1, along: 0, sim, re: performance.now(), timer: 0, watch: 0, joined: false, away: false, said: { step: -1, stage: -1 }, lead: 'Starting navigation. ' + instr(route.steps[0]) + '. ' };
     mapapp.classList.add('is-nav'); $('locate').hidden = false; $('start-btn').hidden = true; banner.hidden = false; follow = true; resBox.hidden = true;
     sheet.hidden = false;
-    sheet.innerHTML = '<h2 id="sheet-h" class="vh">Navigation</h2><p class="eta"><strong id="eta"></strong> <span class="hint" id="eta-d"></span></p><div class="row"><button type="button" class="secondary toggle" aria-pressed="' + voice + '" data-act="voice">Voice</button><button type="button" data-act="end">End</button></div>';
+    sheet.innerHTML = '<h2 id="sheet-h" class="vh">Navigation</h2><p class="eta"><strong id="eta"></strong> <span class="hint" id="eta-d"></span></p><div class="row"><button type="button" class="secondary toggle" aria-pressed="' + voice + '" data-act="voice">Voice</button><button type="button" class="secondary toggle" aria-pressed="false" data-act="steps">Steps</button><button type="button" data-act="end">End</button></div><ol class="steps nav-steps" aria-label="Walking directions" hidden>' + stepsHtml() + '</ol>';
     keepAwake(true);
     if (sim) {
       let d = 0; me = { lat: route.pts[0][0], lng: route.pts[0][1], acc: 0 };
       const tick = () => { const p = pointAt(d); d += SIM_STEP_M; onFix(p[0], p[1], 0); };
       tick(); if (nav) { nav.timer = setInterval(tick, SIM_TICK_MS); }
     } else {
-      nav.watch = navigator.geolocation.watchPosition((p) => { if (isCached(p)) { return; } const f = readFix(p); onFix(f.lat, f.lng, f.acc); }, (e) => { if (e.code !== 3) { fail(er, 'Lost your location signal.'); } }, GEO);
+      nav.watch = navigator.geolocation.watchPosition((p) => { if (isCached(p)) { return; } const f = readFix(p); onFix(f.lat, f.lng, f.acc); }, (e) => { if (e.code !== GEO_CODE_TIMEOUT) { fail(er, 'Lost your location signal.'); } }, GEO);
     }
     if (me) { flyTo(me.lat, me.lng, NAV_ZOOM); }
   }
@@ -1377,7 +1444,7 @@ function cachedPromise(map, key, loader, hasValue) {
     if (!nav) { return; }
     clearInterval(nav.timer); if (nav.watch) { navigator.geolocation.clearWatch(nav.watch); }
     nav = null; me = null; keepAwake(false); mapapp.classList.remove('is-nav'); $('locate').hidden = true; $('start-btn').hidden = false; banner.hidden = true; follow = false; redraw();
-    if (window.speechSynthesis) { window.speechSynthesis.cancel(); }
+    stopSpeech();
   }
   function arrive() {
     stopNav();
@@ -1390,11 +1457,11 @@ function cachedPromise(map, key, loader, hasValue) {
     const a = b.dataset.act;
     if (a === 'close') { stopNav(); clearAll(); }
     else if (a === 'dir') { directions(); }
-    else if (a === 'start') { startNav(false); }
-    else if (a === 'preview') { startNav(true); }
-    else if (a === 'steps') { const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', String(on)); sheet.querySelector('.steps').hidden = !on; }
+    else if (a === 'start') { primeVoice(); startNav(false); }
+    else if (a === 'preview') { primeVoice(); startNav(true); }
+    else if (a === 'steps') { const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', String(on)); sheet.querySelector('.steps').hidden = !on; if (on) { markSteps(); } }
     else if (a === 'end') { stopNav(); if (route) { showRoute(); } else { clearAll(); } }
-    else if (a === 'voice') { voice = !voice; store.set(VOICE_KEY, voice); b.setAttribute('aria-pressed', String(voice)); if (!voice && window.speechSynthesis) { window.speechSynthesis.cancel(); } }
+    else if (a === 'voice') { voice = !voice; store.set(VOICE_KEY, voice); b.setAttribute('aria-pressed', String(voice)); if (voice) { primeVoice(); speak('Voice on'); } else { stopSpeech(); } }
   });
 
   loadColors(); fitCanvas();
