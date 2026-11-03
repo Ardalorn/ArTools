@@ -1,46 +1,48 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en-GB">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="color-scheme" content="light dark">
-<meta name="theme-color" content="#EEF2EF" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0E1614" media="(prefers-color-scheme: dark)">
-<meta name="robots" content="index, follow">
-<link rel="canonical" href="https://ardalorn.github.io/ArTools/">
-
-<title>Ardalorn — Tools</title>
-<meta name="description" content="A shelf of privacy-focused, single-file web applications by Ardalorn. Includes tools for planning, weather tracking, drawing, and developer utilities.">
-<meta name="author" content="Ardalorn">
-
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='18' fill='%23121111'/%3E%3Ccircle cx='50' cy='50' r='22' fill='%2321b176'/%3E%3C/svg%3E">
-
-<meta property="og:title" content="Ardalorn — Tools">
-<meta property="og:description" content="A shelf of single-file apps. Each one runs entirely in your browser, no accounts, no tracking.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://ardalorn.github.io/ArTools/">
-<meta property="og:locale" content="en_GB">
-<!-- No og:image yet — omitted rather than pointed at a file that doesn't exist.
-     Without one, most platforms fall back to a plain title/description card
-     instead of a broken image. Once you have a preview graphic (ideally
-     1200x630px), add og:image here, a twitter:image below, and switch
-     twitter:card to "summary_large_image" for the bigger card layout. -->
-<meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Ardalorn — Tools">
-<meta name="twitter:description" content="A shelf of single-file apps. Each one runs entirely in your browser, no accounts, no tracking.">
-
-<!--
-  JSON-LD Schema Markup (AI Generative Engine Optimization)
-  This maps the tool names and descriptions shown on the cards into a structured
-  Knowledge Graph so AI Overviews can read and recommend your individual tools.
-  Keep it in step with the cards in main whenever a tool is added or changed.
--->
-<script type="application/ld+json">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+        <title>Ardalorn — Tools: single-file apps</title>
+        <meta name="description" content="A shelf of privacy-focused, single-file web applications by Ardalorn. Includes tools for planning, weather tracking, drawing, walking navigation and developer utilities.">
+        <meta name="author" content="Ardalorn">
+        <meta name="application-name" content="ArTools">
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+        <meta name="color-scheme" content="light dark">
+        <meta
+            name="theme-color"
+            content="#f5f6f7"
+            media="(prefers-color-scheme: light)"
+        >
+        <meta
+            name="theme-color"
+            content="#111213"
+            media="(prefers-color-scheme: dark)"
+        >
+        <link rel="canonical" href="https://ardalorn.github.io/ArTools/">
+        <link
+            rel="icon"
+            type="image/svg+xml"
+            href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231a1a1d'/%3E%3Crect x='7' y='9' width='18' height='4' rx='1' fill='none' stroke='%239999cc' stroke-width='2.5'/%3E%3Crect x='7' y='19' width='18' height='4' rx='1' fill='none' stroke='%239999cc' stroke-width='2.5'/%3E%3C/svg%3E"
+        >
+        <meta property="og:type" content="website">
+        <meta property="og:site_name" content="ArTools">
+        <meta property="og:title" content="Ardalorn — Tools: single-file apps">
+        <meta property="og:description" content="A shelf of single-file apps. Each one runs in your browser, no accounts, no tracking.">
+        <meta property="og:url" content="https://ardalorn.github.io/ArTools/">
+        <meta property="og:locale" content="en_GB">
+        <meta name="twitter:card" content="summary">
+        <meta name="twitter:title" content="Ardalorn — Tools: single-file apps">
+        <meta name="twitter:description" content="A shelf of single-file apps. Each one runs in your browser, no accounts, no tracking.">
+        <script type="application/ld+json">
 {
   "@context": "https://schema.org",
   "@type": "CollectionPage",
   "name": "Ardalorn — Tools",
-  "description": "A shelf of single-file apps running entirely in the browser, with no accounts or tracking.",
+  "url": "https://ardalorn.github.io/ArTools/",
+  "description": "A shelf of single-file apps. Each one runs in your browser, with no accounts and no tracking.",
+  "inLanguage": "en-GB",
+  "isAccessibleForFree": true,
   "author": {
     "@type": "Person",
     "name": "Ardalorn"
@@ -54,7 +56,7 @@
         "item": {
           "@type": "WebApplication",
           "name": "ArPlan",
-          "url": "ArPlan/",
+          "url": "https://ardalorn.github.io/ArTools/ArPlan/",
           "description": "Weekly itinerary, meal planning, and pantry tracker.",
           "applicationCategory": "ProductivityApplication",
           "operatingSystem": "Web Browser"
@@ -66,7 +68,7 @@
         "item": {
           "@type": "WebApplication",
           "name": "ArCast",
-          "url": "ArCast/",
+          "url": "https://ardalorn.github.io/ArTools/ArCast/",
           "description": "A calm, accessible UK weather dashboard with moon phase tracking.",
           "applicationCategory": "WeatherApplication",
           "operatingSystem": "Web Browser"
@@ -78,7 +80,7 @@
         "item": {
           "@type": "WebApplication",
           "name": "ArCanvas",
-          "url": "ArCanvas/",
+          "url": "https://ardalorn.github.io/ArTools/ArCanvas/",
           "description": "A distraction-free drawing experience for children.",
           "applicationCategory": "DesignApplication",
           "operatingSystem": "Web Browser"
@@ -90,7 +92,7 @@
         "item": {
           "@type": "WebApplication",
           "name": "ArHar",
-          "url": "ArHar/",
+          "url": "https://ardalorn.github.io/ArTools/ArHar/",
           "description": "A network log (HAR file) inspector.",
           "applicationCategory": "DeveloperApplication",
           "operatingSystem": "Web Browser"
@@ -102,413 +104,642 @@
         "item": {
           "@type": "WebApplication",
           "name": "ArCom",
-          "url": "ArCom/",
+          "url": "https://ardalorn.github.io/ArTools/ArCom/",
           "description": "A zero-dependency comic library and reader for your local collection, with CVD support.",
           "applicationCategory": "MultimediaApplication",
+          "operatingSystem": "Web Browser"
+        }
+      },
+      {
+        "@type": "ListItem",
+        "position": 6,
+        "item": {
+          "@type": "WebApplication",
+          "name": "ArWalk",
+          "url": "https://ardalorn.github.io/ArTools/ArWalk/",
+          "description": "Search a place, get a walking route on a map and follow turn-by-turn directions.",
+          "applicationCategory": "NavigationApplication",
           "operatingSystem": "Web Browser"
         }
       }
     ]
   }
 }
-</script>
+        </script>
+        <style>
+/* Aengus design system.
+   Layers: 1 tokens, 2 base, 3 layout, 4 components, 5 your page, 6 user preferences and assistive modes. */
 
-<!--
-  FONTS
-  Text: Atkinson Hyperlegible Next. Headings: Fraunces. Code: Atkinson Hyperlegible Mono.
-  The CSS below only names these families, so to self-host instead, delete the
-  three link tags below and add @font-face rules for the same three family names.
-  If the fonts fail to load, the fallback stacks in the tokens keep the page readable.
--->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Mono:wght@400;700&amp;family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,700;1,400;1,700&amp;family=Fraunces:opsz,wght@9..144,400..700&amp;display=swap">
+/* 1. Tokens. light-dark(light value, dark value) follows the system setting.
+   1a primitives (Nuadyr Black Steel and Periwinkle), 1b semantic roles, 1c LOCKED status colours.
+   The UI is monochrome on purpose: the only strong colours on a page are the status messages. */
 
-<style>
-/* ==========================================================================
-   1. Tokens
-   Colour pairs were measured, not estimated: every text pair is at least
-   4.5:1 and every control edge and focus ring at least 3:1 against the
-   surface it sits on, in both themes.
-   ========================================================================== */
+/* 1a. Primitives. Reference only: components never use these directly, they use the roles in 1b. */
+:root {
+  /* Black Steel: cool charcoal greys with a faint blue tint. Every neutral in the UI comes from here. */
+  --Nuadyr-color-steel-100: rgba(245, 246, 247, 1);
+--Nuadyr-color-steel-200: rgba(233, 234, 236, 1);
+--Nuadyr-color-steel-300: rgba(209, 211, 215, 1);
+--Nuadyr-color-steel-400: rgba(173, 176, 184, 1);
+--Nuadyr-color-steel-500: rgba(136, 138, 150, 1);
+--Nuadyr-color-steel-600: rgba(101, 102, 114, 1);
+--Nuadyr-color-steel-700: rgba(67, 68, 75, 1);
+--Nuadyr-color-steel-800: rgba(44, 44, 48, 1);
+--Nuadyr-color-steel-900: rgba(26, 26, 29, 1);
+--Nuadyr-color-steel-950: rgba(17, 18, 19, 1);
+  /* Periwinkle: the one accent hue, a muted blue-violet that deepens to a steel blue in the darkest steps. Used only for actions, links, focus and chart marks.
+     25 and 50 are lighter tints of 100 (same hue and saturation) for dark-mode text: 100 alone only reaches about 6.9:1 on steel-950. */
+--Nuadyr-color-periwinkle-25: rgba(207, 207, 231, 1);
+--Nuadyr-color-periwinkle-50: rgba(187, 187, 221, 1);
+--Nuadyr-color-periwinkle-100: rgb(153, 153, 204);
+--Nuadyr-color-periwinkle-200: rgba(142, 144, 199, 1);
+--Nuadyr-color-periwinkle-300: rgba(131, 135, 195, 1);
+--Nuadyr-color-periwinkle-400: rgba(101, 114, 183, 1);
+--Nuadyr-color-periwinkle-500: rgba(74, 97, 166, 1);
+--Nuadyr-color-periwinkle-600: rgba(59, 87, 138, 1);
+--Nuadyr-color-periwinkle-700: rgba(46, 74, 111, 1);
+--Nuadyr-color-periwinkle-800: rgba(34, 61, 85, 1);
+--Nuadyr-color-periwinkle-900: rgba(25, 49, 66, 1);
+--Nuadyr-color-periwinkle-950: rgba(18, 37, 48, 1);
+
+/* Bone: soft warm greys for dark-mode text. Pure white on near-black glares and makes letters swim for many readers with dyslexia,
+   so dark mode uses three calmer steps instead (heading, body, secondary). All stay at 7:1 or better on every dark surface. */
+--Nuadyr-color-bone-100: #e6e3da;
+--Nuadyr-color-bone-200: #cdcac1;
+--Nuadyr-color-bone-300: #bebbb2;
+/* Periwinkle 150: a clearly blue link colour for dark mode, so links stand apart from body text by hue as well as underline. 7:1 or better on every dark surface. */
+--Nuadyr-color-periwinkle-150: #b4b7e8;
+
+--Nuadyr-color-white: rgba(255, 255, 255, 1);
+}
+
+/* 1b. Roles. */
 :root {
   color-scheme: light dark;
 
-  /* Colour */
-  --paper: #EEF2EF;
-  --paper-2: #DEE7E2;
-  --ink: #12221E;
-  --soft: #3A4D47;
-  --edge: #5B736A;
-  --error: #9B1C1C;
-  --success: #14663F;
-
-  --signal: #F0B429;
-  --on-signal: #12221E;
-
-  /* Type. Every font-family and font shorthand below uses one of these three. */
   --font-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-heading: Fraunces, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
-  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, "Cascadia Code", "SF Mono", Menlo, Consolas, "DejaVu Sans Mono", monospace;
+  --font-head: "Fraunces", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --font-mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
 
-  /* Running text starts at the WCAG 1.4.12 spacing values. Set the two
-     spacing tokens to 0 for a tighter look; nothing else depends on them. */
-  --letter-spacing: 0.12em;
-  --word-spacing: 0.16em;
-  --leading: 1.5;
-  --leading-heading: 1.3;
+  --paper:         light-dark(var(--Nuadyr-color-steel-100), var(--Nuadyr-color-steel-950));
+  --surface:       light-dark(var(--Nuadyr-color-white), var(--Nuadyr-color-steel-900));
+  --surface-2:     light-dark(var(--Nuadyr-color-steel-200), var(--Nuadyr-color-steel-800));
+  --ink:           light-dark(var(--Nuadyr-color-steel-950), var(--Nuadyr-color-bone-200));
+  --ink-soft:      light-dark(var(--Nuadyr-color-steel-700), var(--Nuadyr-color-bone-300));
+  --heading:       light-dark(var(--Nuadyr-color-steel-950), var(--Nuadyr-color-bone-100));
+  --line:          light-dark(var(--Nuadyr-color-steel-600), var(--Nuadyr-color-steel-500));
+  --line-soft:     light-dark(var(--Nuadyr-color-steel-300), var(--Nuadyr-color-steel-700));
 
-  /* Shape and layout */
-  --focus: var(--ink);
-  --radius: 4px;
+  --brand:         light-dark(var(--Nuadyr-color-steel-900), var(--Nuadyr-color-steel-900));
+  --brand-2:       light-dark(var(--Nuadyr-color-steel-800), var(--Nuadyr-color-steel-800));
+  --on-brand:   var(--Nuadyr-color-steel-100);
+  --on-brand-soft: var(--Nuadyr-color-steel-300);
+
+  --action:        light-dark(var(--Nuadyr-color-periwinkle-800), var(--Nuadyr-color-periwinkle-50));
+  --action-hover:  light-dark(var(--Nuadyr-color-periwinkle-900), var(--Nuadyr-color-periwinkle-25));
+  --on-action:     light-dark(var(--Nuadyr-color-white), var(--Nuadyr-color-steel-950));
+  --link:          light-dark(var(--Nuadyr-color-periwinkle-800), var(--Nuadyr-color-periwinkle-150));
+  --focus:         light-dark(var(--Nuadyr-color-steel-950), var(--Nuadyr-color-periwinkle-300));
+
+  /* Secondary emphasis stays monochrome: an inverted steel button. Never use it for status. */
+  --accent-2:      light-dark(var(--Nuadyr-color-steel-800), var(--Nuadyr-color-steel-200));
+  --accent-2-hover: light-dark(var(--Nuadyr-color-steel-950), var(--Nuadyr-color-steel-100));
+  --on-accent-2:   light-dark(var(--Nuadyr-color-white), var(--Nuadyr-color-steel-950));
+
+  --chart:         light-dark(var(--Nuadyr-color-periwinkle-700), var(--Nuadyr-color-periwinkle-400));
+  --chart-line: var(--ink);
+
+  --mark:          light-dark(var(--Nuadyr-color-periwinkle-50), var(--Nuadyr-color-periwinkle-800));
+  --scrim:         rgba(17, 18, 19, 0.72);
+
+  --s-1: 0.25rem; --s-2: 0.5rem; --s-3: 0.75rem; --s-4: 1rem; --s-5: 1.5rem; --s-6: 2rem; --s-7: 3rem; --s-8: 4rem;
+  --r-1: 0.25rem; --r-2: 0.5rem; --r-3: 0.875rem;
+  --t-min:  1rem; /* 12pt, smallest permitted text size */
+  --t-sm:   var(--t-min);
+  --t-base: clamp(1rem, 0.95rem + 0.2vw, 1.0625rem);
+  --t-md:   clamp(1.125rem, 1.04rem + 0.4vw, 1.3125rem);
+  --t-lg:   clamp(1.375rem, 1.18rem + 0.85vw, 1.75rem);
+  --t-xl:   clamp(1.75rem, 1.35rem + 1.7vw, 2.5rem);
+  --pad-card: clamp(var(--s-4), 3vw, var(--s-5));
   --target: 2.75rem;
-  --container: 75rem;
-  --measure: 42rem;
+  --measure: 70rem;
+  --text-measure: 42rem;
+  --rule: 0.125rem;
+
+  --mask-chev: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='m9.5 6 6 6-6 6' fill='none' stroke='black' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --mask-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3.5' y='3.5' width='17' height='17' rx='4' fill='none' stroke='black' stroke-width='2.2'/%3E%3Cpath d='M12 11v5M12 7.6v.2' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E");
+  --mask-ok: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='black' stroke-width='2.2'/%3E%3Cpath d='m7.8 12.3 3 3 5.4-6' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --mask-warn: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3.8 21.2 19.5H2.8z' fill='none' stroke='black' stroke-width='2.2' stroke-linejoin='round'/%3E%3Cpath d='M12 10v4.5M12 17v.2' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E");
+  --mask-problem: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.8 21.2 12 12 21.2 2.8 12z' fill='none' stroke='black' stroke-width='2.2' stroke-linejoin='round'/%3E%3Cpath d='m9 9 6 6M15 9l-6 6' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E");
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: #0E1614;
-    --paper-2: #1A2724;
-    --ink: #E8F0EC;
-    --soft: #AFC2BA;
-    --edge: #7F988E;
-    --error: #FF9C94;
-    --success: #5FD3A0;
-  }
+/* 1c. LOCKED status colours. Frozen at the kit's original values.
+   Literal values only: no var(), no primitives, no roles. A palette change in 1a or 1b cannot reach them.
+   Do not edit, override or redefine these anywhere else. Every status also has its own icon shape and a word. */
+:root {
+  --ok-ink:      light-dark(#064e3f, #00FF00CC); --ok-mark:      light-dark(#0b7a56, #66FF33); --ok-tint:      light-dark(#e0f3ec, #12302a);
+  --warn-ink:    light-dark(#5a3d00, #FFFF33CC); --warn-mark:    light-dark(#a85f00, #FFFF66); --warn-tint:    light-dark(#fbf0d6, #33280f);
+  --problem-ink: light-dark(#7a0f1f, #FF3333E6); --problem-mark: light-dark(#c0262d, #FF3333); --problem-tint: light-dark(#fbe4e7, #330000);
+  --info-ink:    light-dark(#0f3f7a, #a9cdf5); --info-mark:    light-dark(#1f66b0, #55aff0); --info-tint:    light-dark(#e1ecf8, #052136);
 }
 
-/* ==========================================================================
-   2. Base
-   Nothing has a fixed height, so user text-spacing overrides also hold.
-   ========================================================================== */
+/* 2. Base */
 *, *::before, *::after { box-sizing: border-box; }
-
-html { scroll-padding-block-start: 1rem; }
-@media (prefers-reduced-motion: no-preference) {
-  html { scroll-behavior: smooth; }
-}
-
+html { font-size: 100%; -webkit-text-size-adjust: 100%; scroll-padding-block-start: var(--s-6); }
 body {
-  margin: 0;
-  min-height: 100vh;
-  min-height: 100dvh;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto 1fr auto;
-  background: var(--paper);
-  color: var(--ink);
-  font: 1rem/var(--leading) var(--font-body);
-  letter-spacing: var(--letter-spacing);
-  word-spacing: var(--word-spacing);
-  overflow-wrap: break-word;
+  margin: 0; min-block-size: 100vb; display: flex; flex-direction: column;
+  background: var(--paper); color: var(--ink);
+  font-family: var(--font-body); font-size: var(--t-base); line-height: 1.6;
+  letter-spacing: 0.02em; word-spacing: 0.08em;
 }
-
+h1, h2, h3, h4, h5 { font-family: var(--font-head); font-weight: 600; line-height: 1.2; margin: 0; color: var(--heading); text-wrap: balance; }
+h1 { font-size: var(--t-xl); }
+h2 { font-size: var(--t-lg); }
+h3 { font-size: var(--t-md); }
+h4, h5 { font-family: var(--font-body); font-weight: 700; line-height: 1.3; }
+h4 { font-size: var(--t-base); }
+h5 { font-size: var(--t-sm); }
+p, ul, ol, dl { margin: 0; }
+/* Hierarchy without relying on one flat colour: headings and emphasis are the brightest step, body is calmer, secondary text calmer again. */
+strong, b, th, legend, .stat__value { color: var(--heading); }
+.note strong, .note b, [role="alert"] strong, .badge strong, button strong { color: inherit; }
+p + p { margin-block-start: var(--s-3); }
+a { color: var(--link); text-decoration-thickness: 0.09em; text-underline-offset: 0.18em; }
+a:hover { text-decoration-thickness: 0.18em; }
+code { font-family: var(--font-mono); font-size: inherit; background: var(--surface-2); padding: 0 0.25em; border-radius: var(--r-1); }
+img, svg { max-inline-size: 100%; }
 [hidden] { display: none !important; }
 
-h1, h2, h3, h4, h5, h6 {
-  margin: 0;
-  font-family: var(--font-heading);
-  font-weight: 700;
-  line-height: var(--leading-heading);
-  letter-spacing: normal;
-  word-spacing: normal;
-  text-wrap: balance;
+:focus-visible { outline: 0.25rem solid var(--focus); outline-offset: 0.125rem; border-radius: var(--r-1); box-shadow: 0 0 0 0.125rem var(--surface); }
+/* The shadow fills the gap between an element and its outline with the page surface, so the ring stays visible whatever the element's own border or background is. */
+/* The footer is always dark, so its ring uses the light footer colour instead of the focus colour, which is dark in the light theme. */
+.site-footer :focus-visible { outline-color: var(--on-brand); box-shadow: 0 0 0 0.125rem var(--brand); }
+/* A bordered element that clips its contents (a tile, a card button) can keep its ring inside: add this rule for it.
+   .your-tile:focus-visible { outline-offset: -0.25rem; box-shadow: inset 0 0 0 0.5rem var(--surface); } */
+h1:focus, h2:focus, main:focus { outline: none; }
+h1:focus-visible, h2:focus-visible { outline: 0.25rem solid var(--focus); outline-offset: 0.25rem; }
+
+.vh, .visually-hidden { position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: absolute; inset-inline-start: var(--s-3); inset-block-start: -10rem; z-index: 10; padding: var(--s-2) var(--s-4); background: var(--brand); color: var(--on-brand); border-radius: var(--r-2); font-weight: 700; }
+.skip-link:focus { inset-block-start: var(--s-3); }
+
+.icon { inline-size: 1.25em; block-size: 1.25em; flex: none; vertical-align: -0.2em; }
+
+/* 3. Layout */
+.wrap { inline-size: 100%; max-inline-size: var(--measure); margin-inline: auto; padding-inline: var(--s-4); }
+main { flex: 1 0 auto; inline-size: 100%; max-inline-size: var(--measure); margin-inline: auto; padding: var(--s-5) var(--s-4) var(--s-7); }
+.stack > * + * { margin-block-start: var(--s-4); }
+.stack-lg > * + * { margin-block-start: var(--s-6); }
+.row { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+.split { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+.split > * { min-inline-size: 0; }
+@media (width >= 56rem) { .split { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); } }
+
+/* 4. Components */
+/* Page header */
+.site-header { display: grid; gap: var(--s-3); padding-block-end: var(--s-5); }
+.site-header .lede { font-size: var(--t-md); max-inline-size: var(--text-measure); color: var(--ink-soft); }
+
+/* Buttons. Plain buttons are the main action. */
+button, .btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
+  min-block-size: var(--target); min-inline-size: var(--target); padding: var(--s-2) var(--s-4);
+  font: inherit; font-weight: 700; line-height: 1.3; text-align: center; text-decoration: none; cursor: pointer;
+  color: var(--on-action); background: var(--action); border: var(--rule) solid var(--action); border-radius: var(--r-2);
 }
-h1 { font-size: clamp(2rem, 9vw, 2.75rem); }
-h2 { font-size: 1.625rem; }
-h3 { font-size: 1.25rem; }
-h4 { font-size: 1.125rem; }
-h5, h6 { font-size: 1rem; }
+button:hover, .btn:hover { background: var(--action-hover); border-color: var(--action-hover); text-decoration: none; }
+button:disabled, button[aria-disabled="true"] { cursor: not-allowed; color: var(--ink-soft); background: var(--surface-2); border-color: var(--line); border-style: dashed; }
+button.secondary, .btn--secondary { color: var(--ink); background: var(--surface); border-color: var(--line); }
+button.secondary:hover, .btn--secondary:hover { background: var(--surface-2); border-color: var(--ink); }
+button.small { padding: var(--s-1) var(--s-3); font-size: var(--t-sm); }
+.linklike { min-block-size: var(--target); padding: 0 var(--s-1); color: var(--link); background: none; border: 0; text-decoration: underline; text-underline-offset: 0.18em; font-weight: 400; }
+.linklike:hover { background: none; text-decoration-thickness: 0.18em; }
 
-p, ul, ol, dl, figure, form { margin: 0; }
-p + p { margin-block-start: 2em; }
-ul, ol { padding-inline-start: 1.5em; }
-
-a {
-  color: inherit;
-  text-decoration-line: underline;
-  text-decoration-thickness: 0.1em;
-  text-underline-offset: 0.2em;
+/* Forms */
+.field { display: grid; gap: var(--s-1); }
+.field > label, legend { font-weight: 700; }
+fieldset { margin: 0; padding: 0; border: 0; min-inline-size: 0; }
+fieldset > legend { padding: 0; margin-block-end: var(--s-1); }
+input[type="text"], input[type="search"], input[type="number"], input[type="email"], input[type="url"], input[type="tel"], input[type="password"], input[type="date"], input[type="time"], select, textarea {
+  inline-size: 100%; min-block-size: var(--target); padding: var(--s-2) var(--s-3);
+  font: inherit; color: var(--ink); background: var(--surface); border: var(--rule) solid var(--line); border-radius: var(--r-2);
 }
-a:hover { text-decoration-thickness: 0.2em; }
+textarea { min-block-size: 10rem; resize: vertical; font-size: var(--t-sm); line-height: 1.5; }
+::placeholder { color: var(--ink-soft); opacity: 1; }
+:is(input, select, textarea):disabled { cursor: not-allowed; color: var(--ink-soft); background: var(--surface-2); border-style: dashed; }
+input[type="file"] { max-inline-size: 100%; min-block-size: var(--target); font: inherit; }
+.hint { color: var(--ink-soft); font-size: var(--t-sm); }
+.field .hint { margin: 0; }
+.checkline { display: flex; align-items: center; gap: var(--s-3); min-block-size: var(--target); }
+.checkline input { inline-size: 1.5rem; block-size: 1.5rem; margin: 0; flex: none; accent-color: var(--action); }
 
-img, video { max-width: 100%; height: auto; }
-
-button, input, select, textarea {
-  font: inherit;
-  letter-spacing: inherit;
-  word-spacing: inherit;
+/* Panels, notes and live regions */
+.panel { background: var(--surface); border: var(--rule) solid var(--line-soft); border-radius: var(--r-3); padding: var(--s-5); }
+.panel > * + * { margin-block-start: var(--s-4); }
+.panel > h2 + *, .panel > h3 + * { margin-block-start: var(--s-3); }
+.note, [role="alert"]:not(:empty) {
+  display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-3); align-items: start;
+  padding: var(--s-3) var(--s-4); color: var(--info-ink); background: var(--info-tint);
+  border: var(--rule) solid var(--info-mark); border-inline-start-width: 0.5rem; border-radius: var(--r-2);
 }
-::placeholder { color: var(--soft); opacity: 1; }
-
-code, kbd, samp, pre {
-  font-family: var(--font-mono);
-  letter-spacing: 0;
-  word-spacing: 0;
+.note::before, [role="alert"]:not(:empty)::before {
+  content: ""; content: "" / ""; inline-size: 1.5rem; block-size: 1.5rem; margin-block-start: 0.1rem; background: currentColor;
+  mask: var(--mask-info) center / contain no-repeat; -webkit-mask: var(--mask-info) center / contain no-repeat;
 }
-code, kbd, samp { font-size: 0.9375em; }
-pre { margin: 0; }
-pre code { font-size: 1em; }
+.note > * { min-inline-size: 0; }
+.note a { color: inherit; }
+.note p + p { margin-block-start: var(--s-2); }
+.note--ok { color: var(--ok-ink); background: var(--ok-tint); border-color: var(--ok-mark); }
+.note--ok::before { mask-image: var(--mask-ok); -webkit-mask-image: var(--mask-ok); }
+.note--warn { color: var(--warn-ink); background: var(--warn-tint); border-color: var(--warn-mark); }
+.note--warn::before { mask-image: var(--mask-warn); -webkit-mask-image: var(--mask-warn); }
+.note--problem, [role="alert"]:not(:empty) { color: var(--problem-ink); background: var(--problem-tint); border-color: var(--problem-mark); }
+.note--problem::before, [role="alert"]:not(:empty)::before { mask-image: var(--mask-problem); -webkit-mask-image: var(--mask-problem); }
+[role="status"] { color: var(--ink-soft); font-size: var(--t-sm); }
+/* Live regions stay in the accessibility tree when empty (display: none would drop them and the first message can go unannounced), so they are collapsed, not hidden. */
+[role="status"]:empty, [role="alert"]:empty { position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); border: 0; }
+/* A visible word for each status, so colour and shape are never the only cue (1.4.1). The words are real generated text, so assistive technology reads them. */
+.note--ok > :first-child::before { content: "Success: "; font-weight: 700; }
+.note--warn > :first-child::before { content: "Warning: "; font-weight: 700; }
+.note--problem > :first-child::before { content: "Error: "; font-weight: 700; }
 
-:focus-visible {
-  outline: 3px solid var(--focus);
-  outline-offset: 3px;
-}
+/* Status badge: word plus shape plus colour */
+.badge { display: inline-flex; align-items: center; gap: var(--s-1); padding: 0 var(--s-2); min-block-size: 1.75rem; border: var(--rule) solid currentColor; border-radius: var(--r-2); font-size: var(--t-sm); font-weight: 700; color: var(--ink); background: var(--surface); }
+.badge::before { content: ""; content: "" / ""; inline-size: 1rem; block-size: 1rem; flex: none; background: currentColor; mask: var(--mask-info) center / contain no-repeat; -webkit-mask: var(--mask-info) center / contain no-repeat; }
+.badge--ok { color: var(--ok-ink); background: var(--ok-tint); }
+.badge--ok::before { mask-image: var(--mask-ok); -webkit-mask-image: var(--mask-ok); }
+.badge--warn { color: var(--warn-ink); background: var(--warn-tint); }
+.badge--warn::before { mask-image: var(--mask-warn); -webkit-mask-image: var(--mask-warn); }
+.badge--problem { color: var(--problem-ink); background: var(--problem-tint); }
+.badge--problem::before { mask-image: var(--mask-problem); -webkit-mask-image: var(--mask-problem); }
+.badge--info { color: var(--info-ink); background: var(--info-tint); }
 
-::selection { background: var(--ink); color: var(--paper); }
+/* Disclosure */
+details { border-block-start: var(--rule) solid var(--line-soft); padding-block-start: var(--s-2); }
+summary { display: flex; align-items: center; gap: var(--s-2); min-block-size: var(--target); cursor: pointer; font-weight: 700; list-style: none; }
+summary::-webkit-details-marker { display: none; }
+summary::before { content: ""; inline-size: 1.25rem; block-size: 1.25rem; flex: none; background: currentColor; mask: var(--mask-chev) center / contain no-repeat; -webkit-mask: var(--mask-chev) center / contain no-repeat; }
+details[open] > summary::before { transform: rotate(90deg); }
+summary h2, summary h3, summary h4 { display: inline; font-size: inherit; font-family: var(--font-body); font-weight: 700; margin: 0; }
+details > :not(summary) { margin-block-start: var(--s-3); }
 
-.skip {
-  position: absolute;
-  inset-inline-start: 1rem;
-  inset-block-start: -6rem;
-  padding: 0.75rem 1rem;
-  background: var(--ink);
-  color: var(--paper);
-  z-index: 2000;
-}
-.skip:focus { inset-block-start: 1rem; }
+/* Tables */
+.table-scroll { overflow-x: auto; max-inline-size: 100%; border: var(--rule) solid var(--line-soft); border-radius: var(--r-2); background: var(--surface); }
+.table-scroll:focus-visible { outline-offset: 0; }
+table { inline-size: 100%; border-collapse: collapse; font-size: var(--t-sm); font-variant-numeric: tabular-nums; }
+caption { text-align: start; font-weight: 700; padding: var(--s-2) var(--s-3); }
+th, td { text-align: start; padding: var(--s-2) var(--s-3); vertical-align: top; }
+thead th { background: var(--surface-2); border-block-end: var(--rule) solid var(--line); white-space: nowrap; }
+tbody th, tbody td { border-block-end: 1px solid var(--line-soft); }
+th.num, td.num { text-align: end; }
 
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-}
+/* Numbered result cards, stat tiles, fact lists, chips */
+.cards { display: grid; gap: var(--s-5); counter-reset: card; }
+.card { counter-increment: card; display: grid; gap: var(--s-4); align-content: start; padding: var(--pad-card); background: var(--surface); border: var(--rule) solid var(--line-soft); border-radius: var(--r-3); }
+.card > * { min-inline-size: 0; margin: 0; }
+.card > h3 { display: flex; align-items: center; gap: var(--s-3); }
+.card > h3::before { content: counter(card); display: inline-grid; place-items: center; flex: none; min-inline-size: 2rem; block-size: 2rem; border-radius: var(--r-2); background: var(--brand); color: var(--on-brand); font: 700 var(--t-base) / 1 var(--font-body); }
+.card p, .facts li { max-inline-size: var(--text-measure); }
+.stats { display: grid; gap: var(--s-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr)); }
+.stat { display: grid; gap: var(--s-1); align-content: start; padding: var(--s-3) var(--s-4); background: var(--surface-2); border: var(--rule) solid var(--line-soft); border-radius: var(--r-2); }
+.stat__label { color: var(--ink-soft); font-size: var(--t-sm); line-height: 1.3; }
+.stat__value { margin: 0; font: 600 var(--t-lg) / 1.1 var(--font-head); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.facts, .chips { list-style: none; padding: 0; }
+.facts { display: grid; gap: var(--s-2); }
+.facts li { padding-inline-start: var(--s-3); border-inline-start: 0.25rem solid var(--line-soft); }
+.chips { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr)); gap: var(--s-2); }
+.chip { display: flex; align-items: center; min-inline-size: 0; min-block-size: 1.75rem; padding: var(--s-1) var(--s-3); background: var(--surface); border: var(--rule) solid var(--line); border-radius: var(--r-2); font-size: var(--t-sm); overflow-wrap: anywhere; }
 
-/* ==========================================================================
-   3. Layout
-   .section sets the vertical rhythm. .hero comes after it on purpose: same
-   specificity, so its larger top padding wins.
-   ========================================================================== */
-.container {
-  width: 100%;
-  max-width: var(--container);
-  margin-inline: auto;
-  padding-inline: 1.25rem;
-  /* viewport-fit=cover (see the viewport meta) lets the page run under display
-     cutouts, so keep content clear of them. */
-  padding-inline-start: max(1.25rem, env(safe-area-inset-left, 0px));
-  padding-inline-end: max(1.25rem, env(safe-area-inset-right, 0px));
-}
+/* Content elements: text, lists, quotes, code, media, dialog. Wrap long-form text in .prose.
+   Use only the elements your page needs. A rule for an element you never use is harmless: leave it or delete it. */
+.prose { max-inline-size: var(--text-measure); }
+.prose :is(ul, ol) { padding-inline-start: var(--s-5); }
+.prose :is(ul, ol) > li + li, .prose :is(ul, ol) :is(ul, ol) { margin-block-start: var(--s-1); }
+menu { display: flex; flex-wrap: wrap; gap: var(--s-2); margin: 0; padding: 0; list-style: none; }
+dt { font-weight: 700; }
+dd { margin-inline: 0; padding-inline-start: var(--s-4); }
+dd + dt { margin-block-start: var(--s-3); }
+blockquote { margin: 0; padding-inline-start: var(--s-4); border-inline-start: 0.25rem solid var(--line); }
+figure { margin: 0; }
+figcaption { margin-block-start: var(--s-2); color: var(--ink-soft); font-size: var(--t-sm); }
+img { block-size: auto; border-radius: var(--r-2); }
+cite, var { font-style: italic; }
+address { font-style: normal; }
+abbr[title] { text-decoration: underline dotted; text-underline-offset: 0.18em; }
+mark { padding-inline: 0.2em; color: var(--ink); background: var(--mark); border-radius: var(--r-1); }
+kbd, samp { font-family: var(--font-mono); font-size: 0.9em; }
+kbd { padding: 0.05em 0.4em; background: var(--surface); border: 1px solid var(--line); border-block-end-width: 0.2em; border-radius: var(--r-1); white-space: nowrap; }
+samp { padding: 0 0.25em; background: var(--surface-2); border-radius: var(--r-1); }
+sub, sup { font-size: 0.75em; line-height: 0; }
+small { font-size: var(--t-sm); }
+ins { text-decoration-style: double; }
+/* Edits are announced to screen readers with hidden start and end labels, so they do not rely on the line style alone. */
+ins::before, ins::after, del::before, del::after { position: absolute; inline-size: 1px; block-size: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+ins::before { content: " [inserted text start] "; } ins::after { content: " [inserted text end] "; }
+del::before { content: " [deleted text start] "; } del::after { content: " [deleted text end] "; }
+pre { margin: 0; padding: var(--s-3) var(--s-4); overflow-x: auto; font-family: var(--font-mono); font-size: var(--t-sm); line-height: 1.5; tab-size: 2; color: var(--ink); background: var(--surface-2); border: var(--rule) solid var(--line-soft); border-radius: var(--r-2); }
+pre code { padding: 0; font-size: inherit; background: none; }
+pre:focus-visible { outline-offset: 0; }
+hr { block-size: 0; margin: 0; border: 0; border-block-start: var(--rule) solid var(--line-soft); }
 
-.stack { display: grid; gap: 1.5rem; align-content: start; }
+/* Navigation lists (in-page links, breadcrumbs), search, sample boxes, canvas, dialog */
+search { display: block; }
+.navlist { display: flex; flex-wrap: wrap; gap: 0 var(--s-4); margin: 0; padding: 0; list-style: none; }
+.navlist a { display: inline-flex; align-items: center; min-block-size: var(--target); }
+.navlist--crumbs li + li::before { content: "/"; content: "/" / ""; margin-inline-end: var(--s-4); color: var(--ink-soft); }
+.sample { padding: var(--s-4); background: var(--surface-2); border: var(--rule) solid var(--line-soft); border-radius: var(--r-2); }
+.sample .sample { background: var(--surface); }
+canvas { display: block; inline-size: 100%; max-inline-size: var(--text-measure); block-size: auto; color: var(--chart); background: var(--surface); border: var(--rule) solid var(--line); border-radius: var(--r-2); }
+dialog { inline-size: min(calc(100% - 2rem), 32rem); max-block-size: calc(100% - 2rem); padding: 0; color: var(--ink); background: var(--surface); border: var(--rule) solid var(--line); border-radius: var(--r-3); }
+dialog::backdrop { background: var(--scrim); }
+.dialog__body { padding: var(--s-5); }
 
-/* .stack spaces its children with gap, so the running-text paragraph
-   margin (p + p, above) must not stack on top of it. */
-.stack > * { margin-block: 0; }
+/* Table extras and form extras */
+tfoot th, tfoot td { font-weight: 700; background: var(--surface-2); border-block-start: var(--rule) solid var(--line); }
+col.col-wide { inline-size: 50%; }
+fieldset > legend { padding: 0; margin-block-end: var(--s-1); }
+input[type="color"] { inline-size: 4.5rem; min-block-size: var(--target); padding: var(--s-1); cursor: pointer; background: var(--surface); border: var(--rule) solid var(--line); border-radius: var(--r-2); }
+input[type="range"] { inline-size: 100%; max-inline-size: var(--text-measure); min-block-size: var(--target); margin: 0; accent-color: var(--action); }
+::placeholder { color: var(--ink-soft); opacity: 1; }
+:is(input, select, textarea):disabled { cursor: not-allowed; color: var(--ink-soft); background: var(--surface-2); border-style: dashed; }
+output { font-weight: 700; font-variant-numeric: tabular-nums; }
 
-.section { padding-block: 2.5rem; }
-.hero { padding-block-start: 3.5rem; }
+/* Meter and bar chart (draw with inline SVG or HTML and these tokens) */
+.meter { inline-size: 100%; max-inline-size: var(--text-measure); block-size: 1rem; accent-color: var(--chart); }
+.chart text { fill: var(--ink); font-family: var(--font-body); font-size: 0.75rem; }
+.chart__axis { stroke: var(--line); stroke-width: 1; }
+.chart__bar { fill: var(--chart); stroke: var(--chart-line); stroke-width: 1; }
 
-.lead { max-width: var(--measure); }
+/* Panel extras: readable line length, a divided sub-section, empty lists hidden, list resets for cards */
+.panel > p, .panel .field { max-inline-size: var(--text-measure); }
+.panel > .sub { padding-block-start: var(--s-5); border-block-start: var(--rule) solid var(--line-soft); }
+.panel ul:empty, .panel ol:empty { display: none; }
+.panel nav .row { gap: var(--s-3) var(--s-4); }
+ul.cards, ol.cards { list-style: none; padding: 0; }
+/* Card titles that hold a link or button. The number badge gets an edge so it stays visible in dark mode, where it matches the card. */
+.card > h3 { align-items: flex-start; }
+.card > h3::before { border: var(--rule) solid var(--line); }
+.card > h3 .linklike { min-inline-size: 0; overflow-wrap: anywhere; font: inherit; line-height: 1.25; color: var(--link); text-align: start; padding-inline: 0; }
 
-/* ==========================================================================
-   4. Site header and footer
-   ========================================================================== */
-.site-header {
-  border-bottom: 2px solid var(--ink);
-  padding-block-start: env(safe-area-inset-top, 0px);
-}
-.bar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.25rem 2rem;
-  padding-block: 0.5rem;
-}
+/* Footer */
+.site-footer { background: var(--brand); color: var(--on-brand); padding-block: var(--s-5); }
+.site-footer a { color: var(--on-brand); }
+.site-footer .hint { color: var(--on-brand-soft); }
 
-.brand {
-  display: inline-flex;
-  align-items: center;
-  min-height: var(--target);
-  font-family: var(--font-heading);
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: normal;
-  word-spacing: normal;
-  text-decoration: none;
-}
-.brand:hover { text-decoration: underline; }
+/* Toolbar: a label, a select and a hint on one row. */
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-4); }
+.toolbar label { font-weight: 700; }
+.toolbar select { inline-size: auto; }
+.toolbar .hint { margin-inline-end: auto; }
+.navlist a[aria-current="page"] { font-weight: 700; color: var(--ink); text-decoration-thickness: 0.25em; text-underline-offset: 0.2em; }
+.card > h3 { align-items: flex-start; }
+.card > h3 a { min-inline-size: 0; overflow-wrap: anywhere; font: inherit; line-height: 1.25; color: var(--link); }
+.card > h4 { font-family: var(--font-head); font-size: var(--t-md); }
+.card--target { outline: 0.25rem solid var(--focus); outline-offset: 0.125rem; } /* The card a link points at. */
+/* Key and value grid. */
+.rawlist { display: grid; gap: var(--s-3); grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); }
+.rawlist dt { color: var(--ink-soft); font-size: var(--t-sm); }
+.rawlist dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
 
-.site-footer {
-  border-top: 2px solid var(--ink);
-  padding-block: 1.5rem;
-  padding-block-end: max(1.5rem, env(safe-area-inset-bottom, 0px));
-}
-
-/* ==========================================================================
-   5. Tool shelf
-   One tile per tool. The whole tile is the link, so its accessible name is the
-   tool name followed by its description. The edge is --edge (3:1 or better)
-   and hover and focus are signalled by more than colour: the name underlines.
-   Icons are decorative. --tool-color can recolour one icon, but check it
-   against --paper in both themes first.
-   ========================================================================== */
-.shelf {
-  list-style: none;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(100%, 12rem), 1fr));
-  gap: 1rem;
-}
+/* 5. Your page: the tool shelf */
+.shelf { list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 14rem), 1fr)); gap: var(--s-4); margin: 0; padding: 0; }
 .shelf > li { display: grid; }
+.tool { display: grid; justify-items: center; align-content: start; gap: var(--s-2); padding: var(--pad-card); text-align: center; text-decoration: none; color: var(--ink); background: var(--surface); border: var(--rule) solid var(--line-soft); border-radius: var(--r-3); }
+.tool:hover { background: var(--surface-2); border-color: var(--ink); }
+.tool:hover .tool__name { text-decoration: underline; text-decoration-thickness: 0.09em; text-underline-offset: 0.18em; }
+.tool:focus-visible { outline-offset: -0.25rem; box-shadow: inset 0 0 0 0.5rem var(--surface); }
+.tool__icon { inline-size: 2rem; block-size: 2rem; color: var(--ink); }
+.tool__name { font: 600 var(--t-md) / 1.2 var(--font-head); color: var(--heading); }
+.tool__desc { color: var(--ink-soft); font-size: var(--t-sm); }
 
-.tool {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.75rem;
-  min-height: var(--target);
-  padding: 1.5rem 1rem;
-  border: 2px solid var(--edge);
-  border-radius: var(--radius);
-  color: var(--ink);
-  text-align: center;
-  text-decoration: none;
+/* 6. User preferences and assistive modes */
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+@media (forced-colors: active) {
+  /* Mask icons are painted with background-color, which forced colours overrides: pin them to system ink. */
+  .note::before, [role="alert"]:not(:empty)::before, .badge::before, summary::before { forced-color-adjust: none; background-color: CanvasText; }
+  .card > h3::before { border: var(--rule) solid CanvasText; }
+  .card, .stat, .chip, .panel, .tool { border-color: CanvasText; }
+  dialog { border-color: CanvasText; }
+  .chart text { fill: CanvasText; }
+  .chart__axis, .chart__bar { stroke: CanvasText; }
+  .chart__bar { forced-color-adjust: none; fill: Highlight; }
+  .note { border-inline-start-width: 0.5rem; }
+  :focus-visible { outline-color: Highlight; box-shadow: none; }
 }
-.tool:hover { background: var(--paper-2); border-color: var(--ink); }
-.tool:hover .tool-name { text-decoration: underline; text-decoration-thickness: 0.1em; text-underline-offset: 0.2em; }
-
-.tool-icon {
-  display: block;
-  width: 2rem;
-  height: 2rem;
-  color: var(--tool-color, var(--ink));
+@media print {
+  :root { color-scheme: light; }
+  .site-footer, .skip-link, .no-print, search { display: none; }
+  body { background: #fff; }
 }
-.tool-icon svg { display: block; width: 100%; height: 100%; }
+        </style>
+    </head>
+    <body>
+        <a class="skip-link" href="#main">Skip to main content</a>
 
-.tool-name {
-  font-family: var(--font-heading);
-  font-size: 1.125rem;
-  font-weight: 700;
-  line-height: var(--leading-heading);
-  letter-spacing: normal;
-  word-spacing: normal;
+        <main id="main" tabindex="-1">
+            <header class="site-header">
+                <h1>Tools, kept in one place</h1>
+                <p class="lede">A shelf of single-file apps. Each one runs in your browser, no accounts, no tracking.</p>
+            </header>
+
+            <p id="app-status" role="status"></p>
+            <p id="app-error" role="alert"></p>
+
+            <div class="stack-lg">
+                <section aria-labelledby="tools-heading">
+                    <h2 id="tools-heading" class="vh">Available tools</h2>
+                    <ul class="shelf">
+                    <li>
+                        <a class="tool" href="ArPlan/">
+                            <svg class="tool__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                                <rect x="3" y="4.5" width="18" height="16" rx="2"/>
+                                <path d="M3 9.5h18"/>
+                                <path d="M8 2.5v4M16 2.5v4"/>
+                                <path d="M7.5 13.5h3M7.5 17h6"/>
+                            </svg>
+                            <span class="tool__name">ArPlan</span>
+                            <span class="tool__desc">Weekly itinerary, meal planning, and pantry tracker.</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="tool" href="ArCast/">
+                            <svg class="tool__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                                <path d="M17.5 18a4 4 0 0 0 0-8 5.5 5.5 0 0 0-10.6-1.6A4.5 4.5 0 0 0 7.5 18h10z"/>
+                                <path d="M18.5 6.5a5 5 0 0 1 1.2 3"/>
+                            </svg>
+                            <span class="tool__name">ArCast</span>
+                            <span class="tool__desc">A calm, accessible UK weather dashboard with moon phase tracking.</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="tool" href="ArCanvas/">
+                            <svg class="tool__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                                <path d="M4 20l1-4.2L15.6 5.2a1.5 1.5 0 0 1 2.1 0l1.1 1.1a1.5 1.5 0 0 1 0 2.1L8.2 19 4 20z"/>
+                                <path d="M13.8 6.9l3.3 3.3"/>
+                            </svg>
+                            <span class="tool__name">ArCanvas</span>
+                            <span class="tool__desc">A distraction-free drawing experience for children.</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="tool" href="ArHar/">
+                            <svg class="tool__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                                <path d="M3 13h3l2 6 4-14 2 8h4"/>
+                                <path d="M18 13h3"/>
+                            </svg>
+                            <span class="tool__name">ArHar</span>
+                            <span class="tool__desc">A network log (HAR file) inspector.</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="tool" href="ArCom/">
+                            <svg class="tool__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                                <path d="M10 3v7"/>
+                                <path d="M3 10h18"/>
+                                <path d="M13 10v11"/>
+                            </svg>
+                            <span class="tool__name">ArCom</span>
+                            <span class="tool__desc">A zero-dependency comic library and reader for your local collection, with CVD support.</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="tool" href="ArWalk/">
+                            <svg class="tool__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+                                <path d="M12 21s7-6.2 7-11.5a7 7 0 0 0-14 0C5 14.8 12 21 12 21z"/>
+                                <circle cx="12" cy="9.5" r="2.5"/>
+                            </svg>
+                            <span class="tool__name">ArWalk</span>
+                            <span class="tool__desc">Search a place, get a walking route on a map and follow turn-by-turn directions.</span>
+                        </a>
+                    </li>
+                    </ul>
+                </section>
+                <section
+                    class="stack"
+                    aria-labelledby="about-heading"
+                    style="max-inline-size: var(--text-measure);"
+                >
+                    <h2 id="about-heading">About ArTools</h2>
+                    <p>ArTools is a small shelf of web apps by Ardalorn. Each is a single page of plain HTML, CSS and JavaScript that you open and use, with no account to make.</p>
+                    <p class="hint">Most tools keep what you enter on your device. A few call free public services when you use them: ArWalk, for example, sends place searches and route points to map and routing services. Each tool says what it uses.</p>
+                </section>
+            </div>
+        </main>
+
+        <footer class="site-footer">
+            <div class="wrap">
+                <p>ArTools by <a href="https://ardalorn.github.io/ArTools/">Ardalorn</a>. © 2026. Vibecoded plain HTML, CSS and JS.</p>
+                <p class="hint">Built on the Aengus design system.</p>
+            </div>
+        </footer>
+
+        <script>
+'use strict';
+/**
+ * @file Kit script: settings, shared helpers, optional helpers and the App block.
+ * Everything runs in the browser with no dependencies and no build step.
+ * Project code goes in the App block only.
+ */
+
+/* ---------- Settings: every pause, timeout, retry and limit is here. Times are in milliseconds. ---------- */
+
+/* ---------- Helpers: keep, they are used by the kit ---------- */
+/**
+ * Shorthand for document.getElementById.
+ * @param {string} id The element id, without a leading "#".
+ * @returns {HTMLElement|null} The element, or null if the page has no element with that id.
+ */
+const $ = (id) => document.getElementById(id);
+/**
+ * Safe localStorage wrapper. Values are stored as JSON.
+ * Every method catches storage errors (private mode, blocked storage, full quota), so the page keeps working without saving.
+ * @namespace store
+ */
+const store = {
+  /**
+   * Read a saved value.
+   * @param {string} key Storage key.
+   * @param {*} [fallback=null] Returned when the key is missing, unreadable or storage is unavailable.
+   * @returns {*} The parsed value, or the fallback.
+   */
+  get(key, fallback = null) { try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
+  /**
+   * Save a value as JSON.
+   * @param {string} key Storage key.
+   * @param {*} value Any JSON-serialisable value.
+   * @returns {boolean} True if the value was saved, false if storage failed.
+   */
+  set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } },
+  /**
+   * Delete a saved value. Does nothing if storage is unavailable.
+   * @param {string} key Storage key.
+   * @returns {void}
+   */
+  remove(key) { try { localStorage.removeItem(key); } catch { /* nothing saved */ } },
+};
+
+/* Live regions: say(el, text) announces politely, fail(el, text) shows an alert, clear(el) empties both. Keep both elements in the page, empty until needed. */
+/**
+ * Announce a polite message in a role="status" element.
+ * @param {HTMLElement} el The live region.
+ * @param {string} text The message. An empty string clears it.
+ * @returns {void}
+ */
+const say = (el, text) => { el.textContent = text; };
+/**
+ * Show an error in a role="alert" element that is always in the page and empty until needed, so the message is announced. An empty string empties it again. The word Error is shown as text, so the message does not rely on colour.
+ * @param {HTMLElement} el The alert element.
+ * @param {string} text The error message.
+ * @returns {void}
+ */
+const fail = (el, text) => {
+  el.replaceChildren();
+  if (!text) { return; }
+  const box = document.createElement('span'), label = document.createElement('strong');
+  label.textContent = 'Error: ';
+  box.append(label, text);
+  el.append(box);
+};
+/**
+ * Empty live regions and alerts. Call it before a new action so old messages do not linger.
+ * @param {...HTMLElement} els Status or alert elements.
+ * @returns {void}
+ */
+const clear = (...els) => els.forEach((el) => { el.replaceChildren(); });
+
+/* Copy with a fallback for browsers or pages without the async clipboard. */
+/**
+ * Copy text to the clipboard. Uses the async clipboard API, then falls back to a hidden textarea and execCommand.
+ * @param {string} text The text to copy.
+ * @returns {Promise<boolean>} True if the copy worked, false if both methods failed.
+ */
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; } catch { /* fall through */ }
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta); ta.select();
+  let ok = false; try { ok = document.execCommand('copy'); } catch { ok = false; }
+  ta.remove(); return ok;
 }
-.tool-desc { color: var(--soft); font-size: 0.9375rem; }
 
-/* ==========================================================================
-   6. Motion preferences
-   0.01ms rather than none: any script that waits for transitionend still gets it.
-   ========================================================================== */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    transition-duration: 0.01ms !important;
-    transition-delay: 0s !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-  }
-}
-</style>
-</head>
-<body>
-<a class="skip" href="#main">Skip to main content</a>
+/* Move focus to a heading after content changes so keyboard and screen reader users land in the right place. */
+/**
+ * Move keyboard focus to a heading so keyboard and screen reader users land in the new content.
+ * Adds tabindex="-1" so the heading can take focus without joining the tab order.
+ * @param {HTMLElement} el The heading to focus.
+ * @returns {void}
+ */
+function focusHeading(el) { el.setAttribute('tabindex', '-1'); el.focus({ preventScroll: false }); }
 
-<header class="site-header">
-  <div class="container bar">
-    <a class="brand" href="#top">Ardalorn</a>
-  </div>
-</header>
-
-<main id="main">
-
-  <section class="section hero" aria-labelledby="page-title">
-    <div class="container stack">
-      <h1 id="page-title">Tools, kept in one place</h1>
-      <p class="lead">A shelf of single-file apps. Each one runs entirely in your browser, no accounts, no tracking.</p>
-    </div>
-  </section>
-
-  <section class="section" aria-labelledby="tool-shelf-heading">
-    <div class="container stack">
-      <h2 id="tool-shelf-heading" class="sr-only">Available tools</h2>
-      <ul class="shelf">
-        <li>
-          <a class="tool" href="ArPlan/">
-            <span class="tool-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                <rect x="3" y="4.5" width="18" height="16" rx="2"/>
-                <path d="M3 9.5h18"/>
-                <path d="M8 2.5v4M16 2.5v4"/>
-                <path d="M7.5 13.5h3M7.5 17h6"/>
-              </svg>
-            </span>
-            <span class="tool-name">ArPlan</span>
-            <span class="tool-desc">Weekly itinerary, meal planning, and pantry tracker.</span>
-          </a>
-        </li>
-        <li>
-          <a class="tool" href="ArCast/">
-            <span class="tool-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                <path d="M17.5 18a4 4 0 0 0 0-8 5.5 5.5 0 0 0-10.6-1.6A4.5 4.5 0 0 0 7.5 18h10z"/>
-                <path d="M18.5 6.5a5 5 0 0 1 1.2 3"/>
-              </svg>
-            </span>
-            <span class="tool-name">ArCast</span>
-            <span class="tool-desc">A calm, accessible UK weather dashboard with moon phase tracking.</span>
-          </a>
-        </li>
-        <li>
-          <a class="tool" href="ArCanvas/">
-            <span class="tool-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                <path d="M4 20l1-4.2L15.6 5.2a1.5 1.5 0 0 1 2.1 0l1.1 1.1a1.5 1.5 0 0 1 0 2.1L8.2 19 4 20z"/>
-                <path d="M13.8 6.9l3.3 3.3" opacity=".65"/>
-                <path d="M4 20l1-4.2 2 2z" fill="currentColor" fill-opacity=".35" stroke="none"/>
-              </svg>
-            </span>
-            <span class="tool-name">ArCanvas</span>
-            <span class="tool-desc">A distraction-free drawing experience for children.</span>
-          </a>
-        </li>
-        <li>
-          <a class="tool" href="ArHar/">
-            <span class="tool-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                <path d="M3 13h3l2 6 4-14 2 8h4"/>
-                <path d="M18 13h3"/>
-              </svg>
-            </span>
-            <span class="tool-name">ArHar</span>
-            <span class="tool-desc">A network log (HAR file) inspector.</span>
-          </a>
-        </li>
-        <li>
-          <a class="tool" href="ArCom/">
-            <span class="tool-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" focusable="false">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <path d="M10 3v7"/>
-                <path d="M3 10h18"/>
-                <path d="M13 10v11"/>
-              </svg>
-            </span>
-            <span class="tool-name">ArCom</span>
-            <span class="tool-desc">A zero-dependency comic library and reader for your local collection, with CVD support.</span>
-          </a>
-        </li>
-        <!-- Add further tools here, one <li> per entry: icon svg + tool-name + tool-desc.
-             Also add a matching ListItem to the JSON-LD in the head. The tool-desc text is
-             both the visible description and the link's accessible name context, so write
-             it as a complete sentence describing what the tool does. -->
-      </ul>
-    </div>
-  </section>
-
-</main>
-
-<footer class="site-footer">
-  <div class="container">
-    <p>Ardalorn · Vibecoded plain HTML, CSS, and JS</p>
-  </div>
-</footer>
-</body>
+/* ---------- App: project code goes here and only here ---------- */
+/**
+ * Project code. Live regions: #app-status (status) and #app-error (alert). Announce with say(), show errors with fail(), empty both with clear().
+ * @returns {void}
+ */
+(function app() {
+  /* Project code goes here. */
+})();
+        </script>
+    </body>
 </html>
