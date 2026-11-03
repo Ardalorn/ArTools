@@ -469,6 +469,11 @@ const ME_DOT_R = 8; // Radius of your-location dot.
 const START_DOT_R = 8; // Radius of the route's start marker.
 const ROUTE_CASING_PX = 4; // Extra width of the white edge round the route line.
 const ACCURACY_MIN_R = 12; // Smallest accuracy circle, in pixels, worth drawing.
+const GOOD_ACC_M = 25; // A fix this accurate (metres) is good enough to stop refining.
+const REFINE_MAX_MS = 12000; // Longest wait for a good fix before the best one so far is used.
+const FRESH_FIX_MS = 20000; // A saved fix older than this is not reused for a new route.
+const FRESH_FIX_ACC_M = 50; // A saved fix must be at least this accurate to be reused.
+const MAX_NAV_ACC_M = 100; // While walking, fixes less accurate than this are ignored.
 
 /* ---------- Helpers ---------- */
 const $ = (id) => document.getElementById(id);
@@ -739,13 +744,29 @@ function cachedPromise(map, key, loader, hasValue) {
   });
   permBox.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closePerm(null); } });
   /* Ask the browser for one fix. fromCard keeps the permission card open if access is refused. */
+  /* The first fix after permission is granted is often a coarse, cached network position.
+     So watch for fixes (never cached) and keep the most accurate until one is good enough or time runs out. */
   function fetchPos(cb, fromCard) {
-    navigator.geolocation.getCurrentPosition((p) => {
-      geoState = 'granted'; me = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }; redraw(); cb(me);
+    let best = null, done = false, watchId = 0, timer = 0;
+    const finish = (result) => {
+      if (done) { return; }
+      done = true; clearTimeout(timer); navigator.geolocation.clearWatch(watchId);
+      if (result) { me = result; redraw(); }
+      cb(result);
+    };
+    watchId = navigator.geolocation.watchPosition((p) => {
+      geoState = 'granted';
+      const fix = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy || 0, t: Date.now() };
+      if (!best || fix.acc <= best.acc) { best = fix; me = fix; redraw(); }
+      if (best.acc <= GOOD_ACC_M) { finish(best); }
     }, (e) => {
+      if (done) { return; }
+      if (best && e.code !== 1) { finish(best); return; }
+      done = true; clearTimeout(timer); navigator.geolocation.clearWatch(watchId);
       if (e.code === 1) { geoState = 'denied'; if (fromCard) { showPerm(true); return; } }
       fail(er, e.code === 1 ? 'Location permission was refused. Allow it for this site, or tap the map to choose a start point.' : 'Your location is not available right now.'); cb(null);
-    }, GEO);
+    }, { ...GEO, maximumAge: 0 });
+    timer = setTimeout(() => { if (best) { finish(best); } else { done = true; navigator.geolocation.clearWatch(watchId); fail(er, 'Your location is not available right now.'); cb(null); } }, REFINE_MAX_MS);
   }
   function locate(cb) {
     if (!navigator.geolocation || !window.isSecureContext) { fail(er, 'Your location is not available right now. Tap the map to choose a start point instead.'); cb(null); return; }
@@ -879,7 +900,8 @@ function cachedPromise(map, key, loader, hasValue) {
   function directions() {
     clear(er);
     const go = async (from) => { if (await getRoute(from)) { showRoute(); } else { showPlace(); } };
-    if (me) { go(me); return; }
+    if (me && me.t && Date.now() - me.t < FRESH_FIX_MS && me.acc <= FRESH_FIX_ACC_M) { go(me); return; }
+    say(st, 'Finding your location…');
     locate((m) => {
       if (m) { go(m); return; }
       picking = true; say(st, 'Tap the map to choose where to start walking from.');
@@ -940,7 +962,8 @@ function cachedPromise(map, key, loader, hasValue) {
     $('eta-d').textContent = fmtDist(rem) + ' · arrive ' + new Date(Date.now() + rem / speed * MS_PER_SECOND).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   }
   function onFix(lat, lng, acc) {
-    me = { lat, lng, acc };
+    if (!nav.sim && acc > MAX_NAV_ACC_M) { return; } /* ignore coarse fixes while walking */
+    me = { lat, lng, acc, t: Date.now() };
     const s = snap(lat, lng);
     if (s.d > REROUTE_M && !nav.sim && performance.now() - nav.re > REROUTE_MIN_MS) { nav.re = performance.now(); reroute(); return; }
     nav.along = s.along;
