@@ -8,6 +8,7 @@
         <meta name="author" content="Ardalorn">
         <meta name="application-name" content="ArWalk">
         <meta name="color-scheme" content="light dark">
+        <meta name="referrer" content="strict-origin-when-cross-origin">
         <link rel="canonical" href="https://ardalorn.github.io/ArTools/ArWalk/">
         <link
             rel="icon"
@@ -410,7 +411,7 @@ main { flex: 1 0 auto; inline-size: 100%; }
                     aria-labelledby="sheet-h"
                     hidden
                 ></section>
-                <p class="attrib">Map tiles © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></p>
+                <p class="attrib">Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></p>
                 <p id="app-error" role="alert"></p>
             </div>
             <dialog
@@ -472,7 +473,7 @@ main { flex: 1 0 auto; inline-size: 100%; }
                 <div class="panel stack" style="max-inline-size: var(--text-measure);">
                     <h2 id="about-heading">About ArWalk</h2>
                     <p>ArWalk is a small map that finds a walking route and talks you along it. The map is drawn by this page itself on a canvas, with no mapping library. Drag to move, pinch or scroll to zoom, tap the map to drop a pin. Your default start point is saved on this device; GPS is only used once you press Start, to follow you along the route.</p>
-                    <p class="hint">Map tiles use the OpenStreetMap standard layer. Place suggestions use Photon, exact address searches use Nominatim, numbered-building lookups use OpenStreetMap Overpass, and walking routes use the OpenStreetMap Germany routing service. Search terms and route endpoints are sent to those services. GPS is used only when you choose it as your start point or press Start to follow a walk. A chosen start point is saved locally on this device; live tracking fixes are not saved.</p>
+                    <p class="hint">Map tiles use the OpenStreetMap standard layer. Place suggestions use Photon, exact address searches use Nominatim, numbered-building lookups use OpenStreetMap Overpass, and walking routes come from OSRM, run by FOSSGIS as the OpenStreetMap Germany routing service. Map, search and route data are © OpenStreetMap contributors, available under the Open Database Licence (<a href="https://www.openstreetmap.org/copyright">details</a>). Search terms and route endpoints are sent to those services. GPS is used only when you choose it as your start point or press Start to follow a walk. A chosen start point is saved locally on this device; live tracking fixes are not saved.</p>
                     <p class="hint"><a href="https://www.openstreetmap.org/fixthemap">Report or correct a map issue</a>.</p>
                     <p><a href="#map">Back to the map</a></p>
                 </div>
@@ -580,6 +581,10 @@ const STAGE_NEAR = 1; // Turn announcement stage: close to the turn.
 const STAGE_TURN = 2; // Turn announcement stage: at the turn.
 const STREET_MATCH_GROUP = 2; // Regex group holding the street name in "12 High Street".
 const STREET_CANDIDATES = 3; // Streets checked for a numbered building.
+const TILE_RETRY_MS = 30000; // A tile that failed to load is not asked for again for this long.
+const NOMINATIM_GAP_MS = 1100; // Nominatim's policy allows at most one request a second, so keep this far apart.
+const OVERPASS_MAXSIZE_B = 1000000; // Memory the Overpass lookup declares it needs; small requests are admitted more easily.
+const LOOKUP_RETRY_MS = 86400000; // A start point whose address lookup finished is not looked up again for a day.
 const SPEAK_DELAY_MS = 60; // Pause between cancelling old speech and starting new speech; Chrome drops speech started instantly after a cancel.
 const PIN_HEAD_OFFSET = 26; // Pixels from the pin's tip up to the middle of its head.
 const PIN_HEAD_R = 13; // Radius of the pin's head.
@@ -695,6 +700,7 @@ function cachedPromise(map, key, loader, hasValue) {
   function cachedTile(z, x, y) {
     const key = tk(z, x, y), img = tiles.get(key);
     if (img && Date.now() - img.arwalkCreatedAt > TILE_MEMORY_TTL_MS) { tiles.delete(key); return null; }
+    if (img && img.arwalkFailedAt && Date.now() - img.arwalkFailedAt > TILE_RETRY_MS) { tiles.delete(key); return null; }
     return img || null;
   }
   function tile(z, x, y) {
@@ -704,7 +710,7 @@ function cachedPromise(map, key, loader, hasValue) {
     img = document.createElement('img');
     img.arwalkCreatedAt = Date.now();
     img.onload = () => { if (tileErr) { tileErr = false; clear(er); } redraw(); };
-    img.onerror = () => { if (tiles.get(key) === img) { tiles.delete(key); } if (!tileErr) { tileErr = true; fail(er, 'Map pictures could not load. Check your connection.'); } };
+    img.onerror = () => { img.arwalkFailedAt = Date.now(); /* kept, so every redraw does not ask the tile server again */ if (!tileErr) { tileErr = true; fail(er, 'Map pictures could not load. Check your connection.'); } };
     /* OpenStreetMap's standard raster service uses XYZ ordering: z/x/y. */
     img.src = TILE_URL + z + '/' + x + '/' + y + '.png';
     tiles.set(key, img);
@@ -954,6 +960,12 @@ function cachedPromise(map, key, loader, hasValue) {
       houseNumber: number, street: road, approx: Boolean(approx)
     };
   }
+  let nominatimNext = 0;
+  async function nominatimGate() { /* spaces Nominatim requests at least NOMINATIM_GAP_MS apart */
+    const now = Date.now(), at = Math.max(now, nominatimNext);
+    nominatimNext = at + NOMINATIM_GAP_MS;
+    if (at > now) { await sleep(at - now); }
+  }
   function openStart(cb) {
     if (nav) { return; }
     startCb = cb || null; spFrom = document.activeElement;
@@ -982,6 +994,7 @@ function cachedPromise(map, key, loader, hasValue) {
       }
     } catch { /* try the address-focused reverse service below */ }
     try {
+      await nominatimGate();
       const url = REVERSE_NOMINATIM_URL + '?format=jsonv2&addressdetails=1&zoom=18&accept-language=en&lat=' + spot.lat + '&lon=' + spot.lng;
       const r = await fetchRetry(url, { headers: { Accept: 'application/json' }, tries: 1, timeout: REVERSE_NOMINATIM_TIMEOUT_MS });
       const f = await r.json(), a = f.address || {};
@@ -997,6 +1010,7 @@ function cachedPromise(map, key, loader, hasValue) {
     try {
       const place = await reversePlace(spot);
       if (start !== spot) { return; }
+      spot.looked = Date.now(); store.set(START_KEY, start); /* remembered, so the lookup is not repeated on every page load */
       if (!place || (place.name === 'Unnamed place' && !place.addr)) {
         say(st, 'The start coordinates were saved, but map data did not return a usable address or house number.');
         return;
@@ -1140,6 +1154,7 @@ function cachedPromise(map, key, loader, hasValue) {
   }
   /* Nominatim knows house numbers, so a submitted search uses it first. Photon is the fallback and the as-you-type source. */
   async function nominatim(t) {
+    await nominatimGate();
     const cc = filtering() ? '&countrycodes=' + home.toLowerCase() : '';
     const r = await fetchRetry(NOMINATIM_URL + '?format=jsonv2&addressdetails=1&limit=' + SEARCH_LIMIT + '&accept-language=en' + cc + '&q=' + encodeURIComponent(t), { headers: { Accept: 'application/json' }, tries: 1, timeout: NOMINATIM_TIMEOUT_MS });
     const seen = new Set(), out = [];
@@ -1158,7 +1173,7 @@ function cachedPromise(map, key, loader, hasValue) {
   async function overpassHouse(num, street, spot) {
     const quoteRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const n = quoteRegex(num.trim()), name = quoteRegex(street.trim());
-    const query = '[out:json][timeout:10];nwr["addr:housenumber"~"^' + n + '$",i]["addr:street"~"^' + name + '$",i](around:' + OVERPASS_AROUND_M + ',' + spot.lat + ',' + spot.lng + ');out center;';
+    const query = '[out:json][timeout:10][maxsize:' + OVERPASS_MAXSIZE_B + '];nwr["addr:housenumber"~"^' + n + '$",i]["addr:street"~"^' + name + '$",i](around:' + OVERPASS_AROUND_M + ',' + spot.lat + ',' + spot.lng + ');out center;';
     const r = await fetchRetry(OVERPASS_URL + '?data=' + encodeURIComponent(query), { tries: 1, timeout: OVERPASS_TIMEOUT_MS });
     const hits = ((await r.json()).elements || []).map((e) => ({ lat: e.lat === undefined ? (e.center || {}).lat : e.lat, lng: e.lon === undefined ? (e.center || {}).lon : e.lon }))
       .filter((h) => Number.isFinite(h.lat) && Number.isFinite(h.lng));
@@ -1465,7 +1480,7 @@ function cachedPromise(map, key, loader, hasValue) {
   });
 
   loadColors(); fitCanvas();
-  if (start && (!start.addr || !start.houseNumber)) { nameSpot(start); } /* enrich older saved coordinates with house-level address data when available */
+  if (start && (!start.addr || !start.houseNumber) && (!start.looked || Date.now() - start.looked > LOOKUP_RETRY_MS)) { nameSpot(start); } /* enrich older saved coordinates with house-level address data when available */
   if (!start) { openStart(); } /* first visit or cleared storage: ask for a default start point */
 })();
         </script>
