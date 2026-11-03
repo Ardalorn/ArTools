@@ -469,10 +469,10 @@ const ME_DOT_R = 8; // Radius of your-location dot.
 const START_DOT_R = 8; // Radius of the route's start marker.
 const ROUTE_CASING_PX = 4; // Extra width of the white edge round the route line.
 const ACCURACY_MIN_R = 12; // Smallest accuracy circle, in pixels, worth drawing.
-const GOOD_ACC_M = 12; // A fix this accurate (metres) is good enough to stop waiting. Wi-Fi and cell fixes are rarely this tight; GPS is.
-const REFINE_MAX_MS = 20000; // Longest wait for a GPS-grade fix before the best one so far is used.
-const LIVE_REFINE_MS = 60000; // How long the dot keeps correcting itself after the first answer.
-const LIVE_ACC_SLACK = 1.5; // A later fix may be this much less accurate than the current one and still be used (it is newer).
+const GOOD_ACC_M = 30; // A fix this accurate (metres) is good enough to stop refining.
+const REFINE_MAX_MS = 20000; // Longest wait for a good fix before the best one so far is used.
+const MAX_USABLE_ACC_M = 150; // A best fix worse than this (metres) is a coarse guess and is not trusted as your position.
+const MAX_FIX_AGE_MS = 10000; // A fix the browser stamped older than this is a cached position and is ignored.
 const FRESH_FIX_MS = 20000; // A saved fix older than this is not reused for a new route.
 const FRESH_FIX_ACC_M = 50; // A saved fix must be at least this accurate to be reused.
 const MAX_NAV_ACC_M = 100; // While walking, fixes less accurate than this are ignored.
@@ -621,7 +621,7 @@ function cachedPromise(map, key, loader, hasValue) {
       if (orig && !nav) { const [x, y] = sc(orig.lat, orig.lng); ctx.beginPath(); ctx.arc(x, y, START_DOT_R, 0, TAU); ctx.fillStyle = C.ring; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = C.route; ctx.stroke(); }
     }
     if (me) {
-      const [x, y] = sc(me.lat, me.lng), r = (me.acc || 0) / (EARTH_CIRCUMFERENCE_M * Math.cos(me.lat * Math.PI / HALF_TURN_DEGREES) / (TILE * ZOOM_BASE ** v.z));
+      const [x, y] = sc(me.lat, me.lng), r = (Number.isFinite(me.acc) ? me.acc : 0) / (EARTH_CIRCUMFERENCE_M * Math.cos(me.lat * Math.PI / HALF_TURN_DEGREES) / (TILE * ZOOM_BASE ** v.z));
       if (r > ACCURACY_MIN_R) { ctx.globalAlpha = 0.15; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fillStyle = C.route; ctx.fill(); ctx.globalAlpha = 1; }
       dot(x, y, ME_DOT_R);
     }
@@ -710,7 +710,7 @@ function cachedPromise(map, key, loader, hasValue) {
   scheme.addEventListener('change', onScheme);
 
   /* Location */
-  const GEO = { enableHighAccuracy: true, timeout: GEO_TIMEOUT_MS, maximumAge: 5000 };
+  const GEO = { enableHighAccuracy: true, timeout: GEO_TIMEOUT_MS, maximumAge: 0 };
   /* Permission state: 'granted', 'prompt', 'denied', or 'unknown' when the browser cannot say. */
   const permBox = $('perm');
   let geoState = 'unknown', permCb = null, permFrom = null;
@@ -748,33 +748,47 @@ function cachedPromise(map, key, loader, hasValue) {
   /* Ask the browser for one fix. fromCard keeps the permission card open if access is refused. */
   /* The first fix after permission is granted is often a coarse, cached network position.
      So watch for fixes (never cached) and keep the most accurate until one is good enough or time runs out. */
-  let stopLive = null; /* Stops the short follow-up watch that keeps refining the dot. */
+  /* Turn a browser reading into a fix. A missing or zero accuracy means unknown, not perfect. */
+  function readFix(p) {
+    const a = p.coords.accuracy;
+    return { lat: p.coords.latitude, lng: p.coords.longitude, acc: Number.isFinite(a) && a > 0 ? a : Infinity, t: Date.now() };
+  }
+  const isCached = (p) => Boolean(p.timestamp) && Date.now() - p.timestamp > MAX_FIX_AGE_MS;
   function fetchPos(cb, fromCard) {
     let best = null, done = false, watchId = 0, timer = 0;
-    if (stopLive) { stopLive(); }
+    const stop = () => { done = true; clearTimeout(timer); navigator.geolocation.clearWatch(watchId); };
     const finish = (result) => {
       if (done) { return; }
-      done = true; clearTimeout(timer);
+      stop();
       if (result) { me = result; redraw(); }
-      /* Keep listening for a while so the dot keeps correcting itself after the first answer. */
-      const liveTimer = setTimeout(() => { if (stopLive) { stopLive(); } }, LIVE_REFINE_MS);
-      stopLive = () => { clearTimeout(liveTimer); navigator.geolocation.clearWatch(watchId); stopLive = null; };
       cb(result);
     };
+    /* Time ran out: trust the best fix only if it is accurate enough to be your real position. */
+    const giveUp = () => {
+      if (done) { return; }
+      if (best && best.acc <= MAX_USABLE_ACC_M) { finish(best); return; }
+      stop();
+      if (best) { me = best; redraw(); }
+      fail(er, best && Number.isFinite(best.acc)
+        ? 'Your position is only accurate to about ' + fmtDist(best.acc) + ', which is too rough to start from. Move outdoors and try again, or tap the map to choose a start point.'
+        : 'Your location is not available right now.');
+      cb(null);
+    };
     watchId = navigator.geolocation.watchPosition((p) => {
+      if (done || isCached(p)) { return; }
       geoState = 'granted';
-      const fix = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy || 0, t: Date.now() };
-      if (done) { if (!nav && fix.acc <= MAX_NAV_ACC_M && (!me || fix.acc <= me.acc * LIVE_ACC_SLACK)) { me = fix; redraw(); } return; }
-      if (!best || fix.acc <= best.acc) { best = fix; me = fix; redraw(); }
+      const fix = readFix(p);
+      if (!best || fix.acc < best.acc || (fix.acc === best.acc && fix.t > best.t)) { best = fix; me = fix; redraw(); }
       if (best.acc <= GOOD_ACC_M) { finish(best); }
     }, (e) => {
       if (done) { return; }
-      if (best && e.code !== 1) { finish(best); return; }
-      done = true; clearTimeout(timer); navigator.geolocation.clearWatch(watchId);
+      if (e.code === 3) { return; } /* a timeout only means no new reading yet: the overall timer decides */
+      if (best && e.code !== 1) { giveUp(); return; }
+      stop();
       if (e.code === 1) { geoState = 'denied'; if (fromCard) { showPerm(true); return; } }
       fail(er, e.code === 1 ? 'Location permission was refused. Allow it for this site, or tap the map to choose a start point.' : 'Your location is not available right now.'); cb(null);
     }, { ...GEO, maximumAge: 0 });
-    timer = setTimeout(() => { if (best) { finish(best); } else { done = true; navigator.geolocation.clearWatch(watchId); fail(er, 'Your location is not available right now.'); cb(null); } }, REFINE_MAX_MS);
+    timer = setTimeout(giveUp, REFINE_MAX_MS);
   }
   function locate(cb) {
     if (!navigator.geolocation || !window.isSecureContext) { fail(er, 'Your location is not available right now. Tap the map to choose a start point instead.'); cb(null); return; }
@@ -993,7 +1007,7 @@ function cachedPromise(map, key, loader, hasValue) {
       locate((m) => { if (m) { startNav(false); } else { fail(er, 'Start needs your location. Use Preview to try the walk without GPS.'); } });
       return;
     }
-    clear(er); stopNav(); if (stopLive) { stopLive(); }
+    clear(er); stopNav();
     nav = { idx: -1, along: 0, sim, re: performance.now(), timer: 0, watch: 0 };
     mapapp.classList.add('is-nav'); banner.hidden = false; follow = true; resBox.hidden = true;
     sheet.hidden = false;
@@ -1004,7 +1018,7 @@ function cachedPromise(map, key, loader, hasValue) {
       const tick = () => { const p = pointAt(d); d += SIM_STEP_M; onFix(p[0], p[1], 0); };
       tick(); if (nav) { nav.timer = setInterval(tick, SIM_TICK_MS); }
     } else {
-      nav.watch = navigator.geolocation.watchPosition((p) => onFix(p.coords.latitude, p.coords.longitude, p.coords.accuracy), () => fail(er, 'Lost your location signal.'), GEO);
+      nav.watch = navigator.geolocation.watchPosition((p) => { if (isCached(p)) { return; } const f = readFix(p); onFix(f.lat, f.lng, f.acc); }, (e) => { if (e.code !== 3) { fail(er, 'Lost your location signal.'); } }, GEO);
     }
     if (me) { flyTo(me.lat, me.lng, NAV_ZOOM); }
   }
