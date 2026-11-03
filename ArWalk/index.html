@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+        <title>ArWalk: walking directions on a map</title>
+        <meta name="description" content="A single-file walking navigation map: search a place, get a walking route and follow turn-by-turn directions.">
+        <meta name="author" content="Ardalorn">
+        <meta name="application-name" content="ArWalk">
+        <meta name="color-scheme" content="light dark">
+        <link rel="canonical" href="https://ardalorn.github.io/ArTools/ArWalk/">
+        <link
+            rel="icon"
+            type="image/svg+xml"
+            href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231a1a1d'/%3E%3Cpath d='M16 27s8-7.4 8-14a8 8 0 0 0-16 0c0 6.6 8 14 8 14z' fill='none' stroke='%239999cc' stroke-width='3' stroke-linejoin='round'/%3E%3Ccircle cx='16' cy='13' r='3' fill='%239999cc'/%3E%3C/svg%3E"
+        >
+        <style>
+/* Aengus design system. Tokens: 1a primitives, 1b roles, 1c locked status colours. */
+:root {
+  --Nuadyr-color-steel-100: rgba(245, 246, 247, 1);
+  --Nuadyr-color-steel-200: rgba(233, 234, 236, 1);
+  --Nuadyr-color-steel-300: rgba(209, 211, 215, 1);
+  --Nuadyr-color-steel-500: rgba(136, 138, 150, 1);
+  --Nuadyr-color-steel-600: rgba(101, 102, 114, 1);
+  --Nuadyr-color-steel-700: rgba(67, 68, 75, 1);
+  --Nuadyr-color-steel-800: rgba(44, 44, 48, 1);
+  --Nuadyr-color-steel-900: rgba(26, 26, 29, 1);
+  --Nuadyr-color-steel-950: rgba(17, 18, 19, 1);
+  --Nuadyr-color-periwinkle-25: rgba(207, 207, 231, 1);
+  --Nuadyr-color-periwinkle-50: rgba(187, 187, 221, 1);
+  --Nuadyr-color-periwinkle-200: rgba(142, 144, 199, 1);
+  --Nuadyr-color-periwinkle-300: rgba(131, 135, 195, 1);
+  --Nuadyr-color-periwinkle-500: rgba(74, 97, 166, 1);
+  --Nuadyr-color-periwinkle-800: rgba(34, 61, 85, 1);
+  --Nuadyr-color-periwinkle-900: rgba(25, 49, 66, 1);
+  --Nuadyr-color-bone-100: #e6e3da;
+  --Nuadyr-color-bone-200: #cdcac1;
+  --Nuadyr-color-bone-300: #bebbb2;
+  --Nuadyr-color-periwinkle-150: #b4b7e8;
+  --Nuadyr-color-white: rgba(255, 255, 255, 1);
+}
+:root {
+  color-scheme: light dark;
+  --font-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-head: "Fraunces", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  --paper:      light-dark(var(--Nuadyr-color-steel-100), var(--Nuadyr-color-steel-950));
+  --surface:    light-dark(var(--Nuadyr-color-white), var(--Nuadyr-color-steel-900));
+  --surface-2:  light-dark(var(--Nuadyr-color-steel-200), var(--Nuadyr-color-steel-800));
+  --ink:        light-dark(var(--Nuadyr-color-steel-950), var(--Nuadyr-color-bone-200));
+  --ink-soft:   light-dark(var(--Nuadyr-color-steel-700), var(--Nuadyr-color-bone-300));
+  --heading:    light-dark(var(--Nuadyr-color-steel-950), var(--Nuadyr-color-bone-100));
+  --line:       light-dark(var(--Nuadyr-color-steel-600), var(--Nuadyr-color-steel-500));
+  --line-soft:  light-dark(var(--Nuadyr-color-steel-300), var(--Nuadyr-color-steel-700));
+  --brand:      var(--Nuadyr-color-steel-900);
+  --on-brand:   var(--Nuadyr-color-steel-100);
+  --on-brand-soft: var(--Nuadyr-color-steel-300);
+  --action:       light-dark(var(--Nuadyr-color-periwinkle-800), var(--Nuadyr-color-periwinkle-50));
+  --action-hover: light-dark(var(--Nuadyr-color-periwinkle-900), var(--Nuadyr-color-periwinkle-25));
+  --on-action:    light-dark(var(--Nuadyr-color-white), var(--Nuadyr-color-steel-950));
+  --link:         light-dark(var(--Nuadyr-color-periwinkle-800), var(--Nuadyr-color-periwinkle-150));
+  --focus:        light-dark(var(--Nuadyr-color-steel-950), var(--Nuadyr-color-periwinkle-300));
+  --route:        light-dark(var(--Nuadyr-color-periwinkle-500), var(--Nuadyr-color-periwinkle-200)); /* Route line and your-location dot. */
+  --pin:          light-dark(#b3261e, #ff8a80); /* Destination pin. */
+  --scrim:        rgba(17, 18, 19, 0.72);
+  --s-1: 0.25rem; --s-2: 0.5rem; --s-3: 0.75rem; --s-4: 1rem; --s-5: 1.5rem; --s-6: 2rem; --s-7: 3rem;
+  --r-1: 0.25rem; --r-2: 0.5rem; --r-3: 0.875rem;
+  --t-sm: 1rem;
+  --t-base: clamp(1rem, 0.95rem + 0.2vw, 1.0625rem);
+  --t-md: clamp(1.125rem, 1.04rem + 0.4vw, 1.3125rem);
+  --t-lg: clamp(1.375rem, 1.18rem + 0.85vw, 1.75rem);
+  --target: 2.75rem;
+  --measure: 70rem;
+  --text-measure: 42rem;
+  --rule: 0.125rem;
+  --mask-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3.5' y='3.5' width='17' height='17' rx='4' fill='none' stroke='black' stroke-width='2.2'/%3E%3Cpath d='M12 11v5M12 7.6v.2' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E");
+  --mask-ok: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='9' fill='none' stroke='black' stroke-width='2.2'/%3E%3Cpath d='m7.8 12.3 3 3 5.4-6' fill='none' stroke='black' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  --mask-problem: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.8 21.2 12 12 21.2 2.8 12z' fill='none' stroke='black' stroke-width='2.2' stroke-linejoin='round'/%3E%3Cpath d='m9 9 6 6M15 9l-6 6' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E");
+  --mask-box: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='4' y='4' width='16' height='16' rx='3' fill='none' stroke='black' stroke-width='2.4'/%3E%3C/svg%3E");
+}
+/* 1c. LOCKED status colours. */
+:root {
+  --ok-ink:      light-dark(#064e3f, #00FF00CC); --ok-mark:      light-dark(#0b7a56, #66FF33); --ok-tint:      light-dark(#e0f3ec, #12302a);
+  --warn-ink:    light-dark(#5a3d00, #FFFF33CC); --warn-mark:    light-dark(#a85f00, #FFFF66); --warn-tint:    light-dark(#fbf0d6, #33280f);
+  --problem-ink: light-dark(#7a0f1f, #FF3333E6); --problem-mark: light-dark(#c0262d, #FF3333); --problem-tint: light-dark(#fbe4e7, #330000);
+  --info-ink:    light-dark(#0f3f7a, #a9cdf5); --info-mark:    light-dark(#1f66b0, #55aff0); --info-tint:    light-dark(#e1ecf8, #052136);
+}
+/* 2. Base */
+*, *::before, *::after { box-sizing: border-box; }
+html { font-size: 100%; -webkit-text-size-adjust: 100%; scroll-padding-block-start: var(--s-6); }
+body { margin: 0; min-block-size: 100vh; display: flex; flex-direction: column; background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: var(--t-base); line-height: 1.6; letter-spacing: 0.02em; word-spacing: 0.08em; }
+h1, h2, h3 { font-family: var(--font-head); font-weight: 600; line-height: 1.2; margin: 0; color: var(--heading); text-wrap: balance; }
+h1 { font-size: var(--t-lg); }
+h2 { font-size: var(--t-lg); }
+p, ul, ol { margin: 0; }
+p + p { margin-block-start: var(--s-3); }
+strong, b { color: var(--heading); }
+a { color: var(--link); text-decoration-thickness: 0.09em; text-underline-offset: 0.18em; }
+a:hover { text-decoration-thickness: 0.18em; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 0.25rem solid var(--focus); outline-offset: 0.125rem; border-radius: var(--r-1); box-shadow: 0 0 0 0.125rem var(--surface); }
+.site-footer :focus-visible { outline-color: var(--on-brand); box-shadow: 0 0 0 0.125rem var(--brand); }
+h1:focus, h2:focus, main:focus { outline: none; }
+h1:focus-visible, h2:focus-visible { outline: 0.25rem solid var(--focus); outline-offset: 0.25rem; }
+.vh { position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: absolute; inset-inline-start: var(--s-3); inset-block-start: -10rem; z-index: 30; padding: var(--s-2) var(--s-4); background: var(--brand); color: var(--on-brand); border-radius: var(--r-2); font-weight: 700; }
+.skip-link:focus { inset-block-start: var(--s-3); }
+.icon { inline-size: 1.5rem; block-size: 1.5rem; flex: none; }
+.stack > * + * { margin-block-start: var(--s-4); }
+.row { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+.hint { color: var(--ink-soft); font-size: var(--t-sm); }
+/* Buttons and fields */
+button { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); min-block-size: var(--target); min-inline-size: var(--target); padding: var(--s-2) var(--s-4); font: inherit; font-weight: 700; line-height: 1.3; text-align: center; text-decoration: none; cursor: pointer; color: var(--on-action); background: var(--action); border: var(--rule) solid var(--action); border-radius: var(--r-2); }
+button:hover { background: var(--action-hover); border-color: var(--action-hover); }
+button:disabled { cursor: not-allowed; color: var(--ink-soft); background: var(--surface-2); border-color: var(--line); border-style: dashed; }
+button.secondary { color: var(--ink); background: var(--surface); border-color: var(--line); }
+button.secondary:hover { background: var(--surface-2); border-color: var(--ink); }
+button strong { color: inherit; }
+input[type="search"] { inline-size: 100%; min-block-size: var(--target); padding: var(--s-2) var(--s-3); font: inherit; color: var(--ink); background: var(--surface); border: var(--rule) solid var(--line); border-radius: var(--r-2); }
+::placeholder { color: var(--ink-soft); opacity: 1; }
+search { display: block; }
+/* Notes and live regions */
+.panel { background: var(--surface); border: var(--rule) solid var(--line-soft); border-radius: var(--r-3); padding: var(--s-5); }
+[role="alert"]:not(:empty) { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-3); align-items: start; padding: var(--s-3) var(--s-4); color: var(--problem-ink); background: var(--problem-tint); border: var(--rule) solid var(--problem-mark); border-inline-start-width: 0.5rem; border-radius: var(--r-2); }
+[role="alert"]:not(:empty)::before { content: ""; content: "" / ""; inline-size: 1.5rem; block-size: 1.5rem; margin-block-start: 0.1rem; background: currentColor; mask: var(--mask-problem) center / contain no-repeat; -webkit-mask: var(--mask-problem) center / contain no-repeat; }
+[role="status"] { color: var(--ink-soft); font-size: var(--t-sm); }
+[role="status"]:empty, [role="alert"]:empty { position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); border: 0; }
+/* Toggle button: same word both states, state in aria-pressed */
+button.toggle::before { content: ""; inline-size: 1.25rem; block-size: 1.25rem; flex: none; background: currentColor; mask: var(--mask-box) center / contain no-repeat; -webkit-mask: var(--mask-box) center / contain no-repeat; }
+button.toggle[aria-pressed="true"]::before { mask-image: var(--mask-ok); -webkit-mask-image: var(--mask-ok); }
+/* Footer */
+.site-footer { background: var(--brand); color: var(--on-brand); padding-block: var(--s-5); }
+.site-footer a { color: var(--on-brand); }
+.site-footer .hint { color: var(--on-brand-soft); }
+.wrap { inline-size: 100%; max-inline-size: var(--measure); margin-inline: auto; padding-inline: var(--s-4); }
+
+/* 5. Your page: the map */
+main { flex: 1 0 auto; inline-size: 100%; }
+.mapapp { position: relative; block-size: 100vh; block-size: 100dvh; min-block-size: 28rem; overflow: hidden; background: var(--surface-2); }
+#map { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+#map:active { cursor: grabbing; }
+#map:focus-visible { outline-offset: -0.25rem; box-shadow: inset 0 0 0 0.5rem var(--surface); }
+.top { position: absolute; inset: var(--s-3) var(--s-3) auto; z-index: 3; max-inline-size: 26rem; }
+.pill { display: flex; align-items: center; gap: var(--s-2); padding: var(--s-1) var(--s-1) var(--s-1) var(--s-4); background: var(--surface); border: var(--rule) solid var(--line-soft); border-radius: 1.75rem; box-shadow: 0 0.125rem 0.75rem rgb(0 0 0 / 0.3); }
+.pill input { flex: 1; min-inline-size: 0; padding-inline: 0; background: transparent; border: 0; }
+.pill:focus-within { outline: 0.25rem solid var(--focus); outline-offset: 0.125rem; }
+.pill input:focus-visible { outline: 0; box-shadow: none; }
+.pill button { border-radius: 50%; inline-size: var(--target); padding: 0; }
+.results { list-style: none; display: grid; gap: var(--s-1); margin: var(--s-2) 0 0; padding: var(--s-2); max-block-size: 55dvh; overflow: auto; background: var(--surface); border: var(--rule) solid var(--line-soft); border-radius: var(--r-3); box-shadow: 0 0.125rem 0.75rem rgb(0 0 0 / 0.3); }
+.top .toggle { margin-block-start: var(--s-2); padding-block: var(--s-1); box-shadow: 0 0.125rem 0.5rem rgb(0 0 0 / 0.3); }
+.results li { margin: 0; padding: 0; }
+.results button { display: grid; grid-template-columns: minmax(0, 1fr); align-content: center; justify-content: stretch; justify-items: start; gap: var(--s-1); inline-size: 100%; margin: 0; padding: var(--s-3) var(--s-4); text-align: start; font-weight: 400; line-height: 1.35; }
+.results button > * { display: block; inline-size: 100%; margin: 0; padding: 0; text-align: start; overflow-wrap: anywhere; }
+.results li.hint { padding: var(--s-3) var(--s-4); }
+.ctrls { position: absolute; inset-inline-end: var(--s-3); inset-block-start: 5rem; z-index: 2; display: grid; gap: var(--s-2); }
+.is-nav .ctrls { inset-block-start: 7.5rem; }
+.ctrls button { inline-size: 3rem; block-size: 3rem; padding: 0; border-radius: 50%; box-shadow: 0 0.125rem 0.5rem rgb(0 0 0 / 0.3); }
+.is-nav .top { display: none; }
+.banner { position: absolute; inset: var(--s-3) var(--s-3) auto; z-index: 3; display: flex; align-items: center; gap: var(--s-3); max-inline-size: 26rem; padding: var(--s-3) var(--s-4); color: var(--on-brand); background: var(--brand); border-radius: var(--r-3); box-shadow: 0 0.125rem 0.75rem rgb(0 0 0 / 0.4); }
+.banner strong { color: inherit; font-size: var(--t-md); line-height: 1.25; }
+.banner .hint { color: var(--on-brand-soft); }
+.arr { flex: none; display: inline-grid; place-items: center; inline-size: 2.5rem; font-size: 2rem; line-height: 1; }
+.sheet { position: absolute; inset-inline: 0; inset-block-end: 2rem; z-index: 3; display: grid; gap: var(--s-3); max-block-size: 60dvh; overflow: auto; padding: var(--s-4); background: var(--surface); border: var(--rule) solid var(--line-soft); border-block-end: 0; border-radius: 1.25rem 1.25rem 0 0; box-shadow: 0 -0.125rem 0.75rem rgb(0 0 0 / 0.3); overscroll-behavior: contain; }
+.sheet > * { margin: 0; }
+.sheet h2 { font-size: var(--t-md); }
+.eta { font-size: var(--t-md); }
+.steps { list-style: none; display: grid; gap: var(--s-2); padding: 0; }
+.steps li { display: flex; align-items: center; gap: var(--s-3); padding-block: var(--s-1); border-block-start: 1px solid var(--line-soft); }
+.attrib { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; position: absolute; inset-inline: 0; inset-block-end: 0; z-index: 4; margin: 0; padding: 0 var(--s-3); font-size: var(--t-sm); line-height: 2rem; color: var(--ink-soft); background: var(--surface); border-block-start: 1px solid var(--line-soft); }
+.mapapp > [role="alert"]:not(:empty) { position: absolute; inset: 4.75rem 4.5rem auto var(--s-3); z-index: 6; max-inline-size: 26rem; }
+.is-nav .mapapp > [role="alert"]:not(:empty) { inset-block-start: 8rem; }
+.perm { position: absolute; inset: 4.75rem var(--s-3) auto; z-index: 7; display: grid; gap: var(--s-3); max-inline-size: 26rem; background: var(--surface); border: var(--rule) solid var(--line); border-radius: var(--r-3); padding: var(--s-4); box-shadow: 0 0.25rem 1rem rgb(0 0 0 / 0.4); }
+.perm > * { margin: 0; }
+.perm h2 { font-size: var(--t-md); }
+.about { padding: var(--s-6) var(--s-4) var(--s-7); max-inline-size: var(--measure); margin-inline: auto; }
+@media (width >= 56rem) {
+  .sheet { inset-inline: var(--s-3) auto; inset-block: 4.75rem auto; inline-size: 26rem; max-block-size: calc(100dvh - 8rem); border-block-end: var(--rule) solid var(--line-soft); border-radius: var(--r-3); }
+  .is-nav .sheet { inset-block: auto 2.5rem; }
+}
+/* 6. User preferences and assistive modes */
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+@media (forced-colors: active) {
+  [role="alert"]:not(:empty)::before, button.toggle::before { forced-color-adjust: none; background-color: CanvasText; }
+  .panel, .sheet, .pill, .banner, .results, .perm { border: var(--rule) solid CanvasText; }
+  :focus-visible { outline-color: Highlight; box-shadow: none; }
+}
+@media print { .site-footer, .skip-link, .mapapp { display: none; } }
+        </style>
+    </head>
+    <body>
+        <a class="skip-link" href="#main">Skip to main content</a>
+        <main id="main" tabindex="-1">
+            <h1 class="vh">ArWalk: walking directions on a map</h1>
+            <noscript>
+                <p role="alert">ArWalk needs JavaScript. Enable it and reload.</p>
+            </noscript>
+            <div class="mapapp" id="mapapp">
+                <canvas
+                    id="map"
+                    tabindex="0"
+                    role="application"
+                    aria-label="Map. Arrow keys move the map, plus and minus zoom."
+                ></canvas>
+                <div class="top">
+                    <search aria-label="Search places">
+                        <form id="search-form">
+                            <div class="pill">
+                                <label for="q" class="vh">Search for a place or address</label>
+                                <input
+                                    type="search"
+                                    id="q"
+                                    name="q"
+                                    autocomplete="off"
+                                    maxlength="120"
+                                    placeholder="Search places"
+                                >
+                                <button type="submit" aria-label="Search">
+                                    <svg
+                                        class="icon"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        stroke-width="2.2"
+                                        stroke-linecap="round"
+                                        aria-hidden="true"
+                                    >
+                                        <circle
+                                            cx="10.5"
+                                            cy="10.5"
+                                            r="6.2"
+                                        />
+                                        <path d="m15.2 15.2 5 5"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </form>
+                    </search>
+                    <button
+                        type="button"
+                        class="secondary toggle"
+                        id="local"
+                        aria-pressed="true"
+                        hidden
+                    ></button>
+                    <ul
+                        id="results"
+                        class="results"
+                        aria-label="Search results"
+                        hidden
+                    ></ul>
+                </div>
+                <div
+                    class="banner"
+                    id="banner"
+                    hidden
+                >
+                    <span
+                        class="arr"
+                        id="b-arrow"
+                        aria-hidden="true"
+                    ></span>
+                    <div>
+                        <strong id="b-text"></strong>
+                        <p class="hint" id="b-dist"></p>
+                    </div>
+                </div>
+                <div class="ctrls">
+                    <button
+                        type="button"
+                        class="secondary"
+                        id="locate"
+                        aria-label="Show my location"
+                    >
+                        <svg
+                            class="icon"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.2"
+                            stroke-linecap="round"
+                            aria-hidden="true"
+                        >
+                            <circle
+                                cx="12"
+                                cy="12"
+                                r="4"
+                            />
+                            <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+                        </svg>
+                    </button>
+                    <button
+                        type="button"
+                        class="secondary"
+                        id="zin"
+                        aria-label="Zoom in"
+                    >
+                        <svg
+                            class="icon"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.2"
+                            stroke-linecap="round"
+                            aria-hidden="true"
+                        >
+                            <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                    </button>
+                    <button
+                        type="button"
+                        class="secondary"
+                        id="zout"
+                        aria-label="Zoom out"
+                    >
+                        <svg
+                            class="icon"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.2"
+                            stroke-linecap="round"
+                            aria-hidden="true"
+                        >
+                            <path d="M5 12h14"/>
+                        </svg>
+                    </button>
+                    <button
+                        type="button"
+                        class="secondary"
+                        id="about-btn"
+                        aria-label="About ArWalk"
+                    >
+                        <svg
+                            class="icon"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.2"
+                            stroke-linecap="round"
+                            aria-hidden="true"
+                        >
+                            <circle
+                                cx="12"
+                                cy="12"
+                                r="9"
+                            />
+                            <path d="M12 11v5M12 7.6v.2"/>
+                        </svg>
+                    </button>
+                </div>
+                <section
+                    class="perm"
+                    id="perm"
+                    aria-labelledby="perm-h"
+                    hidden
+                ></section>
+                <section
+                    class="sheet"
+                    id="sheet"
+                    aria-labelledby="sheet-h"
+                    hidden
+                ></section>
+                <p class="attrib">Tiles © <a href="https://www.esri.com">Esri</a> · Data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a></p>
+                <p id="app-error" role="alert"></p>
+            </div>
+            <p
+                id="app-status"
+                role="status"
+                class="vh"
+            ></p>
+            <section class="about stack" aria-labelledby="about-heading">
+                <div class="panel stack" style="max-inline-size: var(--text-measure);">
+                    <h2 id="about-heading">About ArWalk</h2>
+                    <p>ArWalk is a small map that finds a walking route and talks you along it. The map is drawn by this page itself on a canvas, with no mapping library. Drag to move, pinch or scroll to zoom, tap the map to drop a pin.</p>
+                    <p class="hint">Every service used is free and needs no key. Map pictures come from Esri (with HERE, Garmin and OpenStreetMap contributors), place search uses Photon from Komoot and walking routes use the OpenStreetMap Germany routing service, so what you search for and the start and end of a route are sent to them. Your live position is used on this device only and is never saved.</p>
+                    <p><a href="#map">Back to the map</a></p>
+                </div>
+            </section>
+        </main>
+        <footer class="site-footer">
+            <div class="wrap">
+                <p>ArWalk by <a href="https://ardalorn.github.io/ArTools/">Ardalorn</a>. © 2026.</p>
+                <p class="hint">Built on the Aengus design system.</p>
+            </div>
+        </footer>
+        <script>
+'use strict';
+
+const HALF_TURN_DEGREES = 180;
+const FULL_TURN_DEGREES = 360;
+const MOVED = 99;
+const SECONDS_PER_MINUTE = 60;
+const DECIMAL_PLACES = 5;
+const MS_PER_SECOND = 1000;
+
+/* ---------- Maths numbers: named so no bare number sits in a formula. ---------- */
+const HALF = 0.5; // Multiplying by this halves a number exactly, like dividing by 2.
+const TAU = Math.PI + Math.PI; // One full turn in radians.
+const FOUR_PI = TAU + TAU; // Divisor in the Web Mercator y formula.
+const ZOOM_BASE = 2; // Each zoom level doubles the width of the world.
+const EARTH_CIRCUMFERENCE_M = 40075016.686; // Equator length in metres, to size the accuracy circle.
+const LNG_WRAP_OFFSET = FULL_TURN_DEGREES + HALF_TURN_DEGREES; // Added to a longitude so the wrap stays positive.
+const EPSILON = 1e-9; // Stops a divide by zero.
+const METRES_PER_KM = 1000;
+const ROUND_TO_M = 10; // Walking distances under 1 km round to this many metres.
+
+/* ---------- Settings: every pause, timeout, retry and limit is here. Times are in milliseconds. ---------- */
+const FETCH_TIMEOUT_MS = 15000; // Longest wait for one request.
+const FETCH_TRIES = 2; // Attempts for one request.
+const FETCH_RETRY_MS = 2000; // Wait after a failed attempt, times the attempt number.
+const CACHE_OK_MS = 1800000; // Keep a good answer for 30 minutes.
+const CACHE_MISS_MS = 120000; // Keep an empty answer for 2 minutes.
+const CACHE_MAX_ENTRIES = 250; // Most entries one cache holds before old ones are dropped.
+const CACHE_TRIM_TO = 200; // Size the cache is trimmed down to.
+const TILE = 256; // Map tile size in pixels.
+const MIN_Z = 2; // Lowest zoom level.
+const MAX_TILE_Z = 19; // Highest zoom level the tile server has pictures for.
+const MAX_VIEW_Z = 20; // Highest zoom shown (the top level is stretched).
+const MAX_LAT = 85.0511; // Furthest north or south the map goes.
+const START_LAT = 51.5074; // Where the map opens before you search: latitude.
+const START_LNG = -0.1278; // Where the map opens before you search: longitude.
+const START_Z = 12; // Zoom the map opens at.
+const TILE_CACHE_MAX = 500; // Most map tile pictures kept in memory.
+const TAP_MOVE_PX = 8; // Finger or mouse movement that turns a tap into a drag.
+const TAP_MS = 400; // Longest press that still counts as a tap.
+const DOUBLE_TAP_MS = 280; // Two taps this close together zoom in instead of dropping a pin.
+const WHEEL_ZOOM = 0.0025; // Zoom levels per pixel of wheel movement.
+const KEY_PAN_PX = 100; // Distance one arrow key press moves the map.
+const FLY_MS = 450; // Time the map takes to glide to a new place.
+const ROUTE_W = 7; // Route line width in pixels.
+const SEARCH_LIMIT = 6; // Most places one search lists.
+const ADDR_MAX = 90; // Longest address shown in a result.
+const GEO_TIMEOUT_MS = 15000; // Longest wait for a location fix.
+const NAV_ZOOM = 17; // Zoom used while walking.
+const REROUTE_M = 40; // Distance off the route that asks for a new route.
+const REROUTE_MIN_MS = 10000; // Shortest gap between two new routes.
+const ARRIVE_M = 20; // Distance from the end that counts as arrived.
+const SIM_STEP_M = 14; // Metres a preview walk moves each tick.
+const SIM_TICK_MS = 1000; // Time between preview walk ticks.
+const TILE_URL = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/'; // Map pictures: free, no key.
+const GEOCODE_URL = 'https://photon.komoot.io/api/'; // Place search (Photon: free, no key, made for search as you type).
+const SEARCH_FETCH_LIMIT = 20; // Places requested when results are limited to one country, so enough are left after filtering.
+const LOCAL_KEY = 'arwalk-local'; // Saved choice to show only places in your own country.
+const SUGGEST_MIN = 3; // Letters typed before places are suggested.
+const SUGGEST_DEBOUNCE_MS = 350; // Pause in typing before a search starts.
+const ROUTE_URL = 'https://routing.openstreetmap.de/routed-foot/route/v1/foot/'; // Walking routes.
+const VOICE_KEY = 'arwalk-voice'; // Saved voice setting.
+const PINCH_POINTERS = 2; // Fingers that make a pinch.
+const ZOOM_STEP = 1; // Zoom levels per button press, key press or double tap.
+const PLACE_ZOOM = 16; // Zoom used when centring on a place or on you.
+const EASE_POWER = 3; // Steepness of the glide (3 is a cubic ease out).
+const WHEEL_LINE_PX = 20; // Pixels one line counts for when the wheel reports lines.
+const WHEEL_CTRL_BOOST = 4; // Faster wheel zoom for a trackpad pinch (Ctrl held).
+const FIT_PAD_TOP = 90; // Space kept clear above a fitted route, for the search bar.
+const FIT_PAD_RIGHT = 70; // Space kept clear to the right, for the buttons.
+const FIT_PAD_BOTTOM = 60; // Space kept clear below, plus the sheet height on a phone.
+const FIT_PAD_LEFT = 30; // Space kept clear to the left.
+const FIT_PAD_SHEET_SIDE = 50; // Space kept clear beside the sheet on a wide screen.
+const FIT_MIN_AREA = 60; // Smallest room, in pixels, a fitted route may be squeezed into.
+const FIT_MAX_Z = 18; // Closest zoom a fitted route may use.
+const MIN_SUBMIT_CHARS = 2; // Fewest letters a submitted search needs.
+const ANNOUNCE_MIN_M = 30; // Further than this from a turn, the voice says "In 200 metres".
+const PIN_HEAD_OFFSET = 26; // Pixels from the pin's tip up to the middle of its head.
+const PIN_HEAD_R = 13; // Radius of the pin's head.
+const PIN_ARC_START = 0.65; // Where the head's arc starts, as a fraction of pi.
+const PIN_ARC_END = 0.35; // Where the head's arc ends, as a fraction of pi.
+const PIN_HOLE_R = 4.5; // Radius of the dot in the pin's head.
+const DOT_RING_PX = 3; // Width of the white ring round a dot.
+const ME_DOT_R = 8; // Radius of your-location dot.
+const START_DOT_R = 8; // Radius of the route's start marker.
+const ROUTE_CASING_PX = 4; // Extra width of the white edge round the route line.
+const ACCURACY_MIN_R = 12; // Smallest accuracy circle, in pixels, worth drawing.
+
+/* ---------- Helpers ---------- */
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(key, fallback = null) { try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
+  set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } },
+};
+const say = (el, text) => { el.textContent = text; };
+const fail = (el, text) => {
+  el.replaceChildren();
+  if (!text) { return; }
+  const box = document.createElement('span'), label = document.createElement('strong');
+  label.textContent = 'Error: ';
+  box.append(label, text);
+  el.append(box);
+};
+const clear = (...els) => els.forEach((el) => { el.replaceChildren(); });
+function focusHeading(el) { el.setAttribute('tabindex', '-1'); el.focus({ preventScroll: false }); }
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+/* Waits run in a Web Worker so a background tab keeps its pace. */
+let tickWorker = null;
+const tickWaits = new Map();
+let tickId = 0;
+try {
+  const tickUrl = URL.createObjectURL(new Blob(['onmessage=e=>setTimeout(()=>postMessage(e.data.id),e.data.ms)'], { type: 'text/javascript' }));
+  try { tickWorker = new Worker(tickUrl); } finally { URL.revokeObjectURL(tickUrl); }
+  tickWorker.onmessage = (e) => { const done = tickWaits.get(e.data); if (done) { tickWaits.delete(e.data); done(); } };
+  tickWorker.onerror = () => { tickWorker = null; tickWaits.forEach((done) => done()); tickWaits.clear(); };
+} catch { tickWorker = null; }
+const sleep = (ms) => {
+  if (!tickWorker) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+  return new Promise((resolve) => { const id = ++tickId; tickWaits.set(id, resolve); tickWorker.postMessage({ id, ms }); });
+};
+/** Fetch with a timeout and retries. Throws when every attempt failed. */
+async function fetchRetry(url, options = {}) {
+  const { tries = FETCH_TRIES, timeout = FETCH_TIMEOUT_MS, retryMs = FETCH_RETRY_MS, ...init } = options;
+  const abortSignal = window.AbortSignal;
+  for (let attempt = 0; attempt < tries; attempt++) {
+    try {
+      const r = await fetch(url, abortSignal && abortSignal.timeout ? { ...init, signal: abortSignal.timeout(timeout) } : init);
+      if (r.ok) { return r; }
+    } catch { /* try again */ }
+    if (attempt < tries - 1) { await sleep(retryMs * (attempt + 1)); }
+  }
+  throw new Error('The server did not answer.');
+}
+/** Cache a promise by key so two callers share one request. */
+function cachedPromise(map, key, loader, hasValue) {
+  const now = Date.now(), old = map.get(key);
+  if (old && old.expiresAt > now) { return old.promise; }
+  if (old) { map.delete(key); }
+  const entry = { expiresAt: now + CACHE_MISS_MS, promise: null };
+  entry.promise = Promise.resolve().then(loader).then((value) => {
+    entry.expiresAt = Date.now() + (hasValue(value) ? CACHE_OK_MS : CACHE_MISS_MS);
+    return value;
+  }, (error) => { map.delete(key); throw error; });
+  map.set(key, entry);
+  if (map.size > CACHE_MAX_ENTRIES) {
+    for (const [k, v] of map) { if (v.expiresAt <= Date.now()) { map.delete(k); } if (map.size <= CACHE_TRIM_TO) { break; } }
+    if (map.size > CACHE_MAX_ENTRIES) { map.delete(map.keys().next().value); }
+  }
+  return entry.promise;
+}
+
+/* ---------- App ---------- */
+(function app() {
+  const cv = $('map'), ctx = cv.getContext('2d'), mapapp = $('mapapp'), sheet = $('sheet'), banner = $('banner');
+  const st = $('app-status'), er = $('app-error'), form = $('search-form'), q = $('q'), resBox = $('results');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)'), scheme = matchMedia('(prefers-color-scheme: dark)');
+  const wide = matchMedia('(width >= 56rem)');
+  const v = { lat: START_LAT, lng: START_LNG, z: START_Z };
+  const tiles = new Map(), searchCache = new Map(), ptrs = new Map();
+  let W = 0, H = 0, dpr = 1, raf = 0, fly = 0, dark = scheme.matches, tileErr = false;
+  let me = null, orig = null, dest = null, route = null, nav = null, found = [], picking = false, follow = false;
+  let moved = 99, t0 = 0, pinch = 0, tapTimer = 0, voice = store.get(VOICE_KEY, true) !== false, wake = null;
+  let C = {};
+
+  /* Colours come from the tokens: a probe element resolves light-dark() for us. */
+  const probe = document.createElement('i');
+  probe.hidden = false; probe.className = 'vh'; document.body.append(probe);
+  const col = (name) => { probe.style.color = 'var(' + name + ')'; return getComputedStyle(probe).color; };
+  const loadColors = () => { C = { bg: col('--surface-2'), route: col('--route'), pin: col('--pin'), ring: '#ffffff' }; };
+
+  /* Web Mercator */
+  const clampLat = (l) => Math.max(-MAX_LAT, Math.min(MAX_LAT, l));
+  const proj = (lat, lng, z) => { const n = TILE * ZOOM_BASE ** z, s = Math.sin(clampLat(lat) * Math.PI / HALF_TURN_DEGREES); return { x: (lng + HALF_TURN_DEGREES) / FULL_TURN_DEGREES * n, y: (HALF - Math.log((1 + s) / (1 - s)) / FOUR_PI) * n }; };
+  const unproj = (x, y, z) => { const n = TILE * ZOOM_BASE ** z, t = Math.PI - TAU * y / n; return { lat: HALF_TURN_DEGREES / Math.PI * Math.atan(Math.sinh(t)), lng: x / n * FULL_TURN_DEGREES - HALF_TURN_DEGREES }; };
+  const pos = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+  const geoAt = (x, y) => { const c = proj(v.lat, v.lng, v.z); return unproj(c.x + x - W * HALF, c.y + y - H * HALF, v.z); };
+
+  /* Tiles */
+  const tk = (z, x, y) => z + '/' + x + '/' + y;
+  function tile(z, x, y) {
+    const key = tk(z, x, y);
+    let img = tiles.get(key);
+    if (img) { return img; }
+    img = document.createElement('img');
+    img.onload = () => { if (tileErr) { tileErr = false; clear(er); } redraw(); };
+    img.onerror = () => { if (!tileErr) { tileErr = true; fail(er, 'Map pictures could not load. Check your connection.'); } };
+    img.src = TILE_URL + z + '/' + y + '/' + x;
+    tiles.set(key, img);
+    if (tiles.size > TILE_CACHE_MAX) { tiles.delete(tiles.keys().next().value); }
+    return img;
+  }
+  const ready = (i) => i && i.complete && i.naturalWidth > 0;
+  function drawTile(z, x, y, dx, dy, size) {
+    const img = tile(z, x, y);
+    if (ready(img)) { ctx.drawImage(img, dx, dy, size, size); return; }
+    const p = z > MIN_Z ? tiles.get(tk(z - 1, x >> 1, y >> 1)) : null; /* show the blurry parent while the sharp one loads */
+    if (ready(p)) { const hw = p.naturalWidth * HALF, hh = p.naturalHeight * HALF; ctx.drawImage(p, (x & 1) * hw, (y & 1) * hh, hw, hh, dx, dy, size, size); }
+  }
+
+  /* Drawing */
+  function pin(x, y) {
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y - PIN_HEAD_OFFSET, PIN_HEAD_R, Math.PI * PIN_ARC_START, Math.PI * PIN_ARC_END, false); ctx.closePath();
+    ctx.fillStyle = C.pin; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = C.ring; ctx.stroke();
+    ctx.beginPath(); ctx.arc(x, y - PIN_HEAD_OFFSET, PIN_HOLE_R, 0, TAU); ctx.fillStyle = C.ring; ctx.fill();
+  }
+  function dot(x, y, r) {
+    ctx.beginPath(); ctx.arc(x, y, r + DOT_RING_PX, 0, TAU); ctx.fillStyle = C.ring; ctx.fill();
+    ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fillStyle = C.route; ctx.fill();
+  }
+  function draw() {
+    raf = 0;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
+    const zi = Math.max(MIN_Z, Math.min(MAX_TILE_Z, Math.round(v.z))), s = ZOOM_BASE ** (v.z - zi), c = proj(v.lat, v.lng, zi), n = ZOOM_BASE ** zi;
+    const tx0 = Math.floor((c.x - W * HALF / s) / TILE), tx1 = Math.floor((c.x + W * HALF / s) / TILE);
+    const ty0 = Math.max(0, Math.floor((c.y - H * HALF / s) / TILE)), ty1 = Math.min(n - 1, Math.floor((c.y + H * HALF / s) / TILE));
+    if (dark && 'filter' in ctx) { ctx.filter = 'invert(1) hue-rotate(180deg) saturate(0.45) brightness(0.9) contrast(0.95)'; }
+    for (let ty = ty0; ty <= ty1; ty++) {
+      for (let tx = tx0; tx <= tx1; tx++) { drawTile(zi, ((tx % n) + n) % n, ty, (tx * TILE - c.x) * s + W * HALF, (ty * TILE - c.y) * s + H * HALF, TILE * s + 1); }
+    }
+    if ('filter' in ctx) { ctx.filter = 'none'; }
+    const cc = proj(v.lat, v.lng, v.z);
+    const sc = (lat, lng) => { const p = proj(lat, lng, v.z); return [p.x - cc.x + W * HALF, p.y - cc.y + H * HALF]; };
+    if (route) {
+      ctx.beginPath();
+      route.pts.forEach((p, i) => { const [x, y] = sc(p[0], p[1]); if (i) { ctx.lineTo(x, y); } else { ctx.moveTo(x, y); } });
+      ctx.lineJoin = ctx.lineCap = 'round';
+      ctx.strokeStyle = C.ring; ctx.lineWidth = ROUTE_W + ROUTE_CASING_PX; ctx.stroke();
+      ctx.strokeStyle = C.route; ctx.lineWidth = ROUTE_W; ctx.stroke();
+      if (orig && !nav) { const [x, y] = sc(orig.lat, orig.lng); ctx.beginPath(); ctx.arc(x, y, START_DOT_R, 0, TAU); ctx.fillStyle = C.ring; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = C.route; ctx.stroke(); }
+    }
+    if (me) {
+      const [x, y] = sc(me.lat, me.lng), r = (me.acc || 0) / (EARTH_CIRCUMFERENCE_M * Math.cos(me.lat * Math.PI / HALF_TURN_DEGREES) / (TILE * ZOOM_BASE ** v.z));
+      if (r > ACCURACY_MIN_R) { ctx.globalAlpha = 0.15; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fillStyle = C.route; ctx.fill(); ctx.globalAlpha = 1; }
+      dot(x, y, ME_DOT_R);
+    }
+    if (dest) { const [x, y] = sc(dest.lat, dest.lng); pin(x, y); }
+  }
+  const redraw = () => { if (!raf) { raf = requestAnimationFrame(draw); } };
+  const fitCanvas = () => { dpr = window.devicePixelRatio || 1; W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); redraw(); };
+  new ResizeObserver(fitCanvas).observe(cv);
+
+  /* Moving the view */
+  const stopFly = () => { cancelAnimationFrame(fly); fly = 0; };
+  function panBy(dx, dy) {
+    const c = proj(v.lat, v.lng, v.z), r = unproj(c.x - dx, c.y - dy, v.z);
+    v.lat = clampLat(r.lat); v.lng = ((r.lng + LNG_WRAP_OFFSET) % FULL_TURN_DEGREES) - HALF_TURN_DEGREES; redraw();
+  }
+  function zoomAt(x, y, nz) {
+    stopFly();
+    const z = Math.max(MIN_Z, Math.min(MAX_VIEW_Z, nz)), g = geoAt(x, y), p = proj(g.lat, g.lng, z), r = unproj(p.x - (x - W * HALF), p.y - (y - H * HALF), z);
+    v.z = z; v.lat = clampLat(r.lat); v.lng = r.lng; redraw();
+  }
+  function flyTo(lat, lng, z) {
+    stopFly();
+    if (reduce.matches) { Object.assign(v, { lat, lng, z }); redraw(); return; }
+    const a = { ...v }, t = performance.now();
+    const step = (now) => {
+      const k = Math.min(1, (now - t) / FLY_MS), e = 1 - (1 - k) ** EASE_POWER;
+      v.lat = a.lat + (lat - a.lat) * e; v.lng = a.lng + (lng - a.lng) * e; v.z = a.z + (z - a.z) * e;
+      draw(); fly = k < 1 ? requestAnimationFrame(step) : 0;
+    };
+    fly = requestAnimationFrame(step);
+  }
+  /* Show every point, clear of the search bar and the sheet. */
+  function fit(pts) {
+    const lats = pts.map((p) => p[0]), lngs = pts.map((p) => p[1]);
+    const a = proj(Math.max(...lats), Math.min(...lngs), 0), b = proj(Math.min(...lats), Math.max(...lngs), 0);
+    const pad = { t: FIT_PAD_TOP, r: FIT_PAD_RIGHT, b: wide.matches || sheet.hidden ? FIT_PAD_BOTTOM : sheet.offsetHeight + FIT_PAD_BOTTOM, l: wide.matches ? sheet.offsetWidth + FIT_PAD_SHEET_SIDE : FIT_PAD_LEFT };
+    const aw = Math.max(FIT_MIN_AREA, W - pad.l - pad.r), ah = Math.max(FIT_MIN_AREA, H - pad.t - pad.b);
+    const z = Math.max(MIN_Z, Math.min(FIT_MAX_Z, Math.log2(Math.min(aw / (b.x - a.x || EPSILON), ah / (b.y - a.y || EPSILON)))));
+    const k = ZOOM_BASE ** z, mx = (a.x + b.x) * HALF * k + (W * HALF - (pad.l + aw * HALF)), my = (a.y + b.y) * HALF * k + (H * HALF - (pad.t + ah * HALF));
+    const c = unproj(mx, my, z);
+    flyTo(c.lat, c.lng, z);
+  }
+
+  /* Pointer, wheel and keyboard */
+  const zoomCentre = (dz) => zoomAt(W * HALF, H * HALF, v.z + dz);
+  const mid = () => { const [a, b] = [...ptrs.values()]; return { x: (a[0] + b[0]) * HALF, y: (a[1] + b[1]) * HALF, spread: Math.hypot(a[0] - b[0], a[1] - b[1]) }; };
+  cv.addEventListener('pointerdown', (e) => {
+    cv.setPointerCapture(e.pointerId); stopFly(); ptrs.set(e.pointerId, pos(e));
+    if (ptrs.size === 1) { moved = 0; t0 = performance.now(); } else { moved = MOVED; }
+    pinch = ptrs.size === PINCH_POINTERS ? mid().spread : 0;
+  });
+  cv.addEventListener('pointermove', (e) => {
+    if (!ptrs.has(e.pointerId)) { return; }
+    const prev = ptrs.get(e.pointerId), cur = pos(e);
+    if (ptrs.size === 1) {
+      ptrs.set(e.pointerId, cur); moved += Math.abs(cur[0] - prev[0]) + Math.abs(cur[1] - prev[1]);
+      if (moved > TAP_MOVE_PX) { if (follow) { follow = false; } panBy(cur[0] - prev[0], cur[1] - prev[1]); }
+    } else if (ptrs.size === PINCH_POINTERS) {
+      const m0 = mid(); ptrs.set(e.pointerId, cur); const m1 = mid();
+      panBy(m1.x - m0.x, m1.y - m0.y);
+      if (pinch > 0 && m1.spread > 0) { zoomAt(m1.x, m1.y, v.z + Math.log2(m1.spread / pinch)); }
+      pinch = m1.spread; follow = false;
+    }
+  });
+  const lift = (e) => {
+    if (!ptrs.has(e.pointerId)) { return; }
+    const tapped = e.type === 'pointerup' && ptrs.size === 1 && moved <= TAP_MOVE_PX && performance.now() - t0 < TAP_MS, p = pos(e);
+    ptrs.delete(e.pointerId); pinch = 0; moved = MOVED;
+    if (tapped) {
+      if (tapTimer) { clearTimeout(tapTimer); tapTimer = 0; zoomAt(p[0], p[1], v.z + ZOOM_STEP); } else { tapTimer = setTimeout(() => { tapTimer = 0; onTap(p[0], p[1]); }, DOUBLE_TAP_MS); }
+    }
+  };
+  cv.addEventListener('pointerup', lift);
+  cv.addEventListener('pointercancel', lift);
+  cv.addEventListener('wheel', (e) => { e.preventDefault(); const [x, y] = pos(e); zoomAt(x, y, v.z - e.deltaY * (e.deltaMode === 1 ? WHEEL_LINE_PX : 1) * WHEEL_ZOOM * (e.ctrlKey ? WHEEL_CTRL_BOOST : 1)); }, { passive: false });
+  cv.addEventListener('keydown', (e) => {
+    const k = { ArrowLeft: [KEY_PAN_PX, 0], ArrowRight: [-KEY_PAN_PX, 0], ArrowUp: [0, KEY_PAN_PX], ArrowDown: [0, -KEY_PAN_PX] }[e.key];
+    if (k) { e.preventDefault(); follow = false; panBy(k[0], k[1]); }
+    else if (e.key === '+' || e.key === '=') { zoomCentre(ZOOM_STEP); }
+    else if (e.key === '-') { zoomCentre(-ZOOM_STEP); }
+  });
+  $('zin').addEventListener('click', () => zoomCentre(ZOOM_STEP));
+  $('zout').addEventListener('click', () => zoomCentre(-ZOOM_STEP));
+  $('about-btn').addEventListener('click', () => { $('about-heading').scrollIntoView(); focusHeading($('about-heading')); });
+  const onScheme = () => { dark = scheme.matches; loadColors(); redraw(); };
+  scheme.addEventListener('change', onScheme);
+
+  /* Location */
+  const GEO = { enableHighAccuracy: true, timeout: GEO_TIMEOUT_MS, maximumAge: 5000 };
+  /* Permission state: 'granted', 'prompt', 'denied', or 'unknown' when the browser cannot say. */
+  const permBox = $('perm');
+  let geoState = 'unknown', permCb = null, permFrom = null;
+  if (navigator.permissions && navigator.permissions.query) {
+    navigator.permissions.query({ name: 'geolocation' }).then((s) => {
+      geoState = s.state;
+      s.addEventListener('change', () => {
+        geoState = s.state;
+        if (s.state === 'granted' && !permBox.hidden) { fetchPos(closePerm, true); } /* allowed from the browser's own settings */
+      });
+    }).catch(() => { /* leave as unknown */ });
+  }
+  function closePerm(result) {
+    const cb = permCb, back = permFrom;
+    permCb = permFrom = null; permBox.hidden = true; permBox.innerHTML = '';
+    if (!result && back && document.contains(back)) { back.focus(); }
+    if (cb) { cb(result); }
+  }
+  function showPerm(denied) {
+    permBox.hidden = false;
+    permBox.innerHTML = denied
+      ? '<h2 id="perm-h">Location is blocked</h2><p>Your browser is blocking location for this site. To turn it on, open the padlock or settings icon beside the address bar, set Location to Allow, then try again.</p><div class="row"><button type="button" data-perm="allow">Try again</button><button type="button" class="secondary" data-perm="skip">Choose start on map</button></div>'
+      : '<h2 id="perm-h">Allow location?</h2><p>ArWalk uses your position to start the route from where you are and to guide you as you walk. It stays on this device and is never saved. Your browser will ask you to confirm.</p><div class="row"><button type="button" data-perm="allow">Allow location</button><button type="button" class="secondary" data-perm="skip">Not now</button></div>';
+    say(st, denied ? 'Location is blocked for this site.' : 'ArWalk would like to use your location.');
+    focusHeading($('perm-h'));
+  }
+  permBox.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-perm]');
+    if (!b) { return; }
+    if (b.dataset.perm === 'skip') { closePerm(null); say(st, 'Tap the map to choose a start point instead.'); return; }
+    clear(er); b.disabled = true; b.textContent = 'Waiting for your browser…';
+    fetchPos(closePerm, true);
+  });
+  permBox.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closePerm(null); } });
+  /* Ask the browser for one fix. fromCard keeps the permission card open if access is refused. */
+  function fetchPos(cb, fromCard) {
+    navigator.geolocation.getCurrentPosition((p) => {
+      geoState = 'granted'; me = { lat: p.coords.latitude, lng: p.coords.longitude, acc: p.coords.accuracy }; redraw(); cb(me);
+    }, (e) => {
+      if (e.code === 1) { geoState = 'denied'; if (fromCard) { showPerm(true); return; } }
+      fail(er, e.code === 1 ? 'Location permission was refused. Allow it for this site, or tap the map to choose a start point.' : 'Your location is not available right now.'); cb(null);
+    }, GEO);
+  }
+  function locate(cb) {
+    if (!navigator.geolocation || !window.isSecureContext) { fail(er, 'Your location is not available right now. Tap the map to choose a start point instead.'); cb(null); return; }
+    if (geoState === 'granted') { fetchPos(cb); return; }
+    permCb = cb; permFrom = document.activeElement; showPerm(geoState === 'denied');
+  }
+  $('locate').addEventListener('click', () => {
+    clear(er);
+    if (nav) { follow = true; if (me) { flyTo(me.lat, me.lng, Math.max(v.z, NAV_ZOOM)); } return; }
+    locate((m) => { if (m) { flyTo(m.lat, m.lng, Math.max(v.z, PLACE_ZOOM)); say(st, 'Centred on your location.'); } });
+  });
+
+  /* Formatting */
+  const fmtDist = (m, spoken) => (m < METRES_PER_KM ? Math.max(ROUND_TO_M, Math.round(m / ROUND_TO_M) * ROUND_TO_M) + (spoken ? ' metres' : ' m') : (m / METRES_PER_KM).toFixed(1) + (spoken ? ' kilometres' : ' km'));
+  const fmtTime = (s) => { const m = Math.max(1, Math.round(s / SECONDS_PER_MINUTE)); return m < SECONDS_PER_MINUTE ? m + ' min' : Math.floor(m / SECONDS_PER_MINUTE) + ' h ' + (m % SECONDS_PER_MINUTE) + ' min'; };
+  const MOD = { left: 'Turn left', 'slight left': 'Bear left', 'sharp left': 'Turn sharp left', right: 'Turn right', 'slight right': 'Bear right', 'sharp right': 'Turn sharp right', straight: 'Continue straight', uturn: 'Make a U-turn' };
+  const ARROW = { left: '↰', 'slight left': '↖', 'sharp left': '↲', right: '↱', 'slight right': '↗', 'sharp right': '↳', straight: '↑', uturn: '↶' };
+  const arrow = (s) => (s.type === 'arrive' ? '⚑' : s.type === 'depart' ? '↑' : ARROW[s.mod] || '↑');
+  function instr(s) {
+    const on = s.name ? ' onto ' + s.name : '';
+    if (s.type === 'arrive') { return 'Arrive at your destination'; }
+    if (s.type === 'depart') { return 'Walk' + (s.name ? ' along ' + s.name : ''); }
+    if (s.type === 'roundabout' || s.type === 'rotary') { return 'Take the roundabout' + on; }
+    return (MOD[s.mod] || 'Continue') + on;
+  }
+
+  /* Home country from the browser's reported time zone. Zones not listed give no filter. */
+  const TZ_COUNTRY = { 'Europe/London': 'GB', 'Europe/Belfast': 'GB', 'Europe/Dublin': 'IE', 'Europe/Paris': 'FR', 'Europe/Berlin': 'DE', 'Europe/Madrid': 'ES', 'Europe/Rome': 'IT', 'Europe/Amsterdam': 'NL', 'Europe/Brussels': 'BE', 'Europe/Lisbon': 'PT', 'Europe/Zurich': 'CH', 'Europe/Vienna': 'AT', 'Europe/Stockholm': 'SE', 'Europe/Oslo': 'NO', 'Europe/Copenhagen': 'DK', 'Europe/Helsinki': 'FI', 'Europe/Warsaw': 'PL', 'Europe/Prague': 'CZ', 'Europe/Athens': 'GR', 'Europe/Budapest': 'HU', 'Europe/Bucharest': 'RO', 'Pacific/Auckland': 'NZ', 'Asia/Tokyo': 'JP', 'Asia/Kolkata': 'IN', 'Asia/Calcutta': 'IN', 'Asia/Singapore': 'SG', 'Asia/Dubai': 'AE', 'Asia/Seoul': 'KR', 'Asia/Manila': 'PH', 'Africa/Johannesburg': 'ZA', 'Africa/Lagos': 'NG', 'Africa/Nairobi': 'KE', 'America/Toronto': 'CA', 'America/Vancouver': 'CA', 'America/Edmonton': 'CA', 'America/Winnipeg': 'CA', 'America/Halifax': 'CA', 'America/Mexico_City': 'MX', 'America/Sao_Paulo': 'BR', 'America/Argentina/Buenos_Aires': 'AR', 'America/New_York': 'US', 'America/Chicago': 'US', 'America/Denver': 'US', 'America/Los_Angeles': 'US', 'America/Phoenix': 'US', 'America/Anchorage': 'US', 'America/Detroit': 'US', 'Pacific/Honolulu': 'US' };
+  function zoneCountry() {
+    let z = '';
+    try { z = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch { z = ''; }
+    return TZ_COUNTRY[z] || (z.startsWith('Australia/') ? 'AU' : '');
+  }
+  const home = zoneCountry(), localBtn = $('local');
+  let localOnly = store.get(LOCAL_KEY, true) !== false;
+  const filtering = () => Boolean(home) && localOnly;
+  let homeName = home;
+  try { homeName = new Intl.DisplayNames(['en-GB'], { type: 'region' }).of(home) || home; } catch { homeName = home; }
+  if (home) { localBtn.hidden = false; localBtn.textContent = 'Only in ' + homeName; localBtn.setAttribute('aria-pressed', String(localOnly)); }
+  localBtn.addEventListener('click', () => {
+    localOnly = !localOnly; store.set(LOCAL_KEY, localOnly); localBtn.setAttribute('aria-pressed', String(localOnly));
+    const t = q.value.trim();
+    if (t.length >= SUGGEST_MIN) { runSearch(t, true); }
+  });
+
+  /* Search: suggestions appear as you type, and clearing the box clears them. */
+  let seq = 0, deb = 0;
+  async function geocode(t) {
+    const r = await fetchRetry(GEOCODE_URL + '?limit=' + (filtering() ? SEARCH_FETCH_LIMIT : SEARCH_LIMIT) + '&lang=en&q=' + encodeURIComponent(t), { headers: { Accept: 'application/json' } });
+    const seen = new Set(), out = [];
+    ((await r.json()).features || []).forEach((f) => {
+      const p = f.properties || {}, c = f.geometry.coordinates;
+      if ((filtering() && p.countrycode !== home) || out.length >= SEARCH_LIMIT) { return; }
+      const street = p.street ? (p.housenumber ? p.housenumber + ' ' : '') + p.street : '';
+      const name = p.name || street || p.city || 'Unnamed place';
+      const addr = [p.name ? street : '', p.district, p.city, p.county, p.state, p.country].filter((x) => x && x !== name).join(', ');
+      const key = name + '|' + addr;
+      if (!seen.has(key)) { seen.add(key); out.push({ lat: +c[1], lng: +c[0], name, addr: addr.slice(0, ADDR_MAX) }); }
+    });
+    return out;
+  }
+  async function runSearch(t, typed) {
+    const mine = ++seq;
+    if (!typed) { clear(er); say(st, 'Searching…'); }
+    sheet.hidden = true; resBox.hidden = false;
+    if (!found.length || !typed) { resBox.innerHTML = '<li class="hint" aria-hidden="true">Searching…</li>'; }
+    try {
+      const list = await cachedPromise(searchCache, (filtering() ? home : '*') + t.toLowerCase(), () => geocode(t), (x) => x.length > 0);
+      if (mine !== seq) { return; }
+      found = list; clear(er);
+      if (!list.length) { resBox.innerHTML = '<li class="hint">No places found for “' + esc(t) + '”. Try another spelling' + (filtering() ? ', or turn off “Only in ' + esc(homeName) + '”' : '') + '.</li>'; say(st, 'No places found for “' + t + '”.'); return; }
+      resBox.innerHTML = list.map((p, i) => '<li><button type="button" class="secondary" data-i="' + i + '"><strong>' + esc(p.name) + '</strong>' + (p.addr ? '<span class="hint">' + esc(p.addr) + '</span>' : '') + '</button></li>').join('');
+      say(st, list.length + ' places found.');
+    } catch { if (mine === seq) { resBox.hidden = true; clear(st); fail(er, 'Search failed. Check your connection and try again.'); } }
+  }
+  function endSearch() {
+    clearTimeout(deb); seq++; found = []; resBox.hidden = true; resBox.innerHTML = ''; clear(st);
+    if (sheet.innerHTML && !nav) { sheet.hidden = false; }
+  }
+  q.addEventListener('input', () => {
+    clearTimeout(deb);
+    const t = q.value.trim();
+    if (t.length < SUGGEST_MIN) { endSearch(); return; }
+    deb = setTimeout(() => runSearch(t, true), SUGGEST_DEBOUNCE_MS);
+  });
+  form.addEventListener('submit', (e) => {
+    e.preventDefault(); clearTimeout(deb);
+    const t = q.value.trim();
+    if (t.length < MIN_SUBMIT_CHARS) { endSearch(); return; }
+    runSearch(t, false);
+  });
+  q.addEventListener('keydown', (e) => { if (e.key === 'Escape') { endSearch(); } });
+  resBox.addEventListener('click', (e) => {
+    const b = e.target.closest('button[data-i]');
+    if (!b) { return; }
+    dest = found[+b.dataset.i]; q.value = dest.name; endSearch(); sheet.hidden = false; route = null; orig = null;
+    showPlace(); flyTo(dest.lat, dest.lng, PLACE_ZOOM);
+  });
+
+  /* Place and route sheets */
+  function showPlace() {
+    sheet.hidden = false;
+    sheet.innerHTML = '<h2 id="sheet-h">' + esc(dest.name) + '</h2><p class="hint">' + esc(dest.addr) + '</p><div class="row"><button type="button" data-act="dir">Directions</button><button type="button" class="secondary" data-act="close">Close</button></div>';
+    say(st, dest.name + ' selected.'); redraw();
+  }
+  function showRoute() {
+    const speed = route.dist / Math.max(1, route.dur);
+    sheet.hidden = false;
+    sheet.innerHTML = '<h2 id="sheet-h">' + fmtTime(route.dur) + ' <span class="hint">(' + fmtDist(route.dist) + ') walking</span></h2><p class="hint">To ' + esc(dest.name) + '</p>' +
+      '<div class="row"><button type="button" data-act="start">Start</button><button type="button" class="secondary" data-act="preview" aria-label="Preview the walk without GPS">Preview</button><button type="button" class="secondary toggle" aria-pressed="false" data-act="steps">Steps</button><button type="button" class="secondary" data-act="close">Close</button></div>' +
+      '<ol class="steps" aria-label="Walking directions" hidden>' + route.steps.map((s) => '<li><span class="arr" aria-hidden="true">' + arrow(s) + '</span><span>' + esc(instr(s)) + (s.d ? '<span class="hint"> · ' + fmtDist(s.d) + ' · ' + fmtTime(s.d / speed) + '</span>' : '') + '</span></li>').join('') + '</ol>';
+    say(st, 'Walking route found. ' + fmtTime(route.dur) + ', ' + fmtDist(route.dist, true) + '.');
+    fit(route.pts);
+  }
+  const hav = (a, b) => { const k = 111320, dx = (b[1] - a[1]) * k * Math.cos((a[0] + b[0]) * Math.PI / FULL_TURN_DEGREES), dy = (b[0] - a[0]) * k; return Math.hypot(dx, dy); };
+  async function getRoute(from, quiet) {
+    if (!quiet) { clear(er); say(st, 'Finding a walking route…'); }
+    try {
+      const u = ROUTE_URL + from.lng + ',' + from.lat + ';' + dest.lng + ',' + dest.lat + '?overview=full&geometries=geojson&steps=true';
+      const r = (await (await fetchRetry(u)).json()).routes[0];
+      const pts = r.geometry.coordinates.map((c) => [c[1], c[0]]), cum = [0];
+      for (let i = 1; i < pts.length; i++) { cum.push(cum[i - 1] + hav(pts[i - 1], pts[i])); }
+      let acc = 0;
+      const steps = r.legs[0].steps.map((s) => ({ d: s.distance, name: s.name, type: s.maneuver.type, mod: s.maneuver.modifier }));
+      const starts = steps.map((s) => { const a = acc; acc += s.d; return a; });
+      route = { pts, cum, steps, starts, dist: r.distance, dur: r.duration, total: cum[cum.length - 1] };
+      orig = { lat: from.lat, lng: from.lng }; redraw();
+      return true;
+    } catch { fail(er, 'No walking route could be found between those points.'); clear(st); return false; }
+  }
+  function directions() {
+    clear(er);
+    const go = async (from) => { if (await getRoute(from)) { showRoute(); } else { showPlace(); } };
+    if (me) { go(me); return; }
+    locate((m) => {
+      if (m) { go(m); return; }
+      picking = true; say(st, 'Tap the map to choose where to start walking from.');
+      sheet.innerHTML = '<h2 id="sheet-h">Choose a start point</h2><p class="hint">Tap the map where you will start walking.</p><div class="row"><button type="button" class="secondary" data-act="close">Cancel</button></div>';
+    });
+  }
+  function onTap(x, y) {
+    if (nav) { return; }
+    const g = geoAt(x, y);
+    if (picking) {
+      picking = false; clear(er);
+      getRoute(g).then((ok) => { if (ok) { showRoute(); } else { showPlace(); } });
+      return;
+    }
+    dest = { lat: g.lat, lng: g.lng, name: 'Dropped pin', addr: g.lat.toFixed(DECIMAL_PLACES) + ', ' + g.lng.toFixed(DECIMAL_PLACES) };
+    route = null; orig = null; resBox.hidden = true; clear(er); showPlace();
+  }
+  function clearAll() {
+    dest = orig = route = null; picking = false; sheet.hidden = true; sheet.innerHTML = ''; clear(st, er); redraw();
+  }
+
+  /* Turn by turn */
+  function snap(lat, lng) {
+    const k = 111320, kx = k * Math.cos(lat * Math.PI / HALF_TURN_DEGREES), p = route.pts, cum = route.cum;
+    let best = { d: Infinity, along: 0 };
+    for (let i = 1; i < p.length; i++) {
+      const ax = (p[i - 1][1] - lng) * kx, ay = (p[i - 1][0] - lat) * k, bx = (p[i][1] - lng) * kx, by = (p[i][0] - lat) * k;
+      const dx = bx - ax, dy = by - ay, len2 = dx * dx + dy * dy || EPSILON, t = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2));
+      const d = Math.hypot(ax + t * dx, ay + t * dy);
+      if (d < best.d) { best = { d, along: cum[i - 1] + t * (cum[i] - cum[i - 1]) }; }
+    }
+    return best;
+  }
+  const pointAt = (dist) => {
+    const p = route.pts, c = route.cum;
+    let i = 1;
+    while (i < p.length - 1 && c[i] < dist) { i++; }
+    const t = c[i] === c[i - 1] ? 0 : Math.max(0, Math.min(1, (dist - c[i - 1]) / (c[i] - c[i - 1])));
+    return [p[i - 1][0] + (p[i][0] - p[i - 1][0]) * t, p[i - 1][1] + (p[i][1] - p[i - 1][1]) * t];
+  };
+  function speak(t) {
+    const synth = window.speechSynthesis, Utterance = window.SpeechSynthesisUtterance;
+    if (!voice || !synth || !Utterance) { return; }
+    synth.cancel(); const u = new Utterance(t); u.lang = 'en-GB'; synth.speak(u);
+  }
+  async function keepAwake(on) {
+    try { if (on && navigator.wakeLock) { wake = await navigator.wakeLock.request('screen'); } else if (wake) { await wake.release(); wake = null; } } catch { wake = null; }
+  }
+  function announce() {
+    const s = route.steps[Math.min(nav.idx + 1, route.steps.length - 1)], d = route.starts[Math.min(nav.idx + 1, route.steps.length - 1)] - nav.along;
+    const t = d > ANNOUNCE_MIN_M ? 'In ' + fmtDist(d, true) + ', ' + instr(s).toLowerCase() : instr(s);
+    say(st, t); speak(t);
+  }
+  function paint(rem) {
+    const i = Math.min(nav.idx + 1, route.steps.length - 1), s = route.steps[i], speed = route.dist / Math.max(1, route.dur);
+    $('b-arrow').textContent = arrow(s); $('b-text').textContent = instr(s); $('b-dist').textContent = 'in ' + fmtDist(Math.max(0, route.starts[i] - nav.along));
+    $('eta').textContent = fmtTime(rem / speed);
+    $('eta-d').textContent = fmtDist(rem) + ' · arrive ' + new Date(Date.now() + rem / speed * MS_PER_SECOND).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  }
+  function onFix(lat, lng, acc) {
+    me = { lat, lng, acc };
+    const s = snap(lat, lng);
+    if (s.d > REROUTE_M && !nav.sim && performance.now() - nav.re > REROUTE_MIN_MS) { nav.re = performance.now(); reroute(); return; }
+    nav.along = s.along;
+    const rem = route.total - s.along;
+    if (rem <= ARRIVE_M) { arrive(); return; }
+    let i = 0;
+    route.starts.forEach((d, j) => { if (d <= s.along) { i = j; } });
+    if (i !== nav.idx) { nav.idx = i; announce(); }
+    paint(rem);
+    if (follow) { v.lat = lat; v.lng = lng; }
+    redraw();
+  }
+  async function reroute() {
+    if (await getRoute(me, true) && nav) { nav.idx = -1; say(st, 'Rerouted.'); onFix(me.lat, me.lng, me.acc); }
+  }
+  function startNav(sim) {
+    if (!sim && (!navigator.geolocation || !window.isSecureContext)) { fail(er, 'Your location is not available right now. Use Preview to try the walk without it.'); return; }
+    if (!sim && geoState !== 'granted') { /* ask first, then begin */
+      locate((m) => { if (m) { startNav(false); } else { fail(er, 'Start needs your location. Use Preview to try the walk without GPS.'); } });
+      return;
+    }
+    clear(er); stopNav();
+    nav = { idx: -1, along: 0, sim, re: performance.now(), timer: 0, watch: 0 };
+    mapapp.classList.add('is-nav'); banner.hidden = false; follow = true; resBox.hidden = true;
+    sheet.hidden = false;
+    sheet.innerHTML = '<h2 id="sheet-h" class="vh">Navigation</h2><p class="eta"><strong id="eta"></strong> <span class="hint" id="eta-d"></span></p><div class="row"><button type="button" class="secondary toggle" aria-pressed="' + voice + '" data-act="voice">Voice</button><button type="button" data-act="end">End</button></div>';
+    keepAwake(true);
+    if (sim) {
+      let d = 0; me = { lat: route.pts[0][0], lng: route.pts[0][1], acc: 0 };
+      const tick = () => { const p = pointAt(d); d += SIM_STEP_M; onFix(p[0], p[1], 0); };
+      tick(); if (nav) { nav.timer = setInterval(tick, SIM_TICK_MS); }
+    } else {
+      nav.watch = navigator.geolocation.watchPosition((p) => onFix(p.coords.latitude, p.coords.longitude, p.coords.accuracy), () => fail(er, 'Lost your location signal.'), GEO);
+    }
+    if (me) { flyTo(me.lat, me.lng, NAV_ZOOM); }
+  }
+  function stopNav() {
+    if (!nav) { return; }
+    clearInterval(nav.timer); if (nav.watch) { navigator.geolocation.clearWatch(nav.watch); }
+    nav = null; keepAwake(false); mapapp.classList.remove('is-nav'); banner.hidden = true; follow = false;
+    if (window.speechSynthesis) { window.speechSynthesis.cancel(); }
+  }
+  function arrive() {
+    stopNav();
+    sheet.innerHTML = '<h2 id="sheet-h">You have arrived</h2><p class="hint">' + esc(dest.name) + '</p><div class="row"><button type="button" data-act="close">Done</button></div>';
+    say(st, 'You have arrived at ' + dest.name + '.'); speak('You have arrived.'); redraw();
+  }
+  sheet.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-act]');
+    if (!b) { return; }
+    const a = b.dataset.act;
+    if (a === 'close') { stopNav(); clearAll(); }
+    else if (a === 'dir') { directions(); }
+    else if (a === 'start') { startNav(false); }
+    else if (a === 'preview') { startNav(true); }
+    else if (a === 'steps') { const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', String(on)); sheet.querySelector('.steps').hidden = !on; }
+    else if (a === 'end') { stopNav(); if (route) { showRoute(); } else { clearAll(); } }
+    else if (a === 'voice') { voice = !voice; store.set(VOICE_KEY, voice); b.setAttribute('aria-pressed', String(voice)); if (!voice && window.speechSynthesis) { window.speechSynthesis.cancel(); } }
+  });
+
+  loadColors(); fitCanvas();
+})();
+        </script>
+    </body>
+</html>
