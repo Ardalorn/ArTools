@@ -4,7 +4,49 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>ArTimeline: build a timeline with notes and save it as a PDF</title>
-        <meta name="description" content="Pick a start month and year, add notes with your own headings, and save the timeline as a PDF.">
+        <meta name="description" content="Make a timeline from any start month and year to today. Add notes with your own headings, then save it as a PDF. Free, private, no sign-up.">
+        <meta name="author" content="Ardalorn">
+        <meta name="application-name" content="ArTimeline">
+        <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
+        <!-- eslint-disable @html-eslint/use-baseline -- Kept on purpose: browsers without theme-color ignore it. -->
+        <meta
+            name="theme-color"
+            content="#f5f6f7"
+            media="(prefers-color-scheme: light)"
+        >
+        <meta
+            name="theme-color"
+            content="#111213"
+            media="(prefers-color-scheme: dark)"
+        >
+        <!-- eslint-enable @html-eslint/use-baseline -->
+        <link rel="canonical" href="https://ardalorn.github.io/ArTools/ArTimeline/">
+        <meta property="og:type" content="website">
+        <meta property="og:site_name" content="ArTools">
+        <meta property="og:title" content="ArTimeline: build a timeline with notes and save it as a PDF">
+        <meta property="og:description" content="Make a timeline from a start month and year to today, add notes, and save it as a PDF.">
+        <meta property="og:url" content="https://ardalorn.github.io/ArTools/ArTimeline/">
+        <meta property="og:locale" content="en_GB">
+        <meta name="twitter:card" content="summary">
+        <meta name="twitter:title" content="ArTimeline: build a timeline with notes and save it as a PDF">
+        <meta name="twitter:description" content="Make a timeline from a start month and year to today, add notes, and save it as a PDF.">
+        <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "ArTimeline",
+  "url": "https://ardalorn.github.io/ArTools/ArTimeline/",
+  "description": "Make a timeline from any start month and year to today. Add notes with your own headings, then save it as a PDF. Free, private, no sign-up.",
+  "applicationCategory": "UtilitiesApplication",
+  "operatingSystem": "Any",
+  "browserRequirements": "Requires JavaScript",
+  "inLanguage": "en-GB",
+  "isAccessibleForFree": true,
+  "isPartOf": { "@type": "WebSite", "name": "ArTools", "url": "https://ardalorn.github.io/ArTools/" },
+  "featureList": ["Choose a start month and year", "Notes with your own headings and bodies", "Notes for a whole year or a single month", "Save the timeline as a tagged PDF"],
+  "author": { "@type": "Person", "name": "Ardalorn" }
+}
+        </script>
         <meta name="color-scheme" content="light dark">
         <link
             rel="icon"
@@ -172,6 +214,16 @@ html:has(dialog[open]) { overflow: hidden; scrollbar-gutter: stable; }
                         id="tl"
                         aria-labelledby="tl-h"
                     ></ol>
+                </section>
+                <section
+                    class="stack"
+                    aria-labelledby="about-h"
+                    style="max-inline-size: var(--text-measure);"
+                >
+                    <h2 id="about-h">About ArTimeline</h2>
+                    <p>ArTimeline makes a simple vertical timeline. You choose the start month and year. The timeline runs to the current month. Each note has a heading and a body, and can sit in one month or in the whole year.</p>
+                    <p>Save the result as a tagged PDF with selectable text. Your timeline stays in this browser.</p>
+                    <p class="hint">ArTimeline is part of <a href="https://ardalorn.github.io/ArTools/">ArTools</a>, a set of single-file tools that work offline.</p>
                 </section>
             </div>
         </main>
