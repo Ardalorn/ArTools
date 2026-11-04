@@ -192,7 +192,7 @@ main { flex: 1 0 auto; inline-size: 100%; }
 .dlg label { display: block; margin-block-end: var(--s-2); font-weight: 700; color: var(--heading); }
 .dlg > * { margin: 0; }
 .dlg > * + * { margin-block-start: var(--s-4); }
-.is-nav .top, .is-nav #start-btn { display: none; }
+.is-nav .top, .is-nav #start-btn, .is-nav #walk-btn { display: none; }
 #sp-form button { margin-block-start: var(--s-3); }
 #pick { inset: auto var(--s-3) 2.5rem; } /* Sits at the bottom so the search bar and its results stay usable while picking. */
 /* 6. User preferences and assistive modes */
@@ -321,6 +321,25 @@ main { flex: 1 0 auto; inline-size: 100%; }
                             aria-hidden="true"
                         >
                             <path d="M6 21V4M6 5h11l-2 4 2 4H6"/>
+                        </svg>
+                    </button>
+                    <button
+                        type="button"
+                        class="secondary"
+                        id="walk-btn"
+                        aria-label="Plan a round-trip walk"
+                    >
+                        <svg
+                            class="icon"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2.2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            aria-hidden="true"
+                        >
+                            <path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v4.5h-4.5"/>
                         </svg>
                     </button>
                     <button
@@ -514,7 +533,7 @@ main { flex: 1 0 auto; inline-size: 100%; }
             <section class="about stack" aria-labelledby="about-heading">
                 <div class="panel stack" style="max-inline-size: var(--text-measure);">
                     <h2 id="about-heading">About ArWalk</h2>
-                    <p>ArWalk is a small map that finds a walking route and talks you along it. The map is drawn by this page itself on a canvas, with no mapping library. Drag to move, pinch or scroll to zoom, twist two fingers (or hold Shift and drag) to turn the map, tap the map to drop a pin. While you walk the map follows you, turns to the way you are facing and zooms in for turns. Drag the map to look around and it comes back to you after a few seconds. Your default start point is saved on this device; GPS is only used once you press Start, to follow you along the route.</p>
+                    <p>ArWalk is a small map that finds a walking route and talks you along it. The map is drawn by this page itself on a canvas, with no mapping library. Drag to move, pinch or scroll to zoom, twist two fingers (or hold Shift and drag) to turn the map, tap the map to drop a pin. Use the loop button to plan a round-trip walk of 10 to 60 minutes that starts and ends at your saved start point. While you walk the map follows you, turns to the way you are facing and zooms in for turns. Drag the map to look around and it comes back to you after a few seconds. Your default start point is saved on this device; GPS is only used once you press Start, to follow you along the route.</p>
                     <p class="hint">Map tiles use the OpenStreetMap standard layer. Place suggestions use Photon, exact address searches use Nominatim, numbered-building lookups use OpenStreetMap Overpass, and walking routes use the OpenStreetMap Germany routing service. Search terms and route endpoints are sent to those services. GPS is used only when you choose it as your start point or press Start to follow a walk. A chosen start point is saved locally on this device; live tracking fixes are not saved.</p>
                     <p class="hint"><a href="https://www.openstreetmap.org/fixthemap">Report or correct a map issue</a>.</p>
                     <p><a href="#map">Back to the map</a></p>
@@ -679,6 +698,32 @@ const ROUTE_LOOKAHEAD_M = 15; // Distance ahead used to work out the route's dir
 const CONE_R = 38; // Length in pixels of the view cone drawn from your dot.
 const CONE_HALF_DEG = 32; // Half the width of the view cone, in degrees.
 const CONE_ALPHA = 0.3; // Opacity of the view cone.
+
+/* ---------- Round-trip walks: a loop from your start point that takes the time you pick. ---------- */
+const LOOP_MINUTES = [10, 20, 30, 40, 50, 60]; // Walk lengths offered, in minutes.
+const LOOP_SPEED_MS = 1.3; // First guess at walking speed (metres per second); the router's own timing then corrects it.
+const LOOP_DETOUR = 1.35; // First guess at how much longer streets are than a straight line.
+const LOOP_SIDES = 3; // The loop is a triangle: the start point and two corners.
+const LOOP_CORNER_DEG = 60; // Angle between the two corners as seen from the start (60 makes an even triangle).
+const LOOP_TRIES = 3; // Directions tried; each one turns by LOOP_BEARING_STEP_DEG.
+const LOOP_BEARING_STEP_DEG = 120; // Turn between one direction tried and the next.
+const LOOP_REFINES = 4; // Times one direction is resized to hit the chosen time.
+const LOOP_TOL = 0.025; // A loop within this share of the chosen time is accepted.
+const LOOP_MAX_OVERLAP = 0.3; // Most of a loop that may walk back over the same street.
+const LOOP_OVERLAP_W = 0.5; // How heavily overlap counts against a loop when the best one is chosen.
+const LOOP_OVERLAP_MIN_M = 150; // Passing the same spot again after this many metres counts as overlap.
+const LOOP_CELL_DEG = 0.0002; // Grid size (degrees, about 22 m) used to spot overlap.
+const LOOP_SCALE_MIN = 0.5; // Smallest resize in one step.
+const LOOP_SCALE_MAX = 2; // Largest resize in one step.
+const LOOP_FAIL_SHRINK = 0.7; // Resize used when the router finds no route for a corner (for example in water).
+const LOOP_BUDGET_MS = 45000; // Longest total time spent planning one walk.
+const LOOP_FETCH_TIMEOUT_MS = 10000; // Longest wait for one route request while planning.
+const LOOP_AHEAD_M = 300; // While walking a loop, progress may only jump this far ahead (the end is also the start).
+const LOOP_WP_PASSED_M = 30; // A corner this far behind you is treated as passed when a loop is rerouted.
+const TURN_STRAIGHT_DEG = 20; // Direction change below this is straight on.
+const TURN_SLIGHT_DEG = 60; // Direction change below this is a slight turn.
+const TURN_SHARP_DEG = 130; // Direction change below this is a normal turn.
+const TURN_UTURN_DEG = 160; // Direction change below this is a sharp turn; above it a U-turn.
 
 /* ---------- Helpers ---------- */
 const $ = (id) => document.getElementById(id);
@@ -1358,6 +1403,7 @@ function cachedPromise(map, key, loader, hasValue) {
   });
   $('pick-cancel').addEventListener('click', () => endPick(true));
   $('start-btn').addEventListener('click', () => { if (picking) { endPick(false); } openStart(); });
+  $('walk-btn').addEventListener('click', () => { if (picking) { endPick(false); } showLoopPicker(); });
 
   /* Formatting */
   const fmtDist = (m, spoken) => (m < METRES_PER_KM ? Math.max(ROUND_TO_M, Math.round(m / ROUND_TO_M) * ROUND_TO_M) + (spoken ? ' metres' : ' m') : (m / METRES_PER_KM).toFixed(1) + (spoken ? ' kilometres' : ' km'));
@@ -1367,7 +1413,7 @@ function cachedPromise(map, key, loader, hasValue) {
   const arrow = (s) => (s.type === 'arrive' ? '⚑' : s.type === 'depart' ? '↑' : ARROW[s.mod] || '↑');
   function instr(s) {
     const on = s.name ? ' onto ' + s.name : '';
-    if (s.type === 'arrive') { return 'Arrive at your destination'; }
+    if (s.type === 'arrive') { return route && route.loop ? 'Arrive back at your start' : 'Arrive at your destination'; }
     if (s.type === 'depart') { return 'Walk' + (s.name ? ' along ' + s.name : ''); }
     if (s.type === 'roundabout' || s.type === 'rotary') { return 'Take the roundabout' + on; }
     return (MOD[s.mod] || 'Continue') + on;
@@ -1524,6 +1570,7 @@ function cachedPromise(map, key, loader, hasValue) {
 
   /* Place and route sheets */
   function showPlace() {
+    loopSeq++; /* a walk still being planned is dropped */
     sheet.hidden = false;
     sheet.innerHTML = '<h2 id="sheet-h">' + esc(dest.name) + '</h2><p class="hint">' + esc(dest.addr) + '</p><div class="row"><button type="button" data-act="dir">Directions</button><button type="button" class="secondary" data-act="close">Close</button></div>';
     say(st, dest.name + ' selected.'); redraw();
@@ -1533,6 +1580,7 @@ function cachedPromise(map, key, loader, hasValue) {
     return route.steps.map((s) => '<li><span class="arr" aria-hidden="true">' + arrow(s) + '</span><span>' + esc(instr(s)) + (s.d ? '<span class="hint"> · ' + fmtDist(s.d) + ' · ' + fmtTime(s.d / speed) + '</span>' : '') + '</span></li>').join('');
   }
   function showRoute() {
+    if (route.loop) { showLoop(); return; }
     sheet.hidden = false;
     sheet.innerHTML = '<h2 id="sheet-h">' + fmtTime(route.dur) + ' <span class="hint">(' + fmtDist(route.dist) + ') walking</span></h2><p class="hint">From ' + esc(route.from) + ' to ' + esc(dest.name) + '</p>' +
       '<div class="row"><button type="button" data-act="start">Start</button><button type="button" class="secondary" data-act="preview" aria-label="Preview the walk without GPS">Preview</button><button type="button" class="secondary toggle" aria-pressed="false" data-act="steps">Steps</button><button type="button" class="secondary" data-act="close">Close</button></div>' +
@@ -1541,26 +1589,122 @@ function cachedPromise(map, key, loader, hasValue) {
     fit(route.pts);
   }
   const hav = (a, b) => { const k = 111320, dx = (b[1] - a[1]) * k * Math.cos((a[0] + b[0]) * Math.PI / FULL_TURN_DEGREES), dy = (b[0] - a[0]) * k; return Math.hypot(dx, dy); };
+  /* Direction change at a stop, as the router's own turn words. Positive is clockwise (a right turn). */
+  function turnMod(d) {
+    const a = Math.abs(d), side = d > 0 ? 'right' : 'left';
+    if (a < TURN_STRAIGHT_DEG) { return 'straight'; }
+    if (a < TURN_SLIGHT_DEG) { return 'slight ' + side; }
+    if (a < TURN_SHARP_DEG) { return side; }
+    if (a < TURN_UTURN_DEG) { return 'sharp ' + side; }
+    return 'uturn';
+  }
+  /* One walking route through every stop in order. Stops in the middle become turns, not arrivals. Throws when no route exists. */
+  async function fetchRoute(points, fromName, options) {
+    const u = ROUTE_URL + points.map((p) => p.lng + ',' + p.lat).join(';') + '?overview=full&geometries=geojson&steps=true';
+    const r = (await (await fetchRetry(u, options)).json()).routes[0];
+    const pts = r.geometry.coordinates.map((c) => [c[1], c[0]]), cum = [0];
+    for (let i = 1; i < pts.length; i++) { cum.push(cum[i - 1] + hav(pts[i - 1], pts[i])); }
+    /* Step lengths come from the router and the drawn line from our own sums, so scale one onto the other to keep turns where they are drawn. */
+    const scale = cum[cum.length - 1] / (r.distance || 1), steps = [], starts = [], wps = [];
+    let acc = 0, before = 0;
+    r.legs.forEach((leg, li) => leg.steps.forEach((st0, si) => {
+      const m = st0.maneuver;
+      if (m.type === 'arrive' && li < r.legs.length - 1) { before = m.bearing_before; wps.push({ lat: points[li + 1].lat, lng: points[li + 1].lng, at: acc * scale }); return; }
+      let type = m.type, mod = m.modifier;
+      if (li > 0 && si === 0) { type = 'turn'; mod = turnMod(angDiff(before, m.bearing_after)); } /* the turn at a stop, worked out from the direction before and after it */
+      steps.push({ d: st0.distance, name: st0.name, type, mod }); starts.push(acc * scale); acc += st0.distance;
+    }));
+    return { pts, cum, steps, starts, wps, dist: r.distance, dur: r.duration, total: cum[cum.length - 1], from: fromName };
+  }
   async function getRoute(from, quiet) {
     if (!quiet) { clear(er); say(st, 'Finding a walking route…'); }
     try {
-      const u = ROUTE_URL + from.lng + ',' + from.lat + ';' + dest.lng + ',' + dest.lat + '?overview=full&geometries=geojson&steps=true';
-      const r = (await (await fetchRetry(u)).json()).routes[0];
-      const pts = r.geometry.coordinates.map((c) => [c[1], c[0]]), cum = [0];
-      for (let i = 1; i < pts.length; i++) { cum.push(cum[i - 1] + hav(pts[i - 1], pts[i])); }
-      let acc = 0;
-      const steps = r.legs[0].steps.map((s) => ({ d: s.distance, name: s.name, type: s.maneuver.type, mod: s.maneuver.modifier }));
-      /* Step lengths come from the router and the drawn line from our own sums, so scale one onto the other to keep turns where they are drawn. */
-      const scale = cum[cum.length - 1] / (r.distance || 1);
-      const starts = steps.map((s) => { const a = acc * scale; acc += s.d; return a; });
-      route = { pts, cum, steps, starts, dist: r.distance, dur: r.duration, total: cum[cum.length - 1], from: from.name || 'Your location' };
+      route = await fetchRoute([from, dest], from.name || 'Your location');
       orig = { lat: from.lat, lng: from.lng }; redraw();
       return true;
     } catch { fail(er, 'No walking route could be found between those points.'); clear(st); return false; }
   }
+
+  /* Round-trip walks. The loop is a triangle from the start point through two corners and back. The router times it,
+     then the corners are moved in or out until the walk takes the time you chose. Several directions are tried and
+     the one closest to your time that does not double back over itself wins. */
+  let loopSeq = 0; /* bumped to cancel a walk that is still being planned */
+  const offsetPoint = (p, dist, brg) => { const a = brg * DEG; return { lat: p.lat + dist * Math.cos(a) / METRES_PER_DEG_LAT, lng: p.lng + dist * Math.sin(a) / (METRES_PER_DEG_LAT * Math.cos(p.lat * DEG)) }; };
+  /* Share of the route that passes over ground it already covered a good way back. */
+  function overlapShare(rt) {
+    const seen = new Map();
+    let shared = 0;
+    for (let i = 1; i < rt.pts.length; i++) {
+      const key = Math.round(rt.pts[i][0] / LOOP_CELL_DEG) + ',' + Math.round(rt.pts[i][1] / LOOP_CELL_DEG), first = seen.get(key);
+      if (first === undefined) { seen.set(key, rt.cum[i]); } else if (rt.cum[i] - first > LOOP_OVERLAP_MIN_M) { shared += rt.cum[i] - rt.cum[i - 1]; }
+    }
+    return shared / Math.max(1, rt.total);
+  }
+  /* Resolves to the best loop found, null when none could be planned, or undefined when it was cancelled. */
+  async function planLoop(minutes) {
+    const my = ++loopSeq, target = minutes * SECONDS_PER_MINUTE, began = performance.now(), b0 = Math.random() * FULL_TURN_DEGREES;
+    let best = null, tries = 0, done = false;
+    for (let t = 0; t < LOOP_TRIES && !done; t++) {
+      const brg = b0 + t * LOOP_BEARING_STEP_DEG;
+      let r = target * LOOP_SPEED_MS / (LOOP_SIDES * LOOP_DETOUR); /* straight-line length of each side */
+      for (let k = 0; k < LOOP_REFINES; k++) {
+        if (my !== loopSeq || performance.now() - began > LOOP_BUDGET_MS) { done = true; break; }
+        tries++; say(st, 'Planning a ' + minutes + ' minute walk… attempt ' + tries);
+        let rt = null;
+        try { rt = await fetchRoute([start, offsetPoint(start, r, brg), offsetPoint(start, r, brg + LOOP_CORNER_DEG), start], 'Your start point', { tries: 1, timeout: LOOP_FETCH_TIMEOUT_MS }); } catch { rt = null; }
+        if (my !== loopSeq) { done = true; break; }
+        if (!rt) { r *= LOOP_FAIL_SHRINK; continue; }
+        const err = Math.abs(rt.dur - target) / target, ov = overlapShare(rt), score = err + ov * LOOP_OVERLAP_W;
+        if (!best || score < best.score) { best = { rt, err, ov, score }; }
+        if (err <= LOOP_TOL) { done = ov <= LOOP_MAX_OVERLAP; break; } /* right length: stop if it is also a proper loop, else try another direction */
+        r *= Math.max(LOOP_SCALE_MIN, Math.min(LOOP_SCALE_MAX, target / rt.dur));
+      }
+    }
+    return my === loopSeq ? best : undefined;
+  }
+  function showLoopPicker() {
+    if (nav) { return; }
+    if (!start) { say(st, 'Set a start point to plan a walk.'); openStart(showLoopPicker); return; }
+    loopSeq++; dest = orig = route = null; resBox.hidden = true; clear(er);
+    sheet.hidden = false;
+    sheet.innerHTML = '<h2 id="sheet-h">Round-trip walk</h2><p class="hint">From ' + esc(startLabel(start) || 'your start point') + '. Pick how long to walk. The route brings you back here in that time.</p>' +
+      '<div class="row" role="group" aria-label="Walk length">' + LOOP_MINUTES.map((m) => '<button type="button" class="secondary" data-act="loop" data-min="' + m + '">' + m + ' min</button>').join('') + '</div>' +
+      '<div class="row"><button type="button" class="secondary" data-act="close">Close</button></div>';
+    say(st, 'Choose how long to walk.'); redraw(); focusHeading($('sheet-h'));
+  }
+  async function runLoop(minutes) {
+    clear(er);
+    sheet.querySelectorAll('button:not([data-act="close"])').forEach((b) => { b.disabled = true; });
+    const res = await planLoop(minutes);
+    if (res === undefined) { return; }
+    if (!res) { showLoopPicker(); fail(er, 'No walk could be planned from your start point. Try a different start point.'); clear(st); return; }
+    route = res.rt; route.loop = true; route.minutes = minutes;
+    orig = { lat: start.lat, lng: start.lng };
+    dest = { lat: start.lat, lng: start.lng, name: startLabel(start) || 'your start point', addr: '' };
+    showLoop();
+  }
+  function showLoop() {
+    sheet.hidden = false;
+    const gap = Math.round((route.dur - route.minutes * SECONDS_PER_MINUTE) / SECONDS_PER_MINUTE);
+    const note = Math.abs(gap) > 1 ? ' The closest loop found is ' + Math.abs(gap) + ' min ' + (gap > 0 ? 'longer.' : 'shorter.') : '';
+    sheet.innerHTML = '<h2 id="sheet-h">' + fmtTime(route.dur) + ' <span class="hint">(' + fmtDist(route.dist) + ') round trip</span></h2><p class="hint">Leaves and returns to ' + esc(dest.name) + '. You chose ' + route.minutes + ' min.' + note + '</p>' +
+      '<div class="row"><button type="button" data-act="start">Start</button><button type="button" class="secondary" data-act="preview" aria-label="Preview the walk without GPS">Preview</button><button type="button" class="secondary toggle" aria-pressed="false" data-act="steps">Steps</button><button type="button" class="secondary" data-act="again">Another route</button><button type="button" class="secondary" data-act="close">Close</button></div>' +
+      '<ol class="steps" aria-label="Walking directions" hidden>' + stepsHtml() + '</ol>';
+    say(st, 'Walk planned. ' + fmtTime(route.dur) + ' round trip, ' + fmtDist(route.dist, true) + '.');
+    fit(route.pts);
+  }
+  /* Off the loop while walking: route from where you are through the corners still ahead, then home. */
+  async function getLoopRoute(from) {
+    try {
+      const left = route.wps.filter((w) => w.at > nav.along + LOOP_WP_PASSED_M), rt = await fetchRoute([from, ...left, start], 'Your location');
+      rt.loop = true; rt.minutes = route.minutes; route = rt;
+      return true;
+    } catch { return false; }
+  }
+
   /* Routes always begin at the saved start point. */
   function directions() {
-    clear(er);
+    loopSeq++; clear(er);
     if (!start) { say(st, 'Set a start point to get directions.'); openStart(directions); return; }
     (async () => { if (await getRoute(start)) { showRoute(); } else { showPlace(); } })();
   }
@@ -1572,15 +1716,16 @@ function cachedPromise(map, key, loader, hasValue) {
     route = null; orig = null; resBox.hidden = true; clear(er); showPlace();
   }
   function clearAll() {
-    dest = orig = route = null; endPick(false); sheet.hidden = true; sheet.innerHTML = ''; clear(st, er); redraw();
+    loopSeq++; dest = orig = route = null; endPick(false); sheet.hidden = true; sheet.innerHTML = ''; clear(st, er); redraw();
   }
 
   /* Turn by turn */
-  function snap(lat, lng, from = 0) {
+  function snap(lat, lng, from = 0, to = Infinity) {
     const k = 111320, kx = k * Math.cos(lat * Math.PI / HALF_TURN_DEGREES), p = route.pts, cum = route.cum;
     let best = { d: Infinity, along: 0 };
     for (let i = 1; i < p.length; i++) {
-      if (cum[i] < from) { continue; } /* only look forward (and a little back), so a route that doubles back cannot confuse progress */
+      if (cum[i] < from) { continue; }
+      if (cum[i - 1] > to) { break; } /* a loop ends where it starts, so only look a short way ahead */ /* only look forward (and a little back), so a route that doubles back cannot confuse progress */
       const ax = (p[i - 1][1] - lng) * kx, ay = (p[i - 1][0] - lat) * k, bx = (p[i][1] - lng) * kx, by = (p[i][0] - lat) * k;
       const dx = bx - ax, dy = by - ay, len2 = dx * dx + dy * dy || EPSILON, t = Math.max(0, Math.min(1, -(ax * dx + ay * dy) / len2));
       const d = Math.hypot(ax + t * dx, ay + t * dy);
@@ -1655,8 +1800,9 @@ function cachedPromise(map, key, loader, hasValue) {
     if (!nav.sim && acc > MAX_NAV_ACC_M) { if (!nav.lowAcc) { nav.lowAcc = true; say(st, 'Waiting for a more accurate location…'); } return; } /* ignore coarse fixes while walking */
     nav.lowAcc = false;
     me = { lat, lng, acc, t: Date.now() };
-    let s = snap(lat, lng, Math.max(0, nav.along - SNAP_BACK_M));
-    if (s.d > REROUTE_M && nav.along > 0) { const g = snap(lat, lng); if (g.d < s.d) { s = g; } } /* forward search found nothing near: look everywhere */
+    const reach = route.loop ? nav.along + LOOP_AHEAD_M : Infinity;
+    let s = snap(lat, lng, Math.max(0, nav.along - SNAP_BACK_M), reach);
+    if (s.d > REROUTE_M && nav.along > 0) { const g = snap(lat, lng, 0, reach); if (g.d < s.d) { s = g; } } /* forward search found nothing near: look everywhere */
     if (!nav.sim && !nav.joined) { /* not on the route yet: no new route from GPS, just point to the start */
       if (s.d > REROUTE_M) {
         $('b-arrow').textContent = '⚑'; $('b-text').textContent = 'Head to the route'; $('b-dist').textContent = fmtDist(s.d) + ' away';
@@ -1698,7 +1844,8 @@ function cachedPromise(map, key, loader, hasValue) {
     if (h !== null) { setHeading(h, SRC_GPS); } else { setHeading(routeHeading(along), SRC_ROUTE); }
   }
   async function reroute() {
-    if (await getRoute(me, true) && nav) {
+    const ok = route.loop ? await getLoopRoute(me) : await getRoute(me, true);
+    if (ok && nav) {
       nav.idx = -1; nav.along = 0; nav.said = { step: -1, stage: -1 }; nav.lead = 'Rerouted. ';
       const ol = sheet.querySelector('.steps'); if (ol) { ol.innerHTML = stepsHtml(); }
       onFix(me.lat, me.lng, me.acc);
@@ -1745,6 +1892,8 @@ function cachedPromise(map, key, loader, hasValue) {
     const a = b.dataset.act;
     if (a === 'close') { stopNav(); clearAll(); }
     else if (a === 'dir') { directions(); }
+    else if (a === 'loop') { runLoop(Number(b.dataset.min)); }
+    else if (a === 'again') { runLoop(route.minutes); }
     else if (a === 'start') { primeVoice(); enableCompass(); startNav(false); }
     else if (a === 'preview') { primeVoice(); startNav(true); }
     else if (a === 'steps') { const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', String(on)); sheet.querySelector('.steps').hidden = !on; if (on) { markSteps(); } }
