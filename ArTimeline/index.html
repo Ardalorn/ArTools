@@ -106,6 +106,8 @@ button { display: inline-flex; align-items: center; justify-content: center; gap
 button:hover { background: var(--action-hover); border-color: var(--action-hover); }
 button.secondary { color: var(--ink); background: var(--surface); border-color: var(--line); }
 button.secondary:hover { background: var(--surface-2); border-color: var(--ink); }
+button.danger, button.danger:hover { color: var(--problem-ink); background: var(--problem-tint); border-color: var(--problem-mark); }
+button.danger::before { content: ""; content: "" / ""; flex: none; inline-size: var(--s-5); block-size: var(--s-5); background: currentColor; mask: var(--mask-problem) center / contain no-repeat; -webkit-mask: var(--mask-problem) center / contain no-repeat; }
 button.small { padding: var(--s-1) var(--s-3); }
 .field { display: grid; gap: var(--s-1); } .field > label, legend { font-weight: 700; }
 fieldset { margin: 0; padding: 0; border: 0; min-inline-size: 0; }
@@ -167,6 +169,27 @@ html:has(dialog[open]) { overflow: hidden; scrollbar-gutter: stable; }
                 <section class="panel" aria-labelledby="set-h">
                     <h2 id="set-h">Timeline details</h2>
                     <div class="field">
+                        <label for="t-pick">Active timeline</label>
+                        <select id="t-pick"></select>
+                    </div>
+                    <div class="row no-print">
+                        <button
+                            type="button"
+                            id="b-new"
+                            class="secondary small"
+                        >New timeline</button>
+                        <button
+                            type="button"
+                            id="b-rename"
+                            class="secondary small"
+                        >Rename timeline</button>
+                        <button
+                            type="button"
+                            id="b-tdel"
+                            class="secondary small"
+                        >Delete timeline</button>
+                    </div>
+                    <div class="field">
                         <label for="t-title">Timeline title</label>
                         <input
                             type="text"
@@ -199,6 +222,78 @@ html:has(dialog[open]) { overflow: hidden; scrollbar-gutter: stable; }
                             id="b-pdf"
                             class="secondary"
                         >Save as PDF</button>
+                    </div>
+                    <div
+                        class="stack no-print"
+                        role="group"
+                        aria-labelledby="ex-h"
+                    >
+                        <h3 id="ex-h">Export and import</h3>
+                        <div class="row">
+                            <button
+                                type="button"
+                                id="b-json"
+                                class="secondary small"
+                            >Export JSON</button>
+                            <button
+                                type="button"
+                                id="b-ics"
+                                class="secondary small"
+                            >Export calendar (.ics)</button>
+                            <button
+                                type="button"
+                                id="b-md"
+                                class="secondary small"
+                            >Export Markdown</button>
+                            <button
+                                type="button"
+                                id="b-csv"
+                                class="secondary small"
+                            >Export CSV</button>
+                            <button
+                                type="button"
+                                id="b-csvx"
+                                class="secondary small"
+                            >Export CSV for Excel</button>
+                            <button
+                                type="button"
+                                id="b-xlsx"
+                                class="secondary small"
+                            >Export Excel (.xlsx)</button>
+                            <button
+                                type="button"
+                                id="b-imp"
+                                class="secondary small"
+                            >Import JSON</button>
+                            <button
+                                type="button"
+                                id="b-cpmd"
+                                class="secondary small"
+                            >Copy as Markdown</button>
+                            <button
+                                type="button"
+                                id="b-link"
+                                class="secondary small"
+                            >Copy share link</button>
+                            <button
+                                type="button"
+                                id="b-sharepdf"
+                                class="secondary small"
+                                hidden
+                            >Share PDF</button>
+                            <button
+                                type="button"
+                                id="b-sharetxt"
+                                class="secondary small"
+                                hidden
+                            >Share summary</button>
+                        </div>
+                        <input
+                            type="file"
+                            id="i-file"
+                            accept=".json,application/json"
+                            hidden
+                        >
                     </div>
                 </section>
                 <section aria-labelledby="tl-h" class="stack">
@@ -282,6 +377,78 @@ html:has(dialog[open]) { overflow: hidden; scrollbar-gutter: stable; }
                 </div>
             </form>
         </dialog>
+        <dialog id="dlg-name" aria-labelledby="nm-h">
+            <form
+                id="f-name"
+                class="dialog__body stack"
+                novalidate
+            >
+                <div class="dlg-head">
+                    <h2 id="nm-h">New timeline</h2>
+                    <button
+                        type="button"
+                        class="secondary"
+                        id="nm-x"
+                    >Cancel</button>
+                </div>
+                <p id="nm-err" role="alert"></p>
+                <div class="field">
+                    <label for="nm-i">Timeline name</label>
+                    <input
+                        type="text"
+                        id="nm-i"
+                        maxlength="80"
+                        autocomplete="off"
+                        required
+                    >
+                </div>
+                <div class="row">
+                    <button type="submit">Save name</button>
+                </div>
+            </form>
+        </dialog>
+        <dialog id="dlg-imp" aria-labelledby="imp-h">
+            <div class="dialog__body stack">
+                <div class="dlg-head">
+                    <h2 id="imp-h">Import timeline</h2>
+                    <button
+                        type="button"
+                        class="secondary"
+                        id="imp-x"
+                    >Cancel</button>
+                </div>
+                <p id="imp-sum"></p>
+                <div class="row">
+                    <button type="button" id="imp-new">Add as new timeline</button>
+                    <button
+                        type="button"
+                        class="secondary"
+                        id="imp-rep"
+                    >Replace active timeline</button>
+                </div>
+            </div>
+        </dialog>
+        <dialog id="dlg-copy" aria-labelledby="cp-h">
+            <div class="dialog__body stack">
+                <div class="dlg-head">
+                    <h2 id="cp-h">Copy text</h2>
+                    <button
+                        type="button"
+                        class="secondary"
+                        id="cp-x"
+                    >Close</button>
+                </div>
+                <div class="field">
+                    <label for="cp-t">Text to copy</label>
+                    <textarea
+                        id="cp-t"
+                        readonly
+                        aria-describedby="cp-hint"
+                    ></textarea>
+                    <span id="cp-hint" class="hint">Press Ctrl+C, or Cmd+C on a Mac, to copy.</span>
+                </div>
+            </div>
+        </dialog>
         <footer class="site-footer">
             <p>ArTimeline. Notes stay in this browser and nothing is sent anywhere.</p>
             <p class="hint">Built on the Aengus design system.</p>
@@ -290,10 +457,45 @@ html:has(dialog[open]) { overflow: hidden; scrollbar-gutter: stable; }
 'use strict';
 
 const MAX_RADIX = 36;
-const BINARY_RADIX = 2;
 
 /* Settings */
-const STORE_KEY = 'artimeline-v1'; // Saved timeline.
+const STORE_KEY = 'artimeline-v2'; // Saved timelines.
+const LEGACY_KEY = 'artimeline-v1'; // Earlier single-timeline save. Read for migration, never changed.
+const SCHEMA_VERSION = 2; // Version number stored with the data.
+const NAME_MAX = 80; // Longest timeline name.
+const TIMELINES_MAX = 50; // Most timelines kept.
+const MIN_TIMELINES = 1; // Fewest timelines kept.
+const JSON_INDENT = 2; // Spaces in exported JSON.
+const IMPORT_MAX_BYTES = 1000000; // Largest import file accepted.
+const ICS_FOLD = 75; // Longest calendar line in octets.
+const FOLD_INDENT = 1; // The space that starts a folded calendar line.
+const FIRST_DAY = 1; // Calendar days start at 1.
+const BOM = '\uFEFF'; // Lets Excel read the CSV as UTF-8.
+const SHARE_MAX_CHARS = 50000; // Longest share fragment made or accepted, in characters.
+const SHARE_PACKED = '1'; // Share fragment type: compressed.
+const SHARE_PLAIN = '0'; // Share fragment type: not compressed, used where CompressionStream is missing.
+const BYTE_VALUES = 256; // Values a byte can hold, for the CRC table.
+const BYTE_BITS = 8; // Bits in a byte.
+const BYTE_MASK = 0xFF; // Keeps the low byte.
+const CRC_POLY = 0xEDB88320; // CRC-32 polynomial, reversed.
+const CRC_INIT = 0xFFFFFFFF; // CRC-32 start and end mask.
+const U16 = 2; // Bytes in a 16-bit ZIP field.
+const U32 = 4; // Bytes in a 32-bit ZIP field.
+const ZIP_LOCAL = 0x04034B50; // ZIP local file header signature.
+const ZIP_CENTRAL = 0x02014B50; // ZIP central directory signature.
+const ZIP_END = 0x06054B50; // ZIP end-of-directory signature.
+const ZIP_VERSION = 20; // ZIP version needed: 2.0.
+const ZIP_UTF8 = 0x0800; // ZIP flag: file names are UTF-8.
+const ZIP_DATE = 0x21; // ZIP date field for 1 January 1980.
+const CHAR_A = 65; // Code of the letter A, for column letters.
+const ROW_BASE = 1; // Sheet rows start at 1.
+const XLSX_WIDTHS = [8, 14, 12, 36, 70]; // Column widths in characters.
+const XLSX_COL_STYLE = [0, 0, 0, 2, 2]; // Cell style per column: 0 plain, 2 wrapped text.
+const XLSX_STYLE_HEAD = 1; // Cell style for the header row: bold.
+const XLSX_MIME = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+const ID_MAX = 64; // Longest stored id.
+const DEFAULT_TITLE = 'My timeline'; // Title and name for a fresh timeline.
+const CONFIRM_MS = 5000; // How long a delete button waits for its second press.
 const MIN_YEAR = 1900; // Earliest start year.
 const TITLE_MAX = 80; // Longest timeline title.
 const HEAD_MAX = 80; // Longest note heading.
@@ -359,20 +561,36 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
   const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, Number.isFinite(v) ? Math.trunc(v) : lo));
   let editing = null;
 
-  /* State, cleaned on load because saved data is untrusted */
-  const raw = store.get(STORE_KEY, {});
+  /* State. Saved and imported data is untrusted, so every field is clamped and sliced. */
   const first = new Date(EY, EM - (MONTHS_IN_YEAR - 1), 1);
-  const st = {
-    title: typeof raw.title === 'string' ? raw.title.slice(0, TITLE_MAX) : 'My timeline',
-    sy: clamp(raw.sy === undefined ? first.getFullYear() : raw.sy, MIN_YEAR, EY),
-    sm: clamp(raw.sm === undefined ? first.getMonth() : raw.sm, 0, MONTHS_IN_YEAR - 1),
-    notes: (Array.isArray(raw.notes) ? raw.notes : []).filter((n) => n && typeof n.h === 'string').map((n) => ({
-      id: String(n.id || Math.random().toString(MAX_RADIX).slice(BINARY_RADIX)), h: n.h.slice(0, HEAD_MAX), b: typeof n.b === 'string' ? n.b.slice(0, BODY_MAX) : '',
-      y: clamp(n.y, MIN_YEAR, EY), m: (n.m === null || n.m === undefined || n.m === '') ? null : clamp(n.m, 0, MONTHS_IN_YEAR - 1),
-    })),
-  };
-  if (idx(st.sy, st.sm) > idx(EY, EM)) { st.sy = first.getFullYear(); st.sm = first.getMonth(); }
-  const save = () => store.set(STORE_KEY, st);
+  const newId = () => (globalThis.crypto?.randomUUID ? crypto.randomUUID() : Math.random().toString(MAX_RADIX).slice(ID_SKIP));
+  const cleanId = (v) => (v ? String(v).slice(0, ID_MAX) : newId());
+  const cleanNote = (n) => ({
+    id: cleanId(n.id), h: n.h.slice(0, HEAD_MAX), b: typeof n.b === 'string' ? n.b.slice(0, BODY_MAX) : '',
+    y: clamp(n.y, MIN_YEAR, EY), m: (n.m === null || n.m === undefined || n.m === '') ? null : clamp(n.m, 0, MONTHS_IN_YEAR - 1),
+  });
+  function cleanTimeline(t) {
+    const r = t && typeof t === 'object' ? t : {};
+    const title = typeof r.title === 'string' ? r.title.slice(0, TITLE_MAX) : DEFAULT_TITLE;
+    const name = typeof r.name === 'string' && r.name.trim() ? r.name.trim() : title.trim() || DEFAULT_TITLE;
+    const out = {
+      id: cleanId(r.id), name: name.slice(0, NAME_MAX), title,
+      sy: clamp(r.sy === undefined ? first.getFullYear() : r.sy, MIN_YEAR, EY),
+      sm: clamp(r.sm === undefined ? first.getMonth() : r.sm, 0, MONTHS_IN_YEAR - 1),
+      notes: (Array.isArray(r.notes) ? r.notes : []).filter((n) => n && typeof n.h === 'string').map(cleanNote),
+    };
+    if (idx(out.sy, out.sm) > idx(EY, EM)) { out.sy = first.getFullYear(); out.sm = first.getMonth(); }
+    return out;
+  }
+  function loadDb() {
+    const saved = store.get(STORE_KEY, null);
+    const ok = Boolean(saved) && saved.v === SCHEMA_VERSION && Array.isArray(saved.timelines) && saved.timelines.length > 0;
+    const list = ok ? saved.timelines.slice(0, TIMELINES_MAX).map(cleanTimeline) : [cleanTimeline(store.get(LEGACY_KEY, null))]; // v1 data is only read, never rewritten or deleted.
+    return { v: SCHEMA_VERSION, timelines: list, activeId: ok && list.some((t) => t.id === saved.activeId) ? saved.activeId : list[0].id };
+  }
+  const db = loadDb();
+  let st = db.timelines.find((t) => t.id === db.activeId);
+  const save = () => store.set(STORE_KEY, db);
   const startIdx = () => idx(st.sy, st.sm), endIdx = () => idx(EY, EM);
   const key = (n) => n.y * (MONTHS_IN_YEAR + 1) + (n.m === null ? 0 : n.m + 1); // Whole-year notes sort before the months of their year.
   const visible = () => st.notes.filter((n) => (n.m === null ? n.y >= st.sy && n.y <= EY : idx(n.y, n.m) >= startIdx() && idx(n.y, n.m) <= endIdx())).sort((a, b) => key(a) - key(b));
@@ -440,10 +658,10 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
     if (m !== null && (idx(y, m) < startIdx() || idx(y, m) > endIdx())) { fail($('d-err'), 'Choose a month from ' + label(st.sy, st.sm) + ' to ' + label(EY, EM) + '.'); $('n-m').focus(); return; }
     const data = { h: h.slice(0, HEAD_MAX), b: $('n-b').value.trim().slice(0, BODY_MAX), y, m };
     let id;
-    if (editing) { Object.assign(editing, data); id = editing.id; } else { id = Math.random().toString(MAX_RADIX).slice(ID_SKIP); st.notes.push({ id, ...data }); }
+    if (editing) { Object.assign(editing, data); id = editing.id; } else { id = newId(); st.notes.push({ id, ...data }); }
     save(); dlg.close(); render(id); say(status, 'Note saved under ' + label(y, m) + '.');
   });
-  $('d-del').addEventListener('click', () => {
+  guarded($('d-del'), 'Confirm delete', () => {
     st.notes = st.notes.filter((n) => n !== editing); save(); dlg.close(); render(); $('b-add').focus(); say(status, 'Note deleted.');
   });
 
@@ -560,14 +778,292 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
       const { bytes, title } = buildPdf();
       const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
       const a = document.createElement('a');
-      a.href = url; a.download = (title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'timeline') + '.pdf';
+      a.href = url; a.download = slug(title) + '.pdf';
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
       say(status, 'PDF saved. Letters outside the Western European set show as question marks in the PDF.');
     } catch { fail(error, 'The PDF could not be made.'); }
   });
 
+  /* Exports: JSON, calendar, Markdown, CSV. All run in the browser and nothing is sent. */
+  function slug(text) { return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'timeline'; }
+  function saveBlob(blob, filename) {
+    const url = URL.createObjectURL(blob), a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
+  }
+  const countText = (n) => n + (n === 1 ? ' note' : ' notes');
+  const exportData = () => ({ v: SCHEMA_VERSION, name: st.name, title: st.title, sy: st.sy, sm: st.sm, notes: st.notes.map(({ y, m, h, b }) => ({ y, m, h, b })) });
+  const toJson = () => JSON.stringify(exportData(), null, JSON_INDENT);
+  const icsText = (v) => String(v).replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r\n|\r|\n/g, '\\n');
+  const icsDate = (y, m, d) => new Date(Date.UTC(y, m, d)).toISOString().split('T')[0].replaceAll('-', '');
+  function fold(line) { // Folds at 75 octets without splitting a character.
+    const enc = new TextEncoder(), parts = [];
+    let cur = '', size = 0, limit = ICS_FOLD;
+    for (const ch of line) {
+      const n = enc.encode(ch).length;
+      if (size + n > limit) { parts.push(cur); cur = ''; size = 0; limit = ICS_FOLD - FOLD_INDENT; }
+      cur += ch; size += n;
+    }
+    parts.push(cur);
+    return parts.join('\r\n ');
+  }
+  function toIcs() {
+    const stamp = new Date().toISOString().replace(/[-:]|\.\d+/g, '');
+    const out = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Ardalorn//ArTimeline//EN', 'CALSCALE:GREGORIAN', 'X-WR-CALNAME:' + icsText(st.name)];
+    visible().forEach((n) => {
+      const whole = n.m === null;
+      const start = icsDate(n.y, whole ? 0 : n.m, FIRST_DAY), end = whole ? icsDate(n.y + 1, 0, FIRST_DAY) : icsDate(n.y, n.m, FIRST_DAY + 1);
+      out.push('BEGIN:VEVENT', 'UID:' + n.id.replace(/[^\w.-]/g, '') + '@artimeline', 'DTSTAMP:' + stamp, 'DTSTART;VALUE=DATE:' + start, 'DTEND;VALUE=DATE:' + end, 'SUMMARY:' + icsText(n.h + (whole ? ' (whole year)' : '')));
+      if (n.b) { out.push('DESCRIPTION:' + icsText(n.b)); }
+      out.push('END:VEVENT');
+    });
+    out.push('END:VCALENDAR');
+    return out.map(fold).join('\r\n') + '\r\n';
+  }
+  const mdText = (v) => v.replace(/[\\`*_#[\]<>]/g, '\\$&').replace(/^([-+])/gm, '\\$1').replace(/^(\d+)\./gm, '$1\\.');
+  function toMarkdown() {
+    const vis = visible();
+    const out = ['# ' + mdText(st.title.trim() || DEFAULT_TITLE), '', label(st.sy, st.sm) + ' to ' + label(EY, EM) + ', ' + countText(vis.length) + '.', ''];
+    const noteMd = (n) => { out.push('**' + mdText(n.h) + '**', ''); if (n.b) { out.push(mdText(n.b).replace(/\r?\n/g, '  \n'), ''); } };
+    [...new Set(vis.map((n) => n.y))].forEach((yr) => {
+      const ns = vis.filter((n) => n.y === yr);
+      out.push('## ' + yr, '');
+      ns.filter((n) => n.m === null).forEach(noteMd);
+      [...new Set(ns.filter((n) => n.m !== null).map((n) => n.m))].forEach((m) => { out.push('### ' + label(yr, m), ''); ns.filter((n) => n.m === m).forEach(noteMd); });
+    });
+    return out.join('\n').trimEnd() + '\n';
+  }
+  const csvCell = (v) => { const t = String(v); return /[",\r\n]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t; };
+  const sheetRows = () => [['Year', 'Month', 'Whole year', 'Heading', 'Body'], ...visible().map((n) => [n.y, n.m === null ? '' : MONTHS[n.m], n.m === null ? 'Yes' : 'No', n.h, n.b])];
+  const excelSafe = (v) => (typeof v === 'string' && /^[=+\-@\t\r]/.test(v) ? "'" + v : v); // Text that starts like a formula gets a leading apostrophe, so Excel keeps it as text.
+  const toCsv = (safe) => BOM + sheetRows().map((r) => r.map((v) => csvCell(safe ? excelSafe(v) : v)).join(',')).join('\r\n') + '\r\n';
+
+  /* XLSX: a small ZIP writer (stored, no compression) and the few XML parts a workbook needs. Text goes in as plain strings, never formulas. */
+  const CRC_TABLE = Array.from({ length: BYTE_VALUES }, (_, n) => { let c = n; for (let k = 0; k < BYTE_BITS; k++) { c = c & 1 ? CRC_POLY ^ (c >>> 1) : c >>> 1; } return c >>> 0; });
+  const crc32 = (bytes) => { let c = CRC_INIT; for (const b of bytes) { c = CRC_TABLE[(c ^ b) & BYTE_MASK] ^ (c >>> BYTE_BITS); } return (c ^ CRC_INIT) >>> 0; };
+  const le = (...fields) => fields.flatMap(([v, size]) => Array.from({ length: size }, (_, i) => (v >>> (i * BYTE_BITS)) & BYTE_MASK)); // Little-endian bytes from [value, size] pairs.
+  function zip(files) {
+    const enc = new TextEncoder(), body = [], dir = [];
+    let offset = 0;
+    files.forEach(([name, text]) => {
+      const nameB = enc.encode(name), data = enc.encode(text), crc = crc32(data), size = data.length;
+      const head = le([ZIP_LOCAL, U32], [ZIP_VERSION, U16], [ZIP_UTF8, U16], [0, U16], [0, U16], [ZIP_DATE, U16], [crc, U32], [size, U32], [size, U32], [nameB.length, U16], [0, U16]);
+      const cent = le([ZIP_CENTRAL, U32], [ZIP_VERSION, U16], [ZIP_VERSION, U16], [ZIP_UTF8, U16], [0, U16], [0, U16], [ZIP_DATE, U16], [crc, U32], [size, U32], [size, U32], [nameB.length, U16], [0, U16], [0, U16], [0, U16], [0, U16], [0, U32], [offset, U32]);
+      body.push(Uint8Array.from(head), nameB, data); dir.push(Uint8Array.from(cent), nameB);
+      offset += head.length + nameB.length + size;
+    });
+    const dirSize = dir.reduce((a, d) => a + d.length, 0);
+    const end = le([ZIP_END, U32], [0, U16], [0, U16], [files.length, U16], [files.length, U16], [dirSize, U32], [offset, U32], [0, U16]);
+    return new Blob([...body, ...dir, Uint8Array.from(end)], { type: XLSX_MIME });
+  }
+  function toXlsx() {
+    const head = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+    const main = 'http://schemas.openxmlformats.org/spreadsheetml/2006/main', rel = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships', pkg = 'http://schemas.openxmlformats.org/package/2006/relationships';
+    const ct = 'application/vnd.openxmlformats-officedocument.spreadsheetml.';
+    const xmlText = (v) => esc(String(v).replace(/\p{Cc}/gu, (c) => ('\t\n\r'.includes(c) ? c : ''))); // XML 1.0 rejects most control characters.
+    const colName = (i) => String.fromCharCode(CHAR_A + i);
+    const cell = (v, i, r, style) => '<c r="' + colName(i) + r + '" s="' + style + '"' + (typeof v === 'number' ? '><v>' + v + '</v></c>' : ' t="inlineStr"><is><t xml:space="preserve">' + xmlText(v) + '</t></is></c>');
+    const rows = sheetRows().map((row, ri) => '<row r="' + (ri + ROW_BASE) + '">' + row.map((v, ci) => cell(v, ci, ri + ROW_BASE, ri === 0 ? XLSX_STYLE_HEAD : XLSX_COL_STYLE[ci])).join('') + '</row>').join('');
+    const cols = XLSX_WIDTHS.map((w, i) => '<col min="' + (i + ROW_BASE) + '" max="' + (i + ROW_BASE) + '" width="' + w + '" customWidth="1"/>').join('');
+    const sheet = head + '<worksheet xmlns="' + main + '"><sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/></sheetView></sheetViews><cols>' + cols + '</cols><sheetData>' + rows + '</sheetData></worksheet>';
+    const styles = head + '<styleSheet xmlns="' + main + '"><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><name val="Calibri"/></font></fonts><fills count="2"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill></fills><borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="3"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0" applyAlignment="1"><alignment vertical="top" wrapText="1"/></xf></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>';
+    return zip([
+      ['[Content_Types].xml', head + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="' + ct + 'sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="' + ct + 'worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="' + ct + 'styles+xml"/></Types>'],
+      ['_rels/.rels', head + '<Relationships xmlns="' + pkg + '"><Relationship Id="rId1" Type="' + rel + '/officeDocument" Target="xl/workbook.xml"/></Relationships>'],
+      ['xl/workbook.xml', head + '<workbook xmlns="' + main + '" xmlns:r="' + rel + '"><sheets><sheet name="Timeline" sheetId="1" r:id="rId1"/></sheets></workbook>'],
+      ['xl/_rels/workbook.xml.rels', head + '<Relationships xmlns="' + pkg + '"><Relationship Id="rId1" Type="' + rel + '/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="' + rel + '/styles" Target="styles.xml"/></Relationships>'],
+      ['xl/styles.xml', styles],
+      ['xl/worksheets/sheet1.xml', sheet],
+    ]);
+  }
+  const asBlob = (f) => { const made = f.make(); return made instanceof Blob ? made : new Blob([made], { type: f.mime + ';charset=utf-8' }); };
+  const FORMATS = {
+    json: { ext: 'json', mime: 'application/json', make: toJson, name: 'JSON file' },
+    ics: { ext: 'ics', mime: 'text/calendar', make: toIcs, name: 'Calendar file', needsNotes: true },
+    md: { ext: 'md', mime: 'text/markdown', make: toMarkdown, name: 'Markdown file' },
+    csv: { ext: 'csv', mime: 'text/csv', make: toCsv, name: 'CSV file' },
+    csvx: { ext: 'excel.csv', mime: 'text/csv', make: () => toCsv(true), name: 'Excel CSV file' },
+    xlsx: { ext: 'xlsx', mime: XLSX_MIME, make: toXlsx, name: 'Excel workbook' },
+  };
+  Object.entries(FORMATS).forEach(([k, f]) => $('b-' + k).addEventListener('click', () => {
+    error.replaceChildren();
+    if (f.needsNotes && !visible().length) { fail(error, 'There are no notes to put in a calendar file.'); return; }
+    try { saveBlob(asBlob(f), slug(st.name) + '.' + f.ext); say(status, f.name + ' saved.'); } catch { fail(error, 'The ' + f.name + ' could not be made.'); }
+  }));
+
+  /* Import: same cleaning as saved data, then replace the active timeline or add a new one. */
+  const dlgImp = $('dlg-imp');
+  let pending = null; // Cleaned timeline waiting for the replace-or-add choice.
+  $('b-imp').addEventListener('click', () => $('i-file').click());
+  $('i-file').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    e.target.value = ''; error.replaceChildren();
+    if (!file) { return; }
+    if (file.size > IMPORT_MAX_BYTES) { fail(error, 'That file is too large to be a timeline.'); return; }
+    try {
+      pending = parseTimeline(await file.text());
+    } catch { fail(error, 'That file is not a timeline JSON file.'); return; }
+    openImport(pending, false);
+  });
+  function finishImport(replace) {
+    const t = pending;
+    dlgImp.close();
+    if (!replace && db.timelines.length >= TIMELINES_MAX) { fail(error, 'You can keep up to ' + TIMELINES_MAX + ' timelines. Delete one first.'); return; }
+    if (replace) { t.id = st.id; db.timelines[db.timelines.indexOf(st)] = t; } else { db.timelines.push(t); }
+    activate(t.id); say(status, (replace ? 'Replaced the active timeline with ' : 'Added ') + t.name + '.');
+  }
+  $('imp-rep').addEventListener('click', () => finishImport(true));
+  $('imp-new').addEventListener('click', () => finishImport(false));
+  $('imp-x').addEventListener('click', () => dlgImp.close());
+  dlgImp.addEventListener('click', (e) => { if (e.target === dlgImp) { dlgImp.close(); } });
+  dlgImp.addEventListener('close', () => { pending = null; });
+
+  function parseTimeline(text) { // One path for every import: file, share link.
+    const obj = JSON.parse(text);
+    if (!obj || typeof obj !== 'object' || (typeof obj.title !== 'string' && !Array.isArray(obj.notes))) { throw new TypeError('Not a timeline.'); }
+    return cleanTimeline({ ...obj, id: undefined });
+  }
+  function openImport(t, shared) {
+    pending = t;
+    $('imp-h').textContent = shared ? 'Shared timeline' : 'Import timeline';
+    $('imp-rep').hidden = shared;
+    $('imp-new').textContent = shared ? 'Add shared timeline' : 'Add as new timeline';
+    $('imp-sum').textContent = '"' + t.name + '" has ' + countText(t.notes.length) + (shared ? '. Add it as a new timeline? Your other timelines are not changed.' : '. Replace the active timeline, or add this as a new one?');
+    dlgImp.showModal();
+  }
+
+  /* Clipboard, with a read-only text box when copying is blocked */
+  const dlgCopy = $('dlg-copy');
+  async function copyText(text, title, done) {
+    try {
+      if (!navigator.clipboard?.writeText) { throw new TypeError('No clipboard.'); }
+      await navigator.clipboard.writeText(text);
+      say(status, done);
+    } catch {
+      $('cp-h').textContent = title; $('cp-t').value = text;
+      dlgCopy.showModal(); $('cp-t').select();
+    }
+  }
+  $('cp-x').addEventListener('click', () => dlgCopy.close());
+  dlgCopy.addEventListener('click', (e) => { if (e.target === dlgCopy) { dlgCopy.close(); } });
+  $('b-cpmd').addEventListener('click', () => { error.replaceChildren(); copyText(toMarkdown(), 'Copy the Markdown', 'Markdown copied.'); });
+
+  /* Share links: the timeline lives in the URL fragment, which the browser never sends to a server. */
+  const toB64 = (bytes) => btoa(Array.from(bytes, (b) => String.fromCharCode(b)).join('')).replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, '');
+  const fromB64 = (text) => Uint8Array.from(atob(text.replaceAll('-', '+').replaceAll('_', '/')), (c) => c.charCodeAt(0));
+  const deflate = async (bytes) => new Uint8Array(await new Response(new Blob([bytes]).stream().pipeThrough(new globalThis.CompressionStream('deflate-raw'))).arrayBuffer());
+  async function inflate(bytes) { // Stops early if the result would be too large.
+    const reader = new Blob([bytes]).stream().pipeThrough(new globalThis.DecompressionStream('deflate-raw')).getReader(), chunks = [];
+    let size = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) { break; }
+      size += value.length;
+      if (size > IMPORT_MAX_BYTES) { reader.cancel(); throw new RangeError('Too large.'); }
+      chunks.push(value);
+    }
+    return new Blob(chunks).text();
+  }
+  async function makeHash() {
+    const bytes = new TextEncoder().encode(JSON.stringify(exportData()));
+    const packed = typeof globalThis.CompressionStream === 'function';
+    return '#t=' + (packed ? SHARE_PACKED : SHARE_PLAIN) + ':' + toB64(packed ? await deflate(bytes) : bytes);
+  }
+  async function readHash(hash) {
+    const m = /^#t=(\d):([\w-]+)$/.exec(hash);
+    if (!m || hash.length > SHARE_MAX_CHARS) { throw new RangeError('Bad link.'); }
+    const [, kind, data] = m, bytes = fromB64(data);
+    if (kind === SHARE_PACKED) { return parseTimeline(await inflate(bytes)); }
+    if (kind !== SHARE_PLAIN || bytes.length > IMPORT_MAX_BYTES) { throw new RangeError('Bad link.'); }
+    return parseTimeline(new TextDecoder().decode(bytes));
+  }
+  async function loadShared() {
+    const hash = location.hash;
+    history.replaceState(null, '', location.pathname + location.search); // Clear it so a reload does not ask again.
+    try { openImport(await readHash(hash), true); } catch { fail(error, 'That share link is not valid or is too large.'); }
+  }
+  $('b-link').addEventListener('click', async () => {
+    error.replaceChildren();
+    try {
+      const hash = await makeHash();
+      if (hash.length > SHARE_MAX_CHARS) { fail(error, 'This timeline is too large for a share link. Export JSON instead.'); return; }
+      copyText(location.href.split('#')[0] + hash, 'Copy the share link', 'Share link copied.');
+    } catch { fail(error, 'The share link could not be made.'); }
+  });
+
+  /* Web Share: buttons show only where the browser supports them. */
+  async function shareWith(data, done) {
+    error.replaceChildren();
+    try { await navigator.share(data); say(status, done); } catch (e) { if (e.name !== 'AbortError') { fail(error, 'Sharing did not work.'); } }
+  }
+  const canShareFiles = () => { try { return Boolean(navigator.canShare?.({ files: [new File([''], 'a.pdf', { type: 'application/pdf' })] })); } catch { return false; } };
+  if (navigator.share) { const files = canShareFiles(); $('b-sharepdf').hidden = !files; $('b-sharetxt').hidden = files; }
+  $('b-sharepdf').addEventListener('click', () => {
+    let data;
+    try { const { bytes, title } = buildPdf(); data = { title, files: [new File([bytes], slug(title) + '.pdf', { type: 'application/pdf' })] }; } catch { fail(error, 'The PDF could not be made.'); return; }
+    shareWith(data, 'PDF shared.');
+  });
+  $('b-sharetxt').addEventListener('click', () => {
+    const n = visible().length;
+    shareWith({ title: st.title.trim() || DEFAULT_TITLE, text: label(st.sy, st.sm) + ' to ' + label(EY, EM) + ', ' + countText(n) + '.' }, 'Summary shared.');
+  });
+
+  /* Timelines: switch, create, rename, delete */
+  const dlgName = $('dlg-name');
+  let naming = 'new'; // Either 'new' or 'rename'.
+  function fillPicker() {
+    $('t-pick').innerHTML = db.timelines.map((t) => '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>').join('');
+    $('t-pick').value = db.activeId;
+    $('b-tdel').hidden = db.timelines.length <= MIN_TIMELINES; // The last timeline cannot be deleted.
+  }
+  function activate(id) {
+    db.activeId = id; st = db.timelines.find((t) => t.id === id); save();
+    $('t-title').value = st.title; $('t-sm').value = st.sm; $('t-sy').value = st.sy;
+    error.replaceChildren(); fillPicker(); render();
+  }
+  function guarded(btn, armedText, run) { // Two-step button: the first press arms it, the second runs it. It disarms on blur or after a wait.
+    const idle = btn.textContent;
+    let timer = 0, armed = false;
+    const disarm = () => { clearTimeout(timer); armed = false; btn.textContent = idle; btn.classList.remove('danger'); };
+    btn.addEventListener('blur', disarm);
+    btn.addEventListener('click', () => {
+      if (armed) { disarm(); run(); return; }
+      armed = true; btn.textContent = armedText; btn.classList.add('danger');
+      timer = setTimeout(disarm, CONFIRM_MS); say(status, 'Press the button again to confirm.');
+    });
+  }
+  function openName(mode) {
+    naming = mode; fail($('nm-err'), '');
+    $('nm-h').textContent = mode === 'new' ? 'New timeline' : 'Rename timeline';
+    $('nm-i').value = mode === 'new' ? '' : st.name;
+    dlgName.showModal(); $('nm-i').focus();
+  }
+  $('t-pick').addEventListener('change', () => { activate($('t-pick').value); say(status, 'Showing ' + st.name + '.'); });
+  $('b-new').addEventListener('click', () => openName('new'));
+  $('b-rename').addEventListener('click', () => openName('rename'));
+  $('nm-x').addEventListener('click', () => dlgName.close());
+  dlgName.addEventListener('click', (e) => { if (e.target === dlgName) { dlgName.close(); } });
+  $('f-name').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const name = $('nm-i').value.trim().slice(0, NAME_MAX);
+    if (!name) { fail($('nm-err'), 'Enter a timeline name.'); $('nm-i').focus(); return; }
+    if (naming === 'new' && db.timelines.length >= TIMELINES_MAX) { fail($('nm-err'), 'You can keep up to ' + TIMELINES_MAX + ' timelines. Delete one first.'); return; }
+    dlgName.close();
+    if (naming === 'rename') { st.name = name; save(); fillPicker(); say(status, 'Timeline renamed to ' + name + '.'); return; }
+    const t = cleanTimeline({ name, title: name });
+    db.timelines.push(t); activate(t.id); say(status, 'Timeline ' + name + ' created and shown.');
+  });
+  guarded($('b-tdel'), 'Confirm delete', () => {
+    const gone = st.name;
+    db.timelines = db.timelines.filter((t) => t !== st);
+    activate(db.timelines[0].id); $('t-pick').focus(); say(status, 'Timeline ' + gone + ' deleted.');
+  });
+
+  fillPicker();
   render();
+  if (location.hash.startsWith('#t=')) { loadShared(); }
 })();
         </script>
     </body>
