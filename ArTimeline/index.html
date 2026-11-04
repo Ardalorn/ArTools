@@ -120,7 +120,7 @@ textarea { min-block-size: 9rem; resize: vertical; line-height: 1.5; }
 /* Notes and live regions */
 .note, [role="alert"]:not(:empty) { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-3); align-items: start; padding: var(--s-3) var(--s-4); color: #0f3f7a; background: #e1ecf8; border: var(--rule) solid #1f66b0; border-inline-start-width: 0.5rem; border-radius: var(--r-2); }
 @media (prefers-color-scheme: dark) { .note { color: #a9cdf5; background: #052136; border-color: #55aff0; } }
-.note::before, [role="alert"]:not(:empty)::before { content: ""; content: "" / ""; inline-size: 1.5rem; block-size: 1.5rem; margin-block-start: 0.1rem; background: currentColor; mask: var(--mask-info) center / contain no-repeat; -webkit-mask: var(--mask-info) center / contain no-repeat; }
+.note::before, [role="alert"]:not(:empty)::before { content: ""; content: "" / ""; inline-size: 1.5rem; block-size: 1.5rem; margin-block-start: 0.1rem; margin-block-start: calc((1lh - 1.5rem) / 2); background: currentColor; mask: var(--mask-info) center / contain no-repeat; -webkit-mask: var(--mask-info) center / contain no-repeat; }
 .note--warn { color: var(--warn-ink); background: var(--warn-tint); border-color: var(--warn-mark); }
 .note--warn::before { mask-image: var(--mask-warn); -webkit-mask-image: var(--mask-warn); }
 .note--warn > :first-child::before { content: "Warning: "; font-weight: 700; }
@@ -139,11 +139,14 @@ html:has(dialog[open]) { overflow: hidden; scrollbar-gutter: stable; }
 .site-footer { background: var(--brand); color: var(--on-brand); padding: var(--s-5) var(--gutter); }
 .site-footer .hint { color: var(--on-brand-soft); }
 /* 5. Timeline */
-.tl { list-style: none; margin: 0 0 0 var(--s-3); padding: 0; border-inline-start: 0.25rem solid var(--line); }
-.tl__item { position: relative; padding: 0 0 var(--s-5) var(--s-5); }
-.tl__item::before { content: ""; position: absolute; inset-inline-start: -0.875rem; inset-block-start: 0.2rem; inline-size: 1.5rem; block-size: 1.5rem; border-radius: 50%; background: var(--action); border: 0.25rem solid var(--paper); }
+/* The dot is placed from the same tokens as the heading beside it (size and line height), so it stays centred on the first line at every width, zoom and display scale. Rail and dot sizes are named once so the horizontal centring cannot drift either. */
+.tl { --rail: 0.25rem; --dot: 1.5rem; list-style: none; margin: 0 0 0 var(--s-3); padding: 0; border-inline-start: var(--rail) solid var(--line); }
+.tl__item { --tl-size: var(--t-md); --tl-lh: 1.2; position: relative; padding: 0 0 var(--s-5) var(--s-5); }
+.tl__item--year { --tl-size: var(--t-lg); }
+.tl__item--month { --tl-size: var(--t-base); --tl-lh: 1.3; }
+.tl__item > :is(h3, h4) { font-size: var(--tl-size); line-height: var(--tl-lh); }
+.tl__item::before { content: ""; position: absolute; inset-inline-start: calc((var(--rail) + var(--dot)) / -2); inset-block-start: calc((var(--tl-size) * var(--tl-lh) - var(--dot)) / 2); inline-size: var(--dot); block-size: var(--dot); border-radius: 50%; background: var(--action); border: 0.25rem solid var(--paper); }
 .tl__item--year::before { border-radius: var(--r-1); }
-.tl__item--year h3 { font-size: var(--t-lg); }
 .tl__item:last-child { padding-block-end: 0; }
 .cards { list-style: none; padding: 0; display: grid; gap: var(--s-3); margin-block-start: var(--s-3); }
 .card { display: grid; gap: var(--s-2); padding: var(--s-3) var(--s-4); background: var(--surface); border: var(--rule) solid var(--line); border-radius: var(--r-2); }
@@ -608,7 +611,7 @@ const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&
       const ns = vis.filter((n) => n.y === yr), only = ns.filter((n) => n.m === null);
       html += '<li class="tl__item tl__item--year"><h3>' + yr + '</h3>' + (only.length ? '<p class="hint">Notes for the whole year</p><ul class="cards">' + only.map(card).join('') + '</ul>' : '') + '</li>';
       [...new Set(ns.filter((n) => n.m !== null).map((n) => n.m))].forEach((m) => {
-        html += '<li class="tl__item"><h4>' + esc(label(yr, m)) + '</h4><ul class="cards">' + ns.filter((n) => n.m === m).map(card).join('') + '</ul></li>';
+        html += '<li class="tl__item tl__item--month"><h4>' + esc(label(yr, m)) + '</h4><ul class="cards">' + ns.filter((n) => n.m === m).map(card).join('') + '</ul></li>';
       });
     });
     $('tl').innerHTML = html + '<li class="tl__item"><h3>Now: ' + esc(label(EY, EM)) + '</h3></li>';
