@@ -8,7 +8,6 @@
         <meta name="author" content="Ardalorn">
         <meta name="application-name" content="ArWalk">
         <meta name="color-scheme" content="light dark">
-        <meta name="referrer" content="strict-origin-when-cross-origin">
         <link rel="canonical" href="https://ardalorn.github.io/ArTools/ArWalk/">
         <link
             rel="icon"
@@ -157,6 +156,10 @@ main { flex: 1 0 auto; inline-size: 100%; }
 .ctrls { position: absolute; inset-inline-end: var(--s-3); inset-block-start: 5rem; z-index: 2; display: grid; gap: var(--s-2); }
 .is-nav .ctrls { inset-block-start: 7.5rem; }
 .ctrls button { inline-size: 3rem; block-size: 3rem; padding: 0; border-radius: 50%; box-shadow: 0 0.125rem 0.5rem rgb(0 0 0 / 0.3); }
+/* Location button: one icon per camera mode (free, north-up following, heading-up following). */
+#locate g { display: none; }
+#locate:not([data-mode]) .m-free, #locate[data-mode="free"] .m-free, #locate[data-mode="north"] .m-north, #locate[data-mode="heading"] .m-heading { display: inline; }
+#compass-needle { pointer-events: none; }
 .is-nav .top { display: none; }
 .banner { position: absolute; inset: var(--s-3) var(--s-3) auto; z-index: 3; display: flex; align-items: center; gap: var(--s-3); max-inline-size: 26rem; padding: var(--s-3) var(--s-4); color: var(--on-brand); background: var(--brand); border-radius: var(--r-3); box-shadow: 0 0.125rem 0.75rem rgb(0 0 0 / 0.4); }
 .banner strong { color: inherit; font-size: var(--t-md); line-height: 1.25; }
@@ -214,7 +217,7 @@ main { flex: 1 0 auto; inline-size: 100%; }
                     id="map"
                     tabindex="0"
                     role="application"
-                    aria-label="Map. Arrow keys move the map, plus and minus zoom."
+                    aria-label="Map. Arrow keys move the map, plus and minus zoom, Shift with left or right arrow turns the map, N points north up."
                 ></canvas>
                 <div class="top">
                     <search aria-label="Search places">
@@ -283,6 +286,27 @@ main { flex: 1 0 auto; inline-size: 100%; }
                     <button
                         type="button"
                         class="secondary"
+                        id="compass"
+                        aria-label="Compass: point the map north"
+                        hidden
+                    >
+                        <svg
+                            class="icon"
+                            id="compass-needle"
+                            viewBox="0 0 24 24"
+                            aria-hidden="true"
+                        >
+                            <path d="M12 2.5 16.5 12h-9z" fill="var(--pin)"/>
+                            <path
+                                d="M12 21.5 7.5 12h9z"
+                                fill="currentColor"
+                                opacity="0.5"
+                            />
+                        </svg>
+                    </button>
+                    <button
+                        type="button"
+                        class="secondary"
                         id="start-btn"
                         aria-label="Set start point"
                     >
@@ -315,12 +339,30 @@ main { flex: 1 0 auto; inline-size: 100%; }
                             stroke-linecap="round"
                             aria-hidden="true"
                         >
-                            <circle
-                                cx="12"
-                                cy="12"
-                                r="4"
-                            />
-                            <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+                            <g class="m-free">
+                                <circle
+                                    cx="12"
+                                    cy="12"
+                                    r="4"
+                                />
+                                <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+                            </g>
+                            <g class="m-north">
+                                <circle
+                                    cx="12"
+                                    cy="12"
+                                    r="4"
+                                    fill="currentColor"
+                                />
+                                <path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
+                            </g>
+                            <g class="m-heading">
+                                <path
+                                    d="M12 3.5 19 20.5 12 16.5 5 20.5z"
+                                    fill="currentColor"
+                                    stroke-linejoin="round"
+                                />
+                            </g>
                         </svg>
                     </button>
                     <button
@@ -411,7 +453,7 @@ main { flex: 1 0 auto; inline-size: 100%; }
                     aria-labelledby="sheet-h"
                     hidden
                 ></section>
-                <p class="attrib">Map data © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></p>
+                <p class="attrib">Map tiles © <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a></p>
                 <p id="app-error" role="alert"></p>
             </div>
             <dialog
@@ -472,8 +514,8 @@ main { flex: 1 0 auto; inline-size: 100%; }
             <section class="about stack" aria-labelledby="about-heading">
                 <div class="panel stack" style="max-inline-size: var(--text-measure);">
                     <h2 id="about-heading">About ArWalk</h2>
-                    <p>ArWalk is a small map that finds a walking route and talks you along it. The map is drawn by this page itself on a canvas, with no mapping library. Drag to move, pinch or scroll to zoom, tap the map to drop a pin. Your default start point is saved on this device; GPS is only used once you press Start, to follow you along the route.</p>
-                    <p class="hint">Map tiles use the OpenStreetMap standard layer. Place suggestions use Photon, exact address searches use Nominatim, numbered-building lookups use OpenStreetMap Overpass, and walking routes come from OSRM, run by FOSSGIS as the OpenStreetMap Germany routing service. Map, search and route data are © OpenStreetMap contributors, available under the Open Database Licence (<a href="https://www.openstreetmap.org/copyright">details</a>). Search terms and route endpoints are sent to those services. GPS is used only when you choose it as your start point or press Start to follow a walk. A chosen start point is saved locally on this device; live tracking fixes are not saved.</p>
+                    <p>ArWalk is a small map that finds a walking route and talks you along it. The map is drawn by this page itself on a canvas, with no mapping library. Drag to move, pinch or scroll to zoom, twist two fingers (or hold Shift and drag) to turn the map, tap the map to drop a pin. While you walk the map follows you, turns to the way you are facing and zooms in for turns. Drag the map to look around and it comes back to you after a few seconds. Your default start point is saved on this device; GPS is only used once you press Start, to follow you along the route.</p>
+                    <p class="hint">Map tiles use the OpenStreetMap standard layer. Place suggestions use Photon, exact address searches use Nominatim, numbered-building lookups use OpenStreetMap Overpass, and walking routes use the OpenStreetMap Germany routing service. Search terms and route endpoints are sent to those services. GPS is used only when you choose it as your start point or press Start to follow a walk. A chosen start point is saved locally on this device; live tracking fixes are not saved.</p>
                     <p class="hint"><a href="https://www.openstreetmap.org/fixthemap">Report or correct a map issue</a>.</p>
                     <p><a href="#map">Back to the map</a></p>
                 </div>
@@ -581,10 +623,6 @@ const STAGE_NEAR = 1; // Turn announcement stage: close to the turn.
 const STAGE_TURN = 2; // Turn announcement stage: at the turn.
 const STREET_MATCH_GROUP = 2; // Regex group holding the street name in "12 High Street".
 const STREET_CANDIDATES = 3; // Streets checked for a numbered building.
-const TILE_RETRY_MS = 30000; // A tile that failed to load is not asked for again for this long.
-const NOMINATIM_GAP_MS = 1100; // Nominatim's policy allows at most one request a second, so keep this far apart.
-const OVERPASS_MAXSIZE_B = 1000000; // Memory the Overpass lookup declares it needs; small requests are admitted more easily.
-const LOOKUP_RETRY_MS = 86400000; // A start point whose address lookup finished is not looked up again for a day.
 const SPEAK_DELAY_MS = 60; // Pause between cancelling old speech and starting new speech; Chrome drops speech started instantly after a cancel.
 const PIN_HEAD_OFFSET = 26; // Pixels from the pin's tip up to the middle of its head.
 const PIN_HEAD_R = 13; // Radius of the pin's head.
@@ -600,6 +638,47 @@ const GOOD_ACC_M = 30; // A fix this accurate (metres) is good enough to stop re
 const REFINE_MAX_MS = 20000; // Longest wait for a good fix before the best one so far is used.
 const MAX_FIX_AGE_MS = 10000; // A fix the browser stamped older than this is a cached position and is ignored.
 const MAX_NAV_ACC_M = 100; // While walking, fixes less accurate than this are ignored.
+
+/* ---------- Navigation camera: a map that follows you, turns to your heading and zooms for turns, like Google Maps. ---------- */
+const DEG = Math.PI / HALF_TURN_DEGREES; // Radians in one degree.
+const METRES_PER_DEG_LAT = 111320; // Metres in one degree of latitude.
+const NAV_ZOOM_MID = 17.5; // Walking zoom once a turn is within ZOOM_MID_M.
+const NAV_ZOOM_NEAR = 18; // Walking zoom once a turn is within ZOOM_NEAR_M.
+const ZOOM_MID_M = 150; // Distance to the next turn that starts the closer zoom.
+const ZOOM_NEAR_M = 60; // Distance to the next turn that starts the closest zoom.
+const NAV_ANCHOR = 0.68; // Heading-up: how far down the free map area your dot sits (0 top, 1 bottom), so you see more ahead.
+const ANCHOR_MARGIN_PX = 12; // Space kept between your dot's area and the banner or sheet.
+const ATTRIB_PX = 32; // Height of the map credit strip at the bottom.
+const ME_SMOOTH_MS = 350; // Time constant for your dot gliding to each new fix.
+const ZOOM_SMOOTH_MS = 450; // Time constant for zoom changes while following.
+const BEARING_SMOOTH_MS = 250; // Time constant for the map turning to your heading.
+const FOLLOW_ENGAGE_MS = 600; // Time the camera takes to swing onto you when following starts.
+const MAX_FRAME_MS = 100; // Longest frame step the camera smoothing will use.
+const POS_DONE_DEG = 1e-7; // Dot position difference (degrees) below which it has arrived.
+const ZOOM_DONE = 0.005; // Zoom difference below which zoom has arrived.
+const BEARING_DONE = 0.2; // Bearing difference (degrees) below which the turn has finished.
+const ANCHOR_DONE = 0.002; // Anchor shift below which it has finished.
+const AUTO_RECENTRE_MS = 8000; // After you stop touching the map while walking, it returns to following you.
+const ROTATE_START_DEG = 8; // Two-finger twist needed before the map starts to turn (stops a zoom pinch turning it).
+const ROTATE_KEY_DEG = 15; // Degrees one Shift+arrow press turns the map.
+const ROTATE_DRAG_DEG_PER_PX = 0.4; // Degrees of turn per pixel of Shift+drag.
+const NORTH_SNAP_DEG = 3; // After a turn gesture, a map this close to north snaps to north up.
+const COMPASS_SHOW_DEG = 0.5; // The compass button shows when the map is turned more than this.
+const SRC_ROUTE = 1; // Heading source: direction of the route ahead (weakest).
+const SRC_COMPASS = 2; // Heading source: the phone's compass.
+const SRC_GPS = 3; // Heading source: direction of travel from GPS (strongest, used when moving).
+const MOVING_SPEED_MS = 0.8; // Metres per second above which GPS direction of travel is trusted.
+const MOVE_BEARING_M = 4; // Metres between two fixes before their direction counts as a heading.
+const HEADING_HOLD_MS = 4000; // A stronger heading source keeps priority for this long after its last reading.
+const HEADING_DEADBAND_DEG = 2; // Compass changes smaller than this are ignored (stops shake).
+const GAIN_GPS = 0.5; // Share of each new GPS heading mixed in.
+const GAIN_COMPASS = 0.2; // Share of each new compass heading mixed in.
+const GAIN_ROUTE = 0.3; // Share of each new route heading mixed in.
+const FLAT_BETA_DEG = 45; // Phone tilt (degrees from flat) below which it counts as held flat.
+const ROUTE_LOOKAHEAD_M = 15; // Distance ahead used to work out the route's direction.
+const CONE_R = 38; // Length in pixels of the view cone drawn from your dot.
+const CONE_HALF_DEG = 32; // Half the width of the view cone, in degrees.
+const CONE_ALPHA = 0.3; // Opacity of the view cone.
 
 /* ---------- Helpers ---------- */
 const $ = (id) => document.getElementById(id);
@@ -670,12 +749,16 @@ function cachedPromise(map, key, loader, hasValue) {
   const st = $('app-status'), er = $('app-error'), form = $('search-form'), q = $('q'), resBox = $('results');
   const reduce = matchMedia('(prefers-reduced-motion: reduce)'), scheme = matchMedia('(prefers-color-scheme: dark)');
   const wide = matchMedia('(width >= 56rem)');
-  const v = { lat: START_LAT, lng: START_LNG, z: START_Z };
+  const v = { lat: START_LAT, lng: START_LNG, z: START_Z, b: 0 }; /* b: bearing, the compass direction pointing up the screen (0 = north up) */
   const tiles = new Map(), searchCache = new Map(), ptrs = new Map();
   let W = 0, H = 0, dpr = 1, raf = 0, fly = 0, dark = scheme.matches, tileErr = false;
   let me = null, orig = null, dest = null, route = null, nav = null, found = [], picking = false, follow = false;
   let moved = 99, t0 = 0, pinch = 0, tapTimer = 0, voice = store.get(VOICE_KEY, true) !== false, wake = null;
   let C = {};
+  /* Navigation camera state: heading-up on/off, the smoothed dot, the engage blend, the free-area anchor and gesture state. */
+  const hd = { h: null, src: 0, t: 0 }; /* best known heading, degrees clockwise from north, and where it came from */
+  let hdgUp = true, meV = null, blend = 1, blendT = 0, camFrom = null, ancK = HALF, camRaf = 0, lastT = 0, rcTimer = 0;
+  let uiMode = null, uiB = NaN, twist = 0, rotating = false, anch = { top: 0, bottom: 0 };
   /* Default start point: saved on this device. Empty on a first visit or after the browser's data is cleared. */
   const savedStart = store.get(START_KEY, null);
   let start = savedStart && Number.isFinite(savedStart.lat) && Number.isFinite(savedStart.lng) ? savedStart : null;
@@ -693,14 +776,22 @@ function cachedPromise(map, key, loader, hasValue) {
   const proj = (lat, lng, z) => { const n = TILE * ZOOM_BASE ** z, s = Math.sin(clampLat(lat) * Math.PI / HALF_TURN_DEGREES); return { x: (lng + HALF_TURN_DEGREES) / FULL_TURN_DEGREES * n, y: (HALF - Math.log((1 + s) / (1 - s)) / FOUR_PI) * n }; };
   const unproj = (x, y, z) => { const n = TILE * ZOOM_BASE ** z, t = Math.PI - TAU * y / n; return { lat: HALF_TURN_DEGREES / Math.PI * Math.atan(Math.sinh(t)), lng: x / n * FULL_TURN_DEGREES - HALF_TURN_DEGREES }; };
   const pos = (e) => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
-  const geoAt = (x, y) => { const c = proj(v.lat, v.lng, v.z); return unproj(c.x + x - W * HALF, c.y + y - H * HALF, v.z); };
+  /* Turning the map: bearing b is the compass direction that points up the screen. */
+  const norm = (d) => ((d % FULL_TURN_DEGREES) + FULL_TURN_DEGREES) % FULL_TURN_DEGREES; /* 0 up to (not including) 360 */
+  const angDiff = (a, b) => norm(b - a + HALF_TURN_DEGREES) - HALF_TURN_DEGREES; /* shortest signed turn from a to b */
+  const toMap = (dx, dy, b = v.b) => { const r = b * DEG, c = Math.cos(r), sn = Math.sin(r); return [dx * c - dy * sn, dx * sn + dy * c]; }; /* screen offset to map offset */
+  const geoAt = (x, y) => { const c = proj(v.lat, v.lng, v.z), [mx, my] = toMap(x - W * HALF, y - H * HALF); return unproj(c.x + mx, c.y + my, v.z); };
+  const metresBetween = (a, b) => Math.hypot((b.lat - a.lat) * METRES_PER_DEG_LAT, (b.lng - a.lng) * METRES_PER_DEG_LAT * Math.cos(a.lat * DEG));
+  const bearingTo = (a, b) => {
+    const dl = (b.lng - a.lng) * DEG, la = a.lat * DEG, lb = b.lat * DEG;
+    return norm(Math.atan2(Math.sin(dl) * Math.cos(lb), Math.cos(la) * Math.sin(lb) - Math.sin(la) * Math.cos(lb) * Math.cos(dl)) / DEG);
+  };
 
   /* Tiles */
   const tk = (z, x, y) => z + '/' + x + '/' + y;
   function cachedTile(z, x, y) {
     const key = tk(z, x, y), img = tiles.get(key);
     if (img && Date.now() - img.arwalkCreatedAt > TILE_MEMORY_TTL_MS) { tiles.delete(key); return null; }
-    if (img && img.arwalkFailedAt && Date.now() - img.arwalkFailedAt > TILE_RETRY_MS) { tiles.delete(key); return null; }
     return img || null;
   }
   function tile(z, x, y) {
@@ -710,7 +801,7 @@ function cachedPromise(map, key, loader, hasValue) {
     img = document.createElement('img');
     img.arwalkCreatedAt = Date.now();
     img.onload = () => { if (tileErr) { tileErr = false; clear(er); } redraw(); };
-    img.onerror = () => { img.arwalkFailedAt = Date.now(); /* kept, so every redraw does not ask the tile server again */ if (!tileErr) { tileErr = true; fail(er, 'Map pictures could not load. Check your connection.'); } };
+    img.onerror = () => { if (tiles.get(key) === img) { tiles.delete(key); } if (!tileErr) { tileErr = true; fail(er, 'Map pictures could not load. Check your connection.'); } };
     /* OpenStreetMap's standard raster service uses XYZ ordering: z/x/y. */
     img.src = TILE_URL + z + '/' + x + '/' + y + '.png';
     tiles.set(key, img);
@@ -740,15 +831,19 @@ function cachedPromise(map, key, loader, hasValue) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.fillStyle = C.bg; ctx.fillRect(0, 0, W, H);
     const zi = Math.max(MIN_Z, Math.min(MAX_TILE_Z, Math.round(v.z))), s = ZOOM_BASE ** (v.z - zi), c = proj(v.lat, v.lng, zi), n = ZOOM_BASE ** zi;
-    const tx0 = Math.floor((c.x - W * HALF / s) / TILE), tx1 = Math.floor((c.x + W * HALF / s) / TILE);
-    const ty0 = Math.max(0, Math.floor((c.y - H * HALF / s) / TILE)), ty1 = Math.min(n - 1, Math.floor((c.y + H * HALF / s) / TILE));
+    const rx = v.b ? Math.hypot(W, H) * HALF : W * HALF, ry = v.b ? Math.hypot(W, H) * HALF : H * HALF; /* a turned map needs tiles out to the corners */
+    const tx0 = Math.floor((c.x - rx / s) / TILE), tx1 = Math.floor((c.x + rx / s) / TILE);
+    const ty0 = Math.max(0, Math.floor((c.y - ry / s) / TILE)), ty1 = Math.min(n - 1, Math.floor((c.y + ry / s) / TILE));
+    ctx.save();
+    ctx.translate(W * HALF, H * HALF); ctx.rotate(-v.b * DEG); ctx.translate(-W * HALF, -H * HALF); /* turn the tiles only; markers stay upright */
     if (dark && 'filter' in ctx) { ctx.filter = 'invert(1) hue-rotate(180deg) saturate(0.45) brightness(0.9) contrast(0.95)'; }
     for (let ty = ty0; ty <= ty1; ty++) {
       for (let tx = tx0; tx <= tx1; tx++) { drawTile(zi, ((tx % n) + n) % n, ty, (tx * TILE - c.x) * s + W * HALF, (ty * TILE - c.y) * s + H * HALF, TILE * s + 1); }
     }
     if ('filter' in ctx) { ctx.filter = 'none'; }
-    const cc = proj(v.lat, v.lng, v.z);
-    const sc = (lat, lng) => { const p = proj(lat, lng, v.z); return [p.x - cc.x + W * HALF, p.y - cc.y + H * HALF]; };
+    ctx.restore();
+    const cc = proj(v.lat, v.lng, v.z), rr = v.b * DEG, cs = Math.cos(rr), sn = Math.sin(rr);
+    const sc = (lat, lng) => { const p = proj(lat, lng, v.z), dx = p.x - cc.x, dy = p.y - cc.y; return [dx * cs + dy * sn + W * HALF, -dx * sn + dy * cs + H * HALF]; }; /* map to screen, turned by the bearing */
     if (route) {
       ctx.beginPath();
       route.pts.forEach((p, i) => { const [x, y] = sc(p[0], p[1]); if (i) { ctx.lineTo(x, y); } else { ctx.moveTo(x, y); } });
@@ -758,35 +853,52 @@ function cachedPromise(map, key, loader, hasValue) {
       if (orig && !nav) { const [x, y] = sc(orig.lat, orig.lng); ctx.beginPath(); ctx.arc(x, y, START_DOT_R, 0, TAU); ctx.fillStyle = C.ring; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = C.route; ctx.stroke(); }
     }
     if (start && !nav) { const [x, y] = sc(start.lat, start.lng); ctx.beginPath(); ctx.arc(x, y, START_DOT_R, 0, TAU); ctx.fillStyle = C.ring; ctx.fill(); ctx.lineWidth = 4; ctx.strokeStyle = C.route; ctx.stroke(); ctx.beginPath(); ctx.arc(x, y, START_DOT_R * HALF, 0, TAU); ctx.fillStyle = C.route; ctx.fill(); }
-    if (me) {
-      const [x, y] = sc(me.lat, me.lng), r = (Number.isFinite(me.acc) ? me.acc : 0) / (EARTH_CIRCUMFERENCE_M * Math.cos(me.lat * Math.PI / HALF_TURN_DEGREES) / (TILE * ZOOM_BASE ** v.z));
+    const mp = nav && meV ? meV : me; /* while walking, the dot glides between fixes */
+    if (mp) {
+      const [x, y] = sc(mp.lat, mp.lng), r = (me && Number.isFinite(me.acc) ? me.acc : 0) / (EARTH_CIRCUMFERENCE_M * Math.cos(mp.lat * Math.PI / HALF_TURN_DEGREES) / (TILE * ZOOM_BASE ** v.z));
       if (r > ACCURACY_MIN_R) { ctx.globalAlpha = 0.15; ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); ctx.fillStyle = C.route; ctx.fill(); ctx.globalAlpha = 1; }
+      if (nav && hd.h !== null) { /* view cone: the way you are facing, relative to the way the map is turned */
+        const a = (hd.h - v.b) * DEG - Math.PI * HALF;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, CONE_R, a - CONE_HALF_DEG * DEG, a + CONE_HALF_DEG * DEG); ctx.closePath();
+        ctx.globalAlpha = CONE_ALPHA; ctx.fillStyle = C.route; ctx.fill(); ctx.globalAlpha = 1;
+      }
       dot(x, y, ME_DOT_R);
     }
     if (dest) { const [x, y] = sc(dest.lat, dest.lng); pin(x, y); }
+    syncUi();
   }
   const redraw = () => { if (!raf) { raf = requestAnimationFrame(draw); } };
-  const fitCanvas = () => { dpr = window.devicePixelRatio || 1; W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); redraw(); };
+  const fitCanvas = () => { dpr = window.devicePixelRatio || 1; W = cv.clientWidth; H = cv.clientHeight; cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); updateAnchor(); redraw(); };
   new ResizeObserver(fitCanvas).observe(cv);
 
-  /* Moving the view */
+  /* Moving the view. The view is a centre point, a zoom and a bearing. */
   const stopFly = () => { cancelAnimationFrame(fly); fly = 0; };
+  /* Put the place g at screen point (x, y) with the given zoom and bearing. */
+  function placeAt(x, y, g, z, b) {
+    const p = proj(g.lat, g.lng, z), [mx, my] = toMap(x - W * HALF, y - H * HALF, b), r = unproj(p.x - mx, p.y - my, z);
+    v.z = z; v.b = norm(b); v.lat = clampLat(r.lat); v.lng = r.lng;
+  }
   function panBy(dx, dy) {
-    const c = proj(v.lat, v.lng, v.z), r = unproj(c.x - dx, c.y - dy, v.z);
+    const c = proj(v.lat, v.lng, v.z), [mx, my] = toMap(dx, dy), r = unproj(c.x - mx, c.y - my, v.z);
     v.lat = clampLat(r.lat); v.lng = ((r.lng + LNG_WRAP_OFFSET) % FULL_TURN_DEGREES) - HALF_TURN_DEGREES; redraw();
   }
   function zoomAt(x, y, nz) {
     stopFly();
-    const z = Math.max(MIN_Z, Math.min(MAX_VIEW_Z, nz)), g = geoAt(x, y), p = proj(g.lat, g.lng, z), r = unproj(p.x - (x - W * HALF), p.y - (y - H * HALF), z);
-    v.z = z; v.lat = clampLat(r.lat); v.lng = r.lng; redraw();
+    const z = Math.max(MIN_Z, Math.min(MAX_VIEW_Z, nz));
+    if (nav) { nav.autoZoom = false; armRecentre(); } /* your own zoom wins over the automatic zoom until you re-centre */
+    if (follow && meV) { v.z = z; kick(); return; } /* while following, zoom keeps you at your spot on the screen */
+    placeAt(x, y, geoAt(x, y), z, v.b); redraw();
   }
-  function flyTo(lat, lng, z) {
+  function rotateAt(x, y, b) { stopFly(); placeAt(x, y, geoAt(x, y), v.z, b); redraw(); }
+  function rotateBy(d) { stopFly(); if (follow) { follow = false; } v.b = norm(v.b + d); armRecentre(); redraw(); }
+  function flyTo(lat, lng, z, b) {
     stopFly();
-    if (reduce.matches) { Object.assign(v, { lat, lng, z }); redraw(); return; }
-    const a = { ...v }, t = performance.now();
+    const tb = b === undefined ? v.b : b;
+    if (reduce.matches) { Object.assign(v, { lat, lng, z, b: tb }); redraw(); return; }
+    const a = { ...v }, t = performance.now(), db = angDiff(a.b, tb);
     const step = (now) => {
       const k = Math.min(1, (now - t) / FLY_MS), e = 1 - (1 - k) ** EASE_POWER;
-      v.lat = a.lat + (lat - a.lat) * e; v.lng = a.lng + (lng - a.lng) * e; v.z = a.z + (z - a.z) * e;
+      v.lat = a.lat + (lat - a.lat) * e; v.lng = a.lng + (lng - a.lng) * e; v.z = a.z + (z - a.z) * e; v.b = norm(a.b + db * e);
       draw(); fly = k < 1 ? requestAnimationFrame(step) : 0;
     };
     fly = requestAnimationFrame(step);
@@ -800,34 +912,179 @@ function cachedPromise(map, key, loader, hasValue) {
     const z = Math.max(MIN_Z, Math.min(FIT_MAX_Z, Math.log2(Math.min(aw / (b.x - a.x || EPSILON), ah / (b.y - a.y || EPSILON)))));
     const k = ZOOM_BASE ** z, mx = (a.x + b.x) * HALF * k + (W * HALF - (pad.l + aw * HALF)), my = (a.y + b.y) * HALF * k + (H * HALF - (pad.t + ah * HALF));
     const c = unproj(mx, my, z);
-    flyTo(c.lat, c.lng, z);
+    flyTo(c.lat, c.lng, z, 0);
   }
+
+  /* Follow camera, used while walking. It keeps your dot at one spot on the screen, turns the map to the way you face
+     (heading-up, with a north-up option) and zooms in for turns, like Google Maps. Dragging the map lets go of it;
+     it comes back by itself after a few seconds, or when you press the location button. */
+  const cmp = $('compass'), needle = $('compass-needle'), locBtn = $('locate');
+  const LOCATE_LABELS = {
+    free: 'Re-centre on my location',
+    north: 'Following you with north at the top. Press to turn the map with your heading',
+    heading: 'Following you with the map turned to your heading. Press to keep north at the top'
+  };
+  /* The part of the screen that is free of the banner and the sheet: your dot sits inside it. */
+  function updateAnchor() {
+    const top = banner.hidden ? 0 : banner.offsetTop + banner.offsetHeight + ANCHOR_MARGIN_PX;
+    const bottom = H - ATTRIB_PX - ANCHOR_MARGIN_PX - (wide.matches || sheet.hidden ? 0 : sheet.offsetHeight);
+    anch = { top, bottom: Math.max(top + FIT_MIN_AREA, bottom) };
+    if (follow) { kick(); }
+  }
+  const anchorY = () => anch.top + (anch.bottom - anch.top) * ancK;
+  /* The view centre that puts the place g at the anchor with the given zoom and bearing. */
+  function lockCentre(g, z, b) {
+    const p = proj(g.lat, g.lng, z), [mx, my] = toMap(0, anchorY() - H * HALF, b), r = unproj(p.x - mx, p.y - my, z);
+    return { lat: clampLat(r.lat), lng: r.lng };
+  }
+  function kick() { if (!camRaf) { lastT = performance.now(); camRaf = requestAnimationFrame(frame); } }
+  function frame(now) {
+    camRaf = 0;
+    const dt = Math.min(MAX_FRAME_MS, now - lastT), jump = reduce.matches;
+    lastT = now;
+    let busy = false;
+    if (nav && me) { /* glide the dot to the newest fix */
+      if (!meV || jump) { meV = { lat: me.lat, lng: me.lng }; }
+      else {
+        const k = 1 - Math.exp(-dt / ME_SMOOTH_MS), dLat = me.lat - meV.lat, dLng = me.lng - meV.lng;
+        if (Math.abs(dLat) + Math.abs(dLng) > POS_DONE_DEG) { meV.lat += dLat * k; meV.lng += dLng * k; busy = true; } else { meV.lat = me.lat; meV.lng = me.lng; }
+      }
+    }
+    const ta = hdgUp ? NAV_ANCHOR : HALF; /* your dot sits lower in heading-up so you see more ahead */
+    if (Math.abs(ta - ancK) > ANCHOR_DONE) { ancK += jump ? ta - ancK : (ta - ancK) * (1 - Math.exp(-dt / ZOOM_SMOOTH_MS)); busy = true; } else { ancK = ta; }
+    if (follow && nav && meV) {
+      const tz = nav.autoZoom ? nav.zT : v.z, tb = hdgUp ? (hd.h === null ? v.b : hd.h) : 0;
+      if (blend < 1) { /* swing onto you */
+        blend = jump ? 1 : Math.min(1, (now - blendT) / FOLLOW_ENGAGE_MS);
+        const e = 1 - (1 - blend) ** EASE_POWER, z = camFrom.z + (tz - camFrom.z) * e, b = norm(camFrom.b + angDiff(camFrom.b, tb) * e), c = lockCentre(meV, z, b);
+        v.z = z; v.b = b; v.lat = camFrom.lat + (c.lat - camFrom.lat) * e; v.lng = camFrom.lng + (c.lng - camFrom.lng) * e; busy = true;
+      } else {
+        const dz = tz - v.z, db = angDiff(v.b, tb);
+        if (Math.abs(dz) > ZOOM_DONE || Math.abs(db) > BEARING_DONE) {
+          busy = true;
+          v.z += jump ? dz : dz * (1 - Math.exp(-dt / ZOOM_SMOOTH_MS));
+          v.b = norm(v.b + (jump ? db : db * (1 - Math.exp(-dt / BEARING_SMOOTH_MS))));
+        } else { v.z = tz; v.b = norm(v.b + db); }
+        const c = lockCentre(meV, v.z, v.b); v.lat = c.lat; v.lng = c.lng;
+      }
+    }
+    cancelAnimationFrame(raf); draw();
+    if (busy) { camRaf = requestAnimationFrame(frame); }
+  }
+  function engageFollow() {
+    stopFly(); follow = true;
+    camFrom = { lat: v.lat, lng: v.lng, z: v.z, b: v.b }; blend = meV ? 0 : 1; blendT = performance.now();
+    kick();
+  }
+  function recentre() { clearTimeout(rcTimer); if (!nav) { return; } nav.autoZoom = true; engageFollow(); }
+  /* After you let go of the map while walking, start the countdown to following you again. */
+  function armRecentre() {
+    clearTimeout(rcTimer);
+    if (!nav || follow) { return; }
+    rcTimer = setTimeout(() => { if (nav && !follow && !ptrs.size && (nav.sim || nav.joined) && !nav.away) { recentre(); } }, AUTO_RECENTRE_MS);
+  }
+  function northUp() {
+    if (nav) { hdgUp = false; }
+    if (nav && follow) { kick(); } else { flyTo(v.lat, v.lng, v.z, 0); }
+    say(st, 'North is at the top.');
+  }
+  /* Heading: GPS direction of travel while you move, else the phone's compass, else the direction of the route ahead. */
+  function setHeading(h, src) {
+    if (h === null || !Number.isFinite(h)) { return; }
+    if (nav && nav.sim && src !== SRC_ROUTE) { return; } /* a preview walk follows the route, not the phone */
+    const now = performance.now();
+    if (src < hd.src && now - hd.t < HEADING_HOLD_MS) { return; }
+    const gain = src === SRC_GPS ? GAIN_GPS : src === SRC_COMPASS ? GAIN_COMPASS : GAIN_ROUTE;
+    if (hd.h === null || src !== hd.src) { hd.h = norm(h); }
+    else {
+      const d = angDiff(hd.h, h);
+      if (src === SRC_COMPASS && Math.abs(d) < HEADING_DEADBAND_DEG) { hd.t = now; return; }
+      hd.h = norm(hd.h + d * gain);
+    }
+    hd.src = src; hd.t = now; kick();
+  }
+  /* Compass. Android sends absolute orientation; iOS sends webkitCompassHeading and asks permission on a tap. */
+  const compass = { on: false, busy: false, abs: false };
+  function tiltHeading(e) {
+    const a = e.alpha, bt = e.beta || 0, gm = e.gamma || 0, angle = (window.screen && screen.orientation && screen.orientation.angle) || 0;
+    if (Math.abs(bt) < FLAT_BETA_DEG) { return norm(FULL_TURN_DEGREES - a + angle); } /* held flat: the way the top of the screen points */
+    const x = bt * DEG, y = gm * DEG, z = a * DEG; /* held upright: the way the back of the phone points */
+    const vx = -Math.cos(z) * Math.sin(y) - Math.sin(z) * Math.sin(x) * Math.cos(y);
+    const vy = -Math.sin(z) * Math.sin(y) + Math.cos(z) * Math.sin(x) * Math.cos(y);
+    return norm(Math.atan2(vx, vy) / DEG);
+  }
+  function onOrient(e) {
+    if (!nav) { return; }
+    let h = null;
+    if (e.type === 'deviceorientationabsolute') { compass.abs = true; if (e.alpha !== null) { h = tiltHeading(e); } }
+    else if (!compass.abs) { /* the plain event is only used when the absolute one never arrives */
+      if (Number.isFinite(e.webkitCompassHeading)) { h = e.webkitCompassHeading; }
+      else if (e.absolute && e.alpha !== null) { h = tiltHeading(e); }
+    }
+    if (h !== null) { setHeading(h, SRC_COMPASS); }
+  }
+  async function enableCompass() {
+    const DO = window.DeviceOrientationEvent;
+    if (!DO || compass.on || compass.busy) { return; }
+    compass.busy = true;
+    try {
+      if (typeof DO.requestPermission === 'function' && (await DO.requestPermission()) !== 'granted') { return; }
+      window.addEventListener('deviceorientationabsolute', onOrient, true);
+      window.addEventListener('deviceorientation', onOrient, true);
+      compass.on = true;
+    } catch { /* no compass: the heading comes from GPS or the route */ } finally { compass.busy = false; }
+  }
+  function disableCompass() {
+    window.removeEventListener('deviceorientationabsolute', onOrient, true);
+    window.removeEventListener('deviceorientation', onOrient, true);
+    compass.on = false; compass.abs = false;
+  }
+  /* Keep the compass button and the location button in step with the camera. */
+  function syncUi() {
+    const mode = !nav ? 'free' : !follow ? 'free' : hdgUp ? 'heading' : 'north';
+    if (mode !== uiMode) { uiMode = mode; locBtn.dataset.mode = mode; locBtn.setAttribute('aria-label', LOCATE_LABELS[mode]); }
+    const show = Boolean(nav) || Math.abs(angDiff(0, v.b)) > COMPASS_SHOW_DEG;
+    if (cmp.hidden === show) { cmp.hidden = !show; }
+    if (show && v.b !== uiB) { uiB = v.b; needle.style.transform = 'rotate(' + (-v.b).toFixed(1) + 'deg)'; }
+  }
+  const roUi = new ResizeObserver(updateAnchor); roUi.observe(sheet); roUi.observe(banner);
 
   /* Pointer, wheel and keyboard */
   const zoomCentre = (dz) => zoomAt(W * HALF, H * HALF, v.z + dz);
-  const mid = () => { const [a, b] = [...ptrs.values()]; return { x: (a[0] + b[0]) * HALF, y: (a[1] + b[1]) * HALF, spread: Math.hypot(a[0] - b[0], a[1] - b[1]) }; };
+  const mid = () => { const [a, b] = [...ptrs.values()]; return { x: (a[0] + b[0]) * HALF, y: (a[1] + b[1]) * HALF, spread: Math.hypot(a[0] - b[0], a[1] - b[1]), ang: Math.atan2(b[1] - a[1], b[0] - a[0]) / DEG }; };
   cv.addEventListener('pointerdown', (e) => {
-    cv.setPointerCapture(e.pointerId); stopFly(); ptrs.set(e.pointerId, pos(e));
+    cv.setPointerCapture(e.pointerId); stopFly(); clearTimeout(rcTimer); ptrs.set(e.pointerId, pos(e));
     if (ptrs.size === 1) { moved = 0; t0 = performance.now(); } else { moved = MOVED; }
-    pinch = ptrs.size === PINCH_POINTERS ? mid().spread : 0;
+    if (ptrs.size === PINCH_POINTERS) { const m = mid(); pinch = m.spread; twist = 0; rotating = false; } else { pinch = 0; }
   });
   cv.addEventListener('pointermove', (e) => {
     if (!ptrs.has(e.pointerId)) { return; }
     const prev = ptrs.get(e.pointerId), cur = pos(e);
     if (ptrs.size === 1) {
       ptrs.set(e.pointerId, cur); moved += Math.abs(cur[0] - prev[0]) + Math.abs(cur[1] - prev[1]);
-      if (moved > TAP_MOVE_PX) { if (follow) { follow = false; } panBy(cur[0] - prev[0], cur[1] - prev[1]); }
+      if (moved > TAP_MOVE_PX) {
+        if (e.shiftKey) { if (follow) { follow = false; } rotateAt(W * HALF, H * HALF, v.b - (cur[0] - prev[0]) * ROTATE_DRAG_DEG_PER_PX); } /* Shift+drag turns the map */
+        else { if (follow) { follow = false; } panBy(cur[0] - prev[0], cur[1] - prev[1]); }
+      }
     } else if (ptrs.size === PINCH_POINTERS) {
       const m0 = mid(); ptrs.set(e.pointerId, cur); const m1 = mid();
-      panBy(m1.x - m0.x, m1.y - m0.y);
-      if (pinch > 0 && m1.spread > 0) { zoomAt(m1.x, m1.y, v.z + Math.log2(m1.spread / pinch)); }
-      pinch = m1.spread; follow = false;
+      if (follow) { /* while following, two fingers only zoom: you stay where you are on the screen */
+        if (pinch > 0 && m1.spread > 0) { zoomAt(m1.x, m1.y, v.z + Math.log2(m1.spread / pinch)); }
+      } else {
+        panBy(m1.x - m0.x, m1.y - m0.y);
+        if (pinch > 0 && m1.spread > 0) { zoomAt(m1.x, m1.y, v.z + Math.log2(m1.spread / pinch)); }
+        const da = angDiff(m0.ang, m1.ang); twist += da;
+        if (rotating || Math.abs(twist) > ROTATE_START_DEG) { rotating = true; rotateAt(m1.x, m1.y, v.b - da); } /* twist: the map turns with your fingers */
+      }
+      pinch = m1.spread;
     }
   });
   const lift = (e) => {
     if (!ptrs.has(e.pointerId)) { return; }
     const tapped = e.type === 'pointerup' && ptrs.size === 1 && moved <= TAP_MOVE_PX && performance.now() - t0 < TAP_MS, p = pos(e);
     ptrs.delete(e.pointerId); pinch = 0; moved = MOVED;
+    if (rotating && ptrs.size < PINCH_POINTERS) { rotating = false; if (Math.abs(angDiff(0, v.b)) < NORTH_SNAP_DEG) { v.b = 0; redraw(); } } /* close to north: snap to it */
+    if (!ptrs.size) { armRecentre(); }
     if (tapped) {
       if (tapTimer) { clearTimeout(tapTimer); tapTimer = 0; zoomAt(p[0], p[1], v.z + ZOOM_STEP); } else { tapTimer = setTimeout(() => { tapTimer = 0; onTap(p[0], p[1]); }, DOUBLE_TAP_MS); }
     }
@@ -838,12 +1095,15 @@ function cachedPromise(map, key, loader, hasValue) {
   cv.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && picking) { endPick(true); return; }
     const k = { ArrowLeft: [KEY_PAN_PX, 0], ArrowRight: [-KEY_PAN_PX, 0], ArrowUp: [0, KEY_PAN_PX], ArrowDown: [0, -KEY_PAN_PX] }[e.key];
-    if (k) { e.preventDefault(); follow = false; panBy(k[0], k[1]); }
+    if (e.shiftKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); rotateBy(e.key === 'ArrowLeft' ? ROTATE_KEY_DEG : -ROTATE_KEY_DEG); }
+    else if (k) { e.preventDefault(); follow = false; panBy(k[0], k[1]); armRecentre(); }
     else if (e.key === '+' || e.key === '=') { zoomCentre(ZOOM_STEP); }
     else if (e.key === '-') { zoomCentre(-ZOOM_STEP); }
+    else if (e.key === 'n' || e.key === 'N') { northUp(); }
   });
   $('zin').addEventListener('click', () => zoomCentre(ZOOM_STEP));
   $('zout').addEventListener('click', () => zoomCentre(-ZOOM_STEP));
+  cmp.addEventListener('click', () => { northUp(); if (!nav) { cv.focus(); } }); /* the button hides once the map is north up, so keep keyboard focus on the map */
   $('about-btn').addEventListener('click', () => { $('about-heading').scrollIntoView(); focusHeading($('about-heading')); });
   const onScheme = () => { dark = scheme.matches; loadColors(); redraw(); };
   scheme.addEventListener('change', onScheme);
@@ -931,9 +1191,13 @@ function cachedPromise(map, key, loader, hasValue) {
     permCb = cb; permFrom = document.activeElement; showPerm(geoState === 'denied');
   }
   /* The locate button only exists while walking: it re-centres the map on your GPS position. */
+  /* While you walk it works like Google Maps: if the map let go of you it re-centres; if it is following you it flips between heading-up and north-up. */
   $('locate').addEventListener('click', () => {
     clear(er);
-    if (nav) { follow = true; if (me) { flyTo(me.lat, me.lng, Math.max(v.z, NAV_ZOOM)); } }
+    if (!nav) { return; }
+    enableCompass(); /* iOS only asks for compass access on a tap */
+    if (!follow) { recentre(); say(st, 'Following you again.'); }
+    else { hdgUp = !hdgUp; kick(); say(st, hdgUp ? 'The map turns with your heading.' : 'North is at the top.'); }
   });
 
   /* Start point: where every walk begins. Set by address search, GPS or a precise map pin. */
@@ -959,12 +1223,6 @@ function cachedPromise(map, key, loader, hasValue) {
       addr: addressParts.join(', ').slice(0, ADDR_MAX), fullAddress,
       houseNumber: number, street: road, approx: Boolean(approx)
     };
-  }
-  let nominatimNext = 0;
-  async function nominatimGate() { /* spaces Nominatim requests at least NOMINATIM_GAP_MS apart */
-    const now = Date.now(), at = Math.max(now, nominatimNext);
-    nominatimNext = at + NOMINATIM_GAP_MS;
-    if (at > now) { await sleep(at - now); }
   }
   function openStart(cb) {
     if (nav) { return; }
@@ -994,7 +1252,6 @@ function cachedPromise(map, key, loader, hasValue) {
       }
     } catch { /* try the address-focused reverse service below */ }
     try {
-      await nominatimGate();
       const url = REVERSE_NOMINATIM_URL + '?format=jsonv2&addressdetails=1&zoom=18&accept-language=en&lat=' + spot.lat + '&lon=' + spot.lng;
       const r = await fetchRetry(url, { headers: { Accept: 'application/json' }, tries: 1, timeout: REVERSE_NOMINATIM_TIMEOUT_MS });
       const f = await r.json(), a = f.address || {};
@@ -1010,7 +1267,6 @@ function cachedPromise(map, key, loader, hasValue) {
     try {
       const place = await reversePlace(spot);
       if (start !== spot) { return; }
-      spot.looked = Date.now(); store.set(START_KEY, start); /* remembered, so the lookup is not repeated on every page load */
       if (!place || (place.name === 'Unnamed place' && !place.addr)) {
         say(st, 'The start coordinates were saved, but map data did not return a usable address or house number.');
         return;
@@ -1154,7 +1410,6 @@ function cachedPromise(map, key, loader, hasValue) {
   }
   /* Nominatim knows house numbers, so a submitted search uses it first. Photon is the fallback and the as-you-type source. */
   async function nominatim(t) {
-    await nominatimGate();
     const cc = filtering() ? '&countrycodes=' + home.toLowerCase() : '';
     const r = await fetchRetry(NOMINATIM_URL + '?format=jsonv2&addressdetails=1&limit=' + SEARCH_LIMIT + '&accept-language=en' + cc + '&q=' + encodeURIComponent(t), { headers: { Accept: 'application/json' }, tries: 1, timeout: NOMINATIM_TIMEOUT_MS });
     const seen = new Set(), out = [];
@@ -1173,7 +1428,7 @@ function cachedPromise(map, key, loader, hasValue) {
   async function overpassHouse(num, street, spot) {
     const quoteRegex = (value) => String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const n = quoteRegex(num.trim()), name = quoteRegex(street.trim());
-    const query = '[out:json][timeout:10][maxsize:' + OVERPASS_MAXSIZE_B + '];nwr["addr:housenumber"~"^' + n + '$",i]["addr:street"~"^' + name + '$",i](around:' + OVERPASS_AROUND_M + ',' + spot.lat + ',' + spot.lng + ');out center;';
+    const query = '[out:json][timeout:10];nwr["addr:housenumber"~"^' + n + '$",i]["addr:street"~"^' + name + '$",i](around:' + OVERPASS_AROUND_M + ',' + spot.lat + ',' + spot.lng + ');out center;';
     const r = await fetchRetry(OVERPASS_URL + '?data=' + encodeURIComponent(query), { tries: 1, timeout: OVERPASS_TIMEOUT_MS });
     const hits = ((await r.json()).elements || []).map((e) => ({ lat: e.lat === undefined ? (e.center || {}).lat : e.lat, lng: e.lon === undefined ? (e.center || {}).lon : e.lon }))
       .filter((h) => Number.isFinite(h.lat) && Number.isFinite(h.lng));
@@ -1396,7 +1651,7 @@ function cachedPromise(map, key, loader, hasValue) {
     $('eta').textContent = fmtTime(rem / speed);
     $('eta-d').textContent = fmtDist(rem) + ' · arrive ' + new Date(Date.now() + rem / speed * MS_PER_SECOND).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   }
-  function onFix(lat, lng, acc) {
+  function onFix(lat, lng, acc, course, speed) {
     if (!nav.sim && acc > MAX_NAV_ACC_M) { if (!nav.lowAcc) { nav.lowAcc = true; say(st, 'Waiting for a more accurate location…'); } return; } /* ignore coarse fixes while walking */
     nav.lowAcc = false;
     me = { lat, lng, acc, t: Date.now() };
@@ -1407,12 +1662,13 @@ function cachedPromise(map, key, loader, hasValue) {
         $('b-arrow').textContent = '⚑'; $('b-text').textContent = 'Head to the route'; $('b-dist').textContent = fmtDist(s.d) + ' away';
         $('eta').textContent = ''; $('eta-d').textContent = '';
         if (!nav.away) { nav.away = true; follow = false; const t = 'You are ' + fmtDist(s.d, true) + ' from the route. Walk to its start to begin.'; say(st, t); speak(t); fit(route.pts.concat([[lat, lng]])); }
-        redraw(); return;
+        kick(); return;
       }
-      nav.joined = true; nav.away = false; follow = true;
+      nav.joined = true; nav.away = false; engageFollow();
     }
     if (s.d > REROUTE_M && !nav.sim && performance.now() - nav.re > REROUTE_MIN_MS) { nav.re = performance.now(); reroute(); return; }
     nav.along = s.along;
+    updateHeading(lat, lng, acc, course, speed, s.along);
     const rem = route.total - s.along;
     if (rem <= ARRIVE_M) { arrive(); return; }
     let i = 0;
@@ -1424,8 +1680,22 @@ function cachedPromise(map, key, loader, hasValue) {
     if (nav.said.step !== ni) { nav.said = { step: ni, stage: -1 }; }
     if (stage > nav.said.stage) { nav.said.stage = stage; const t = spokenStep(ni, dn, stage); say(st, t); speak(t); }
     paint(rem);
-    if (follow) { v.lat = lat; v.lng = lng; }
-    redraw();
+    nav.zT = dn <= ZOOM_NEAR_M ? NAV_ZOOM_NEAR : dn <= ZOOM_MID_M ? NAV_ZOOM_MID : NAV_ZOOM; /* closer for the turn, wider on a long straight */
+    kick();
+  }
+  /* Which way you face: GPS direction of travel when moving, else the compass (see setHeading), else the route ahead. */
+  const routeHeading = (along) => {
+    const a = pointAt(along), b = pointAt(Math.min(route.total, along + ROUTE_LOOKAHEAD_M)), pa = { lat: a[0], lng: a[1] }, pb = { lat: b[0], lng: b[1] };
+    return metresBetween(pa, pb) < 1 ? null : bearingTo(pa, pb);
+  };
+  function updateHeading(lat, lng, acc, course, speed, along) {
+    if (nav.sim) { setHeading(routeHeading(along), SRC_ROUTE); return; }
+    const here = { lat, lng };
+    let h = null;
+    if (Number.isFinite(course) && Number.isFinite(speed) && speed >= MOVING_SPEED_MS) { h = course; }
+    else if (acc <= GOOD_ACC_M && nav.prev && metresBetween(nav.prev, here) >= MOVE_BEARING_M) { h = bearingTo(nav.prev, here); }
+    if (!nav.prev || metresBetween(nav.prev, here) >= MOVE_BEARING_M) { nav.prev = here; }
+    if (h !== null) { setHeading(h, SRC_GPS); } else { setHeading(routeHeading(along), SRC_ROUTE); }
   }
   async function reroute() {
     if (await getRoute(me, true) && nav) {
@@ -1441,8 +1711,8 @@ function cachedPromise(map, key, loader, hasValue) {
       return;
     }
     clear(er); stopNav();
-    nav = { idx: -1, along: 0, sim, re: performance.now(), timer: 0, watch: 0, joined: false, away: false, said: { step: -1, stage: -1 }, lead: 'Starting navigation. ' + instr(route.steps[0]) + '. ' };
-    mapapp.classList.add('is-nav'); $('locate').hidden = false; $('start-btn').hidden = true; banner.hidden = false; follow = true; resBox.hidden = true;
+    nav = { idx: -1, along: 0, sim, re: performance.now(), timer: 0, watch: 0, joined: false, away: false, autoZoom: true, zT: NAV_ZOOM, prev: null, said: { step: -1, stage: -1 }, lead: 'Starting navigation. ' + instr(route.steps[0]) + '. ' };
+    mapapp.classList.add('is-nav'); $('locate').hidden = false; $('start-btn').hidden = true; banner.hidden = false; hdgUp = true; hd.h = null; hd.src = 0; hd.t = 0; meV = null; resBox.hidden = true;
     sheet.hidden = false;
     sheet.innerHTML = '<h2 id="sheet-h" class="vh">Navigation</h2><p class="eta"><strong id="eta"></strong> <span class="hint" id="eta-d"></span></p><div class="row"><button type="button" class="secondary toggle" aria-pressed="' + voice + '" data-act="voice">Voice</button><button type="button" class="secondary toggle" aria-pressed="false" data-act="steps">Steps</button><button type="button" data-act="end">End</button></div><ol class="steps nav-steps" aria-label="Walking directions" hidden>' + stepsHtml() + '</ol>';
     keepAwake(true);
@@ -1451,14 +1721,17 @@ function cachedPromise(map, key, loader, hasValue) {
       const tick = () => { const p = pointAt(d); d += SIM_STEP_M; onFix(p[0], p[1], 0); };
       tick(); if (nav) { nav.timer = setInterval(tick, SIM_TICK_MS); }
     } else {
-      nav.watch = navigator.geolocation.watchPosition((p) => { if (isCached(p)) { return; } const f = readFix(p); onFix(f.lat, f.lng, f.acc); }, (e) => { if (e.code !== GEO_CODE_TIMEOUT) { fail(er, 'Lost your location signal.'); } }, GEO);
+      nav.watch = navigator.geolocation.watchPosition((p) => { if (isCached(p)) { return; } const f = readFix(p); onFix(f.lat, f.lng, f.acc, p.coords.heading, p.coords.speed); }, (e) => { if (e.code !== GEO_CODE_TIMEOUT) { fail(er, 'Lost your location signal.'); } }, GEO);
     }
-    if (me) { flyTo(me.lat, me.lng, NAV_ZOOM); }
+    if (me) { meV = { lat: me.lat, lng: me.lng }; }
+    updateAnchor(); engageFollow(); /* swing the camera onto you: heading-up, zoomed in */
   }
   function stopNav() {
     if (!nav) { return; }
     clearInterval(nav.timer); if (nav.watch) { navigator.geolocation.clearWatch(nav.watch); }
-    nav = null; me = null; keepAwake(false); mapapp.classList.remove('is-nav'); $('locate').hidden = true; $('start-btn').hidden = false; banner.hidden = true; follow = false; redraw();
+    nav = null; me = null; meV = null; follow = false; clearTimeout(rcTimer); disableCompass(); hd.h = null; hd.src = 0; hd.t = 0;
+    keepAwake(false); mapapp.classList.remove('is-nav'); $('locate').hidden = true; $('start-btn').hidden = false; banner.hidden = true;
+    if (v.b) { flyTo(v.lat, v.lng, v.z, 0); } else { redraw(); } /* back to north up */
     stopSpeech();
   }
   function arrive() {
@@ -1472,7 +1745,7 @@ function cachedPromise(map, key, loader, hasValue) {
     const a = b.dataset.act;
     if (a === 'close') { stopNav(); clearAll(); }
     else if (a === 'dir') { directions(); }
-    else if (a === 'start') { primeVoice(); startNav(false); }
+    else if (a === 'start') { primeVoice(); enableCompass(); startNav(false); }
     else if (a === 'preview') { primeVoice(); startNav(true); }
     else if (a === 'steps') { const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', String(on)); sheet.querySelector('.steps').hidden = !on; if (on) { markSteps(); } }
     else if (a === 'end') { stopNav(); if (route) { showRoute(); } else { clearAll(); } }
@@ -1480,7 +1753,7 @@ function cachedPromise(map, key, loader, hasValue) {
   });
 
   loadColors(); fitCanvas();
-  if (start && (!start.addr || !start.houseNumber) && (!start.looked || Date.now() - start.looked > LOOKUP_RETRY_MS)) { nameSpot(start); } /* enrich older saved coordinates with house-level address data when available */
+  if (start && (!start.addr || !start.houseNumber)) { nameSpot(start); } /* enrich older saved coordinates with house-level address data when available */
   if (!start) { openStart(); } /* first visit or cleared storage: ask for a default start point */
 })();
         </script>
