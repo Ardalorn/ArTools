@@ -36,11 +36,9 @@ Oflline only Comic Book and Graphic Novel reader. With hopefully accurate CVD co
 
 → https://ardalorn.github.io/ArTools/ArCom/
 
-## Under Production ⚠️
-
 ArWalk
 
-Search a place, get a walking route on a map and follow turn-by-turn directions.
+Search a place or pick a 10 to 60 minute round-trip walk from your start point, then follow turn-by-turn directions on a map that follows you.
 
 → https://ardalorn.github.io/ArTools/ArWalk/
 
