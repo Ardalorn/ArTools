@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>ArTimeline: build a timeline with notes and save it as a PDF</title>
+        <meta name="description" content="Pick a start month and year, add notes with your own headings, and save the timeline as a PDF.">
+        <meta name="color-scheme" content="light dark">
+        <link
+            rel="icon"
+            type="image/svg+xml"
+            href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231a1a1d'/%3E%3Cpath d='M10 6v20' stroke='%239999cc' stroke-width='3'/%3E%3Ccircle cx='10' cy='10' r='3' fill='%239999cc'/%3E%3Ccircle cx='10' cy='22' r='3' fill='%239999cc'/%3E%3C/svg%3E"
+        >
+        <style>
+/* Aengus tokens: roles only, light-dark follows the system setting. Status colours are the locked kit values. */
+:root {
+  color-scheme: light dark;
+  --font-body: "Atkinson Hyperlegible Next", "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-head: "Fraunces", "Iowan Old Style", Palatino, Georgia, serif;
+  --paper: light-dark(#f5f6f7, #111213); --surface: light-dark(#fff, #1a1a1d); --surface-2: light-dark(#e9eaec, #2c2c30);
+  --ink: light-dark(#111213, #cdcac1); --ink-soft: light-dark(#43444b, #bebbb2); --heading: light-dark(#111213, #e6e3da);
+  --line: light-dark(#656672, #888a96); --line-soft: light-dark(#d1d3d7, #43444b);
+  --brand: #1a1a1d; --on-brand: #f5f6f7; --on-brand-soft: #d1d3d7;
+  --action: light-dark(#223d55, #bbbbdd); --action-hover: light-dark(#193142, #cfcfe7); --on-action: light-dark(#fff, #111213);
+  --focus: light-dark(#111213, #8387c3); --scrim: rgba(17, 18, 19, 0.72);
+  --s-1: 0.25rem; --s-2: 0.5rem; --s-3: 0.75rem; --s-4: 1rem; --s-5: 1.5rem; --s-6: 2rem; --s-7: 3rem;
+  --r-1: 0.25rem; --r-2: 0.5rem; --r-3: 0.875rem; --rule: 0.125rem; --target: 2.75rem;
+  --t-sm: 1rem; --t-base: clamp(1rem, 0.95rem + 0.2vw, 1.0625rem); --t-md: clamp(1.125rem, 1.04rem + 0.4vw, 1.3125rem);
+  --t-lg: clamp(1.375rem, 1.18rem + 0.85vw, 1.75rem); --t-xl: clamp(1.75rem, 1.35rem + 1.7vw, 2.5rem);
+  --measure: 56rem; --gutter: var(--s-3); --text-measure: 42rem;
+  --ok-ink: light-dark(#064e3f, #00FF00CC); --ok-mark: light-dark(#0b7a56, #66FF33); --ok-tint: light-dark(#e0f3ec, #12302a);
+  --problem-ink: light-dark(#7a0f1f, #FF3333E6); --problem-mark: light-dark(#c0262d, #FF3333); --problem-tint: light-dark(#fbe4e7, #330000);
+  --warn-ink: light-dark(#5a3d00, #FFFF33CC); --warn-mark: light-dark(#a85f00, #FFFF66); --warn-tint: light-dark(#fbf0d6, #33280f);
+  --mask-info: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect x='3.5' y='3.5' width='17' height='17' rx='4' fill='none' stroke='black' stroke-width='2.2'/%3E%3Cpath d='M12 11v5M12 7.6v.2' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E");
+  --mask-problem: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2.8 21.2 12 12 21.2 2.8 12z' fill='none' stroke='black' stroke-width='2.2' stroke-linejoin='round'/%3E%3Cpath d='m9 9 6 6M15 9l-6 6' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E");
+  --mask-warn: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 3.8 21.2 19.5H2.8z' fill='none' stroke='black' stroke-width='2.2' stroke-linejoin='round'/%3E%3Cpath d='M12 10v4.5M12 17v.2' stroke='black' stroke-width='2.4' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+@media (width >= 20rem) { :root { --gutter: var(--s-4); } }
+@media (width >= 40rem) { :root { --gutter: var(--s-5); } }
+*, *::before, *::after { box-sizing: border-box; }
+html { font-size: 100%; -webkit-text-size-adjust: 100%; scroll-padding-block-start: var(--s-6); }
+body { margin: 0; min-inline-size: 15rem; min-block-size: 100vb; display: flex; flex-direction: column; background: var(--paper); color: var(--ink); font-family: var(--font-body); font-size: var(--t-base); line-height: 1.6; letter-spacing: 0.02em; word-spacing: 0.08em; }
+h1, h2, h3, h4, h5 { font-family: var(--font-head); font-weight: 600; line-height: 1.2; margin: 0; color: var(--heading); text-wrap: balance; overflow-wrap: break-word; }
+h1 { font-size: var(--t-xl); } h2 { font-size: var(--t-lg); } h3 { font-size: var(--t-md); }
+h4, h5 { font-family: var(--font-body); font-weight: 700; line-height: 1.3; font-size: var(--t-base); }
+p, ul, ol { margin: 0; }
+strong, legend, label { color: var(--heading); }
+abbr[title] { text-decoration: underline dotted; text-underline-offset: 0.18em; }
+:focus-visible { outline: 0.25rem solid var(--focus); outline-offset: 0.125rem; border-radius: var(--r-1); box-shadow: 0 0 0 0.125rem var(--surface); }
+.site-footer :focus-visible { outline-color: var(--on-brand); box-shadow: 0 0 0 0.125rem var(--brand); }
+h1:focus, h2:focus, main:focus { outline: none; }
+.vh { position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: absolute; inset-inline-start: var(--s-3); inset-block-start: -10rem; z-index: 30; padding: var(--s-2) var(--s-4); background: var(--brand); color: var(--on-brand); border-radius: var(--r-2); font-weight: 700; }
+.skip-link:focus { inset-block-start: var(--s-3); }
+[hidden] { display: none !important; }
+main { flex: 1 0 auto; inline-size: 100%; max-inline-size: var(--measure); margin-inline: auto; padding: var(--s-5) var(--gutter) var(--s-7); }
+.stack > * + * { margin-block-start: var(--s-4); } .stack-lg > * + * { margin-block-start: var(--s-6); }
+.row { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+.site-header { display: grid; gap: var(--s-3); padding-block-end: var(--s-5); }
+.lede { font-size: var(--t-md); max-inline-size: var(--text-measure); color: var(--ink-soft); }
+.hint { color: var(--ink-soft); font-size: var(--t-sm); }
+/* Buttons and forms */
+button { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2); min-block-size: var(--target); min-inline-size: var(--target); padding: var(--s-2) var(--s-4); font: inherit; font-weight: 700; line-height: 1.3; text-align: center; cursor: pointer; color: var(--on-action); background: var(--action); border: var(--rule) solid var(--action); border-radius: var(--r-2); }
+button:hover { background: var(--action-hover); border-color: var(--action-hover); }
+button.secondary { color: var(--ink); background: var(--surface); border-color: var(--line); }
+button.secondary:hover { background: var(--surface-2); border-color: var(--ink); }
+button.small { padding: var(--s-1) var(--s-3); }
+.field { display: grid; gap: var(--s-1); } .field > label, legend { font-weight: 700; }
+fieldset { margin: 0; padding: 0; border: 0; min-inline-size: 0; }
+input[type="text"], input[type="number"], select, textarea { inline-size: 100%; min-block-size: var(--target); padding: var(--s-2) var(--s-3); font: inherit; color: var(--ink); background: var(--surface); border: var(--rule) solid var(--line); border-radius: var(--r-2); }
+textarea { min-block-size: 9rem; resize: vertical; line-height: 1.5; }
+.grid2 { display: grid; gap: var(--s-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); }
+.panel { background: var(--surface); border: var(--rule) solid var(--line-soft); border-radius: var(--r-3); padding: var(--s-4); }
+@media (width >= 40rem) { .panel { padding: var(--s-5); } }
+.panel > * + * { margin-block-start: var(--s-4); }
+/* Notes and live regions */
+.note, [role="alert"]:not(:empty) { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: var(--s-3); align-items: start; padding: var(--s-3) var(--s-4); color: #0f3f7a; background: #e1ecf8; border: var(--rule) solid #1f66b0; border-inline-start-width: 0.5rem; border-radius: var(--r-2); }
+@media (prefers-color-scheme: dark) { .note { color: #a9cdf5; background: #052136; border-color: #55aff0; } }
+.note::before, [role="alert"]:not(:empty)::before { content: ""; content: "" / ""; inline-size: 1.5rem; block-size: 1.5rem; margin-block-start: 0.1rem; background: currentColor; mask: var(--mask-info) center / contain no-repeat; -webkit-mask: var(--mask-info) center / contain no-repeat; }
+.note--warn { color: var(--warn-ink); background: var(--warn-tint); border-color: var(--warn-mark); }
+.note--warn::before { mask-image: var(--mask-warn); -webkit-mask-image: var(--mask-warn); }
+.note--warn > :first-child::before { content: "Warning: "; font-weight: 700; }
+[role="alert"]:not(:empty) { color: var(--problem-ink); background: var(--problem-tint); border-color: var(--problem-mark); }
+[role="alert"]:not(:empty)::before { mask-image: var(--mask-problem); -webkit-mask-image: var(--mask-problem); }
+[role="status"] { color: var(--ink-soft); font-size: var(--t-sm); }
+[role="status"]:empty, [role="alert"]:empty { position: absolute; inline-size: 1px; block-size: 1px; margin: -1px; padding: 0; overflow: hidden; clip-path: inset(50%); border: 0; }
+/* Dialog */
+dialog { inline-size: min(calc(100% - 2rem), 32rem); max-block-size: calc(100% - 2rem); padding: 0; color: var(--ink); background: var(--surface); border: var(--rule) solid var(--line); border-radius: var(--r-3); overscroll-behavior: contain; }
+dialog::backdrop { background: var(--scrim); }
+html:has(dialog[open]) { overflow: hidden; scrollbar-gutter: stable; }
+.dialog__body { padding: var(--s-4); } @media (width >= 40rem) { .dialog__body { padding: var(--s-5); } }
+.dlg-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--s-3); }
+.dlg-head > h2 { flex: 1 1 12rem; font-size: var(--t-md); }
+/* Footer */
+.site-footer { background: var(--brand); color: var(--on-brand); padding: var(--s-5) var(--gutter); }
+.site-footer .hint { color: var(--on-brand-soft); }
+/* 5. Timeline */
+.tl { list-style: none; margin: 0 0 0 var(--s-3); padding: 0; border-inline-start: 0.25rem solid var(--line); }
+.tl__item { position: relative; padding: 0 0 var(--s-5) var(--s-5); }
+.tl__item::before { content: ""; position: absolute; inset-inline-start: -0.875rem; inset-block-start: 0.2rem; inline-size: 1.5rem; block-size: 1.5rem; border-radius: 50%; background: var(--action); border: 0.25rem solid var(--paper); }
+.tl__item--year::before { border-radius: var(--r-1); }
+.tl__item--year h3 { font-size: var(--t-lg); }
+.tl__item:last-child { padding-block-end: 0; }
+.cards { list-style: none; padding: 0; display: grid; gap: var(--s-3); margin-block-start: var(--s-3); }
+.card { display: grid; gap: var(--s-2); padding: var(--s-3) var(--s-4); background: var(--surface); border: var(--rule) solid var(--line); border-radius: var(--r-2); }
+.card p { white-space: pre-line; overflow-wrap: anywhere; max-inline-size: var(--text-measure); }
+@media (forced-colors: active) { .tl__item::before { forced-color-adjust: none; background: CanvasText; } .panel, .card, dialog { border-color: CanvasText; } :focus-visible { outline-color: Highlight; box-shadow: none; } }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+@media print { :root { color-scheme: light; } .no-print, .site-footer, .skip-link { display: none; } body { background: #fff; } }
+        </style>
+    </head>
+    <body>
+        <a class="skip-link" href="#main">Skip to main content</a>
+        <main id="main" tabindex="-1">
+            <header class="site-header">
+                <h1>ArTimeline</h1>
+                <p class="lede">Choose where your timeline starts, add notes with your own headings, then save it as a <abbr title="Portable Document Format">PDF</abbr>. It always ends at the current month.</p>
+            </header>
+            <noscript>
+                <p role="alert">ArTimeline needs JavaScript. Enable it and reload.</p>
+            </noscript>
+            <p id="app-status" role="status"></p>
+            <p id="app-error" role="alert"></p>
+            <div class="stack-lg">
+                <section class="panel" aria-labelledby="set-h">
+                    <h2 id="set-h">Timeline details</h2>
+                    <div class="field">
+                        <label for="t-title">Timeline title</label>
+                        <input
+                            type="text"
+                            id="t-title"
+                            maxlength="80"
+                            autocomplete="off"
+                        >
+                    </div>
+                    <div class="grid2">
+                        <div class="field">
+                            <label for="t-sm">Start month</label>
+                            <select id="t-sm"></select>
+                        </div>
+                        <div class="field">
+                            <label for="t-sy">Start year</label>
+                            <input
+                                type="number"
+                                id="t-sy"
+                                inputmode="numeric"
+                                aria-describedby="t-sy-hint"
+                            >
+                            <span id="t-sy-hint" class="hint"></span>
+                        </div>
+                    </div>
+                    <p class="note"><span id="t-end"></span></p>
+                    <div class="row no-print">
+                        <button type="button" id="b-add">Add note</button>
+                        <button
+                            type="button"
+                            id="b-pdf"
+                            class="secondary"
+                        >Save as PDF</button>
+                    </div>
+                </section>
+                <section aria-labelledby="tl-h" class="stack">
+                    <h2 id="tl-h">Your timeline</h2>
+                    <p id="tl-sum" class="hint"></p>
+                    <p
+                        id="tl-hidden"
+                        class="note note--warn"
+                        hidden
+                    ><span></span></p>
+                    <ol
+                        class="tl"
+                        id="tl"
+                        aria-labelledby="tl-h"
+                    ></ol>
+                </section>
+            </div>
+        </main>
+        <dialog id="dlg" aria-labelledby="dlg-h">
+            <form
+                id="f"
+                class="dialog__body stack"
+                novalidate
+            >
+                <div class="dlg-head">
+                    <h2 id="dlg-h">Add note</h2>
+                    <button
+                        type="button"
+                        class="secondary"
+                        id="d-x"
+                    >Cancel</button>
+                </div>
+                <p id="d-err" role="alert"></p>
+                <div class="grid2">
+                    <div class="field">
+                        <label for="n-m">Month (optional)</label>
+                        <select id="n-m"></select>
+                    </div>
+                    <div class="field">
+                        <label for="n-y">Year</label>
+                        <select id="n-y"></select>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="n-h">Note heading</label>
+                    <input
+                        type="text"
+                        id="n-h"
+                        maxlength="80"
+                        autocomplete="off"
+                        required
+                    >
+                </div>
+                <div class="field">
+                    <label for="n-b">Note body</label>
+                    <textarea
+                        id="n-b"
+                        maxlength="1000"
+                        aria-describedby="n-b-hint"
+                    ></textarea>
+                    <span id="n-b-hint" class="hint">Up to 1000 characters. Line breaks are kept.</span>
+                </div>
+                <div class="row">
+                    <button type="submit">Save note</button>
+                    <button
+                        type="button"
+                        class="secondary"
+                        id="d-del"
+                        hidden
+                    >Delete note</button>
+                </div>
+            </form>
+        </dialog>
+        <footer class="site-footer">
+            <p>ArTimeline. Notes stay in this browser and nothing is sent anywhere.</p>
+            <p class="hint">Built on the Aengus design system.</p>
+        </footer>
+        <script>
+'use strict';
+
+const MAX_RADIX = 36;
+const BINARY_RADIX = 2;
+
+/* Settings */
+const STORE_KEY = 'artimeline-v1'; // Saved timeline.
+const MIN_YEAR = 1900; // Earliest start year.
+const TITLE_MAX = 80; // Longest timeline title.
+const HEAD_MAX = 80; // Longest note heading.
+const BODY_MAX = 1000; // Longest note body.
+const REVOKE_DELAY_MS = 10000; // Wait before a download address is released.
+const MONTHS_IN_YEAR = 12; // Months per year.
+const PAGE_W = 595.28; // A4 width in points.
+const PAGE_H = 841.89; // A4 height in points.
+const PAGE_M = 56; // Page margin in points.
+const FOOT_H = 24; // Space kept for the page number.
+const LINE_H = 1.35; // Line height as a multiple of text size.
+const RAIL_X = 70; // Timeline rail position in points.
+const TEXT_X = 94; // Text start position in points.
+const DOT_R = 4.5; // Marker radius in points.
+const CIRCLE_K = 0.5523; // Bezier constant for a circle.
+const GAP_S = 3; // Small gap after a block.
+const GAP_L = 14; // Gap after a note.
+const MONTH_NAME_YEAR = 2000; // Any year, used only to read month names.
+const ID_SKIP = 2; // Characters dropped from the front of a random number string, which starts with "0.".
+const DIGIT_COUNT = 10; // Digits 0 to 9 in the PDF width tables.
+const DIGIT_W = 556; // Width of a digit in both PDF fonts, in 1/1000 of the text size.
+const ROUND_FACTOR = 100; // Rounds PDF numbers to two decimal places.
+const FONT_REG = 1; // PDF font number for regular text.
+const FONT_BOLD = 2; // PDF font number for bold text.
+const HEAD_LINES = 2; // Lines kept together with a heading.
+const DOT_LIFT = 0.3; // Marker height above the text baseline, as a multiple of text size.
+const HALF = 2; // Divisor for centring.
+const SIZE_TITLE = 22; // Title text size in points.
+const SIZE_SUB = 11; // Date range text size.
+const SIZE_EDGE = 13; // Start and Now heading size.
+const SIZE_YEAR = 16; // Year heading size.
+const SIZE_MONTH = 12; // Month heading size.
+const SIZE_NOTE_HEAD = 11.5; // Note heading size.
+const SIZE_BODY = 10.5; // Note body size.
+const SIZE_HINT = 10; // Whole-year label size.
+const SIZE_FOOT = 9; // Page number size.
+const OBJ = { catalog: 1, pages: 2, fontReg: 3, fontBold: 4, info: 5, tree: 6, doc: 7 }; // Fixed PDF object numbers.
+const OBJ_FIRST_FREE = 8; // First object number for pages and structure.
+
+/* Helpers from the kit: $, store, say, fail, clear, esc */
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(key, fallback = null) { try { const v = localStorage.getItem(key); return v === null ? fallback : JSON.parse(v); } catch { return fallback; } },
+  set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); return true; } catch { return false; } },
+};
+const say = (el, text) => { el.textContent = text; };
+const fail = (el, text) => {
+  el.replaceChildren();
+  if (!text) { return; }
+  const box = document.createElement('span'), label = document.createElement('strong');
+  label.textContent = 'Error: ';
+  box.append(label, text);
+  el.append(box);
+};
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+(function app() {
+  const status = $('app-status'), error = $('app-error'), dlg = $('dlg');
+  const MONTHS = Array.from({ length: MONTHS_IN_YEAR }, (_, i) => new Date(MONTH_NAME_YEAR, i, 1).toLocaleString('en-GB', { month: 'long' }));
+  const now = new Date(), EY = now.getFullYear(), EM = now.getMonth();
+  const idx = (y, m) => y * MONTHS_IN_YEAR + m;
+  const label = (y, m) => (m === null ? String(y) : MONTHS[m] + ' ' + y); // A null month means the whole year.
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, Number.isFinite(v) ? Math.trunc(v) : lo));
+  let editing = null;
+
+  /* State, cleaned on load because saved data is untrusted */
+  const raw = store.get(STORE_KEY, {});
+  const first = new Date(EY, EM - (MONTHS_IN_YEAR - 1), 1);
+  const st = {
+    title: typeof raw.title === 'string' ? raw.title.slice(0, TITLE_MAX) : 'My timeline',
+    sy: clamp(raw.sy === undefined ? first.getFullYear() : raw.sy, MIN_YEAR, EY),
+    sm: clamp(raw.sm === undefined ? first.getMonth() : raw.sm, 0, MONTHS_IN_YEAR - 1),
+    notes: (Array.isArray(raw.notes) ? raw.notes : []).filter((n) => n && typeof n.h === 'string').map((n) => ({
+      id: String(n.id || Math.random().toString(MAX_RADIX).slice(BINARY_RADIX)), h: n.h.slice(0, HEAD_MAX), b: typeof n.b === 'string' ? n.b.slice(0, BODY_MAX) : '',
+      y: clamp(n.y, MIN_YEAR, EY), m: (n.m === null || n.m === undefined || n.m === '') ? null : clamp(n.m, 0, MONTHS_IN_YEAR - 1),
+    })),
+  };
+  if (idx(st.sy, st.sm) > idx(EY, EM)) { st.sy = first.getFullYear(); st.sm = first.getMonth(); }
+  const save = () => store.set(STORE_KEY, st);
+  const startIdx = () => idx(st.sy, st.sm), endIdx = () => idx(EY, EM);
+  const key = (n) => n.y * (MONTHS_IN_YEAR + 1) + (n.m === null ? 0 : n.m + 1); // Whole-year notes sort before the months of their year.
+  const visible = () => st.notes.filter((n) => (n.m === null ? n.y >= st.sy && n.y <= EY : idx(n.y, n.m) >= startIdx() && idx(n.y, n.m) <= endIdx())).sort((a, b) => key(a) - key(b));
+
+  /* Timeline view */
+  function render(focusId) {
+    const vis = visible(), hid = st.notes.length - vis.length;
+    $('t-end').textContent = 'The timeline runs from ' + label(st.sy, st.sm) + ' to ' + label(EY, EM) + ', this month.';
+    $('tl-sum').textContent = vis.length + (vis.length === 1 ? ' note' : ' notes') + ' on the timeline.';
+    $('tl-hidden').hidden = !hid;
+    $('tl-hidden').firstElementChild.textContent = hid + (hid === 1 ? ' note falls' : ' notes fall') + ' before the start month, so ' + (hid === 1 ? 'it is' : 'they are') + ' not shown or saved to the PDF. Move the start earlier to see ' + (hid === 1 ? 'it.' : 'them.');
+    const card = (n) => '<li class="card"><h5>' + esc(n.h) + '</h5>' + (n.b ? '<p>' + esc(n.b) + '</p>' : '') + '<div class="row no-print"><button type="button" class="secondary small" data-edit="' + esc(n.id) + '" aria-label="Edit note: ' + esc(n.h) + '">Edit</button></div></li>';
+    let html = '<li class="tl__item"><h3>Start: ' + esc(label(st.sy, st.sm)) + '</h3></li>';
+    [...new Set(vis.map((n) => n.y))].forEach((yr) => {
+      const ns = vis.filter((n) => n.y === yr), only = ns.filter((n) => n.m === null);
+      html += '<li class="tl__item tl__item--year"><h3>' + yr + '</h3>' + (only.length ? '<p class="hint">Notes for the whole year</p><ul class="cards">' + only.map(card).join('') + '</ul>' : '') + '</li>';
+      [...new Set(ns.filter((n) => n.m !== null).map((n) => n.m))].forEach((m) => {
+        html += '<li class="tl__item"><h4>' + esc(label(yr, m)) + '</h4><ul class="cards">' + ns.filter((n) => n.m === m).map(card).join('') + '</ul></li>';
+      });
+    });
+    $('tl').innerHTML = html + '<li class="tl__item"><h3>Now: ' + esc(label(EY, EM)) + '</h3></li>';
+    if (focusId) { const b = [...document.querySelectorAll('[data-edit]')].find((x) => x.dataset.edit === focusId); if (b) { b.focus(); } }
+  }
+
+  /* Settings fields */
+  $('t-sm').innerHTML = MONTHS.map((m, i) => '<option value="' + i + '">' + m + '</option>').join('');
+  $('n-m').innerHTML = '<option value="">Whole year (no month)</option>' + $('t-sm').innerHTML;
+  $('t-sy').min = MIN_YEAR; $('t-sy').max = EY;
+  $('t-sy-hint').textContent = 'A year from ' + MIN_YEAR + ' to ' + EY + '.';
+  $('t-title').value = st.title; $('t-sm').value = st.sm; $('t-sy').value = st.sy;
+  $('t-title').addEventListener('input', () => { st.title = $('t-title').value.slice(0, TITLE_MAX); save(); });
+  function startChanged() {
+    error.replaceChildren();
+    const y = Number($('t-sy').value), m = Number($('t-sm').value);
+    if (!Number.isInteger(y) || y < MIN_YEAR || y > EY) { fail(error, 'Enter a start year from ' + MIN_YEAR + ' to ' + EY + '.'); return; }
+    if (idx(y, m) > endIdx()) { fail(error, 'The start month cannot be after ' + label(EY, EM) + '.'); return; }
+    st.sy = y; st.sm = m; save(); render(); say(status, 'Start set to ' + label(y, m) + '.');
+  }
+  $('t-sm').addEventListener('change', startChanged);
+  $('t-sy').addEventListener('change', startChanged);
+
+  /* Note dialog */
+  function openNote(note) {
+    editing = note || null; fail($('d-err'), '');
+    let opts = '';
+    for (let y = st.sy; y <= EY; y++) { opts += '<option>' + y + '</option>'; }
+    $('n-y').innerHTML = opts;
+    $('dlg-h').textContent = note ? 'Edit note' : 'Add note';
+    $('n-m').value = note ? (note.m === null ? '' : note.m) : EM; $('n-y').value = note ? note.y : EY;
+    $('n-h').value = note ? note.h : ''; $('n-b').value = note ? note.b : '';
+    $('d-del').hidden = !note;
+    dlg.showModal();
+  }
+  $('b-add').addEventListener('click', () => openNote(null));
+  $('tl').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-edit]');
+    if (b) { openNote(st.notes.find((n) => n.id === b.dataset.edit)); }
+  });
+  $('d-x').addEventListener('click', () => dlg.close());
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) { dlg.close(); } });
+  $('f').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const h = $('n-h').value.trim(), y = Number($('n-y').value), m = $('n-m').value === '' ? null : Number($('n-m').value);
+    if (!h) { fail($('d-err'), 'Enter a note heading.'); $('n-h').focus(); return; }
+    if (m !== null && (idx(y, m) < startIdx() || idx(y, m) > endIdx())) { fail($('d-err'), 'Choose a month from ' + label(st.sy, st.sm) + ' to ' + label(EY, EM) + '.'); $('n-m').focus(); return; }
+    const data = { h: h.slice(0, HEAD_MAX), b: $('n-b').value.trim().slice(0, BODY_MAX), y, m };
+    let id;
+    if (editing) { Object.assign(editing, data); id = editing.id; } else { id = Math.random().toString(MAX_RADIX).slice(ID_SKIP); st.notes.push({ id, ...data }); }
+    save(); dlg.close(); render(id); say(status, 'Note saved under ' + label(y, m) + '.');
+  });
+  $('d-del').addEventListener('click', () => {
+    st.notes = st.notes.filter((n) => n !== editing); save(); dlg.close(); render(); $('b-add').focus(); say(status, 'Note deleted.');
+  });
+
+  /* PDF export: a small tagged PDF writer, so the text can be selected and read by assistive technology. */
+  const WR = [278, 278, 355, 556, 556, 889, 667, 191, 333, 333, 389, 584, 278, 333, 278, 278, ...Array(DIGIT_COUNT).fill(DIGIT_W), 278, 278, 584, 584, 584, 556, 1015, 667, 667, 722, 722, 667, 611, 778, 722, 278, 500, 667, 556, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 278, 278, 278, 469, 556, 333, 556, 556, 500, 556, 556, 278, 556, 556, 222, 222, 500, 222, 833, 556, 556, 556, 556, 333, 500, 278, 556, 500, 722, 500, 500, 500, 334, 260, 334, 584];
+  const WB = [278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278, ...Array(DIGIT_COUNT).fill(DIGIT_W), 333, 333, 584, 584, 584, 611, 975, 722, 722, 722, 722, 667, 611, 778, 722, 278, 556, 722, 611, 833, 722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 333, 278, 333, 584, 556, 333, 556, 611, 556, 611, 556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556, 333, 611, 556, 778, 556, 556, 500, 389, 280, 389, 584];
+  const ANSI = { '\u2018': 145, '\u2019': 146, '\u201C': 147, '\u201D': 148, '\u2022': 149, '\u2013': 150, '\u2014': 151, '\u2026': 133, '\u20AC': 128 };
+  const OCTAL_PAD = 3, OCTAL_BASE = 8, ASCII_LO = 32, ASCII_HI = 126, LATIN_LO = 160, LATIN_HI = 255, AVG_W = 556, EM_W = 1000, UNIT = 1000, HEX_PAD = 4, HEX_BASE = 16, OFFSET_PAD = 10;
+  const fx = (n) => (Math.round(n * ROUND_FACTOR) / ROUND_FACTOR).toString();
+  const pdfStr = (s) => [...s.normalize('NFC')].map((ch) => {
+    const c = ch.codePointAt(0);
+    if (ANSI[ch] || (c >= LATIN_LO && c <= LATIN_HI)) { return '\\' + (ANSI[ch] || c).toString(OCTAL_BASE).padStart(OCTAL_PAD, '0'); }
+    if (c >= ASCII_LO && c <= ASCII_HI) { return (ch === '(' || ch === ')' || ch === '\\') ? '\\' + ch : ch; }
+    return '?';
+  }).join('');
+  const hex16 = (s) => 'FEFF' + [...s].map((ch) => ch.charCodeAt(0).toString(HEX_BASE).padStart(HEX_PAD, '0')).join('');
+  const cw = (ch, bold) => {
+    const b = ch.normalize('NFD').codePointAt(0);
+    if (b >= ASCII_LO && b <= ASCII_HI) { return (bold ? WB : WR)[b - ASCII_LO]; }
+    return ch === '\u2014' ? EM_W : AVG_W;
+  };
+  const tw = (s, size, bold) => [...s].reduce((a, ch) => a + cw(ch, bold), 0) * size / UNIT;
+  function wrap(text, size, bold, maxW) {
+    const out = [];
+    text.replace(/\r/g, '').split('\n').forEach((par) => {
+      let line = '';
+      par.split(/\s+/).filter(Boolean).forEach((word) => {
+        let w = word;
+        while (tw(w, size, bold) > maxW) {
+          let k = w.length;
+          while (k > 1 && tw(w.slice(0, k), size, bold) > maxW) { k--; }
+          if (line) { out.push(line); line = ''; }
+          out.push(w.slice(0, k)); w = w.slice(k);
+        }
+        const t = line ? line + ' ' + w : w;
+        if (tw(t, size, bold) <= maxW) { line = t; } else { out.push(line); line = w; }
+      });
+      out.push(line);
+    });
+    return out;
+  }
+  const circle = (cx, cy, r) => {
+    const k = r * CIRCLE_K;
+    return `${fx(cx + r)} ${fx(cy)} m ${fx(cx + r)} ${fx(cy + k)} ${fx(cx + k)} ${fx(cy + r)} ${fx(cx)} ${fx(cy + r)} c ${fx(cx - k)} ${fx(cy + r)} ${fx(cx - r)} ${fx(cy + k)} ${fx(cx - r)} ${fx(cy)} c ${fx(cx - r)} ${fx(cy - k)} ${fx(cx - k)} ${fx(cy - r)} ${fx(cx)} ${fx(cy - r)} c ${fx(cx + k)} ${fx(cy - r)} ${fx(cx + r)} ${fx(cy - k)} ${fx(cx + r)} ${fx(cy)} c f`;
+  };
+  function buildPdf() {
+    const pages = [], els = [], notes = visible();
+    let cur, y;
+    const newPage = () => { cur = { ops: [], mc: [], rs: PAGE_H - PAGE_M, end: 0 }; pages.push(cur); y = PAGE_H - PAGE_M; };
+    const room = (h) => { if (y - h < PAGE_M + FOOT_H) { cur.end = y; newPage(); } };
+    const text = (el, s, x, size, bold, col) => {
+      const id = cur.mc.length; cur.mc.push(el); el.m.push([pages.length - 1, id]);
+      cur.ops.push(`/${el.t} <</MCID ${id}>> BDC ${col} rg BT /F${bold ? FONT_BOLD : FONT_REG} ${size} Tf ${fx(x)} ${fx(y)} Td (${pdfStr(s)}) Tj ET EMC`);
+    };
+    const block = (tag, str, x, size, bold, col, gap) => {
+      if (!str.trim()) { return; }
+      const el = { t: tag, m: [], i: els.length }; els.push(el);
+      wrap(str, size, bold, PAGE_W - PAGE_M - x).forEach((l) => { room(size * LINE_H); y -= size * LINE_H; text(el, l, x, size, bold, col); });
+      y -= gap;
+    };
+    const head = (tag, str, size, dot) => {
+      room(size * LINE_H * HEAD_LINES + GAP_L);
+      if (dot) { cur.ops.push(`/Artifact BMC 0.13 0.24 0.33 rg ${circle(RAIL_X, y - size * LINE_H + size * DOT_LIFT, DOT_R)} EMC`); }
+      block(tag, str, TEXT_X, size, true, '0 0 0', GAP_S);
+    };
+    newPage();
+    const title = st.title.trim() || 'Timeline';
+    block('H1', title, PAGE_M, SIZE_TITLE, true, '0 0 0', GAP_S);
+    block('P', label(st.sy, st.sm) + ' to ' + label(EY, EM) + ', ' + notes.length + (notes.length === 1 ? ' note' : ' notes'), PAGE_M, SIZE_SUB, false, '0.2 0.2 0.2', GAP_L);
+    cur.rs = y;
+    head('H2', 'Start: ' + label(st.sy, st.sm), SIZE_EDGE, true);
+    const noteBlock = (n) => {
+      block('H4', n.h, TEXT_X, SIZE_NOTE_HEAD, true, '0 0 0', 1);
+      block('P', n.b, TEXT_X, SIZE_BODY, false, '0.15 0.15 0.15', GAP_L);
+    };
+    [...new Set(notes.map((n) => n.y))].forEach((yr) => {
+      const ns = notes.filter((n) => n.y === yr), only = ns.filter((n) => n.m === null);
+      y -= GAP_S; head('H2', String(yr), SIZE_YEAR, false);
+      if (only.length) { block('P', 'Notes for the whole year', TEXT_X, SIZE_HINT, false, '0.3 0.3 0.3', GAP_S); only.forEach(noteBlock); }
+      [...new Set(ns.filter((n) => n.m !== null).map((n) => n.m))].forEach((m) => { head('H3', label(yr, m), SIZE_MONTH, true); ns.filter((n) => n.m === m).forEach(noteBlock); });
+    });
+    head('H2', 'Now: ' + label(EY, EM), SIZE_EDGE, true);
+    cur.end = y;
+    pages.forEach((p, i) => {
+      const s = 'Page ' + (i + 1) + ' of ' + pages.length;
+      p.ops.unshift(`/Artifact BMC 0.4 0.4 0.45 RG 2 w ${RAIL_X} ${fx(p.rs)} m ${RAIL_X} ${fx(p.end)} l S EMC`);
+      p.ops.push(`/Artifact <</Type/Pagination>> BDC 0.3 g BT /F${FONT_REG} ${SIZE_FOOT} Tf ${fx((PAGE_W - tw(s, SIZE_FOOT, false)) / HALF)} ${PAGE_M / HALF} Td (${s}) Tj ET EMC`);
+    });
+    const o = [], font = (n) => `<</Type/Font/Subtype/Type1/BaseFont/${n}/Encoding/WinAnsiEncoding>>`;
+    let next = OBJ_FIRST_FREE;
+    const ids = pages.map(() => ({ p: next++, c: next++ })), eid = els.map(() => next++);
+    o[OBJ.catalog] = `<</Type/Catalog/Pages ${OBJ.pages} 0 R/Lang(en-GB)/MarkInfo<</Marked true>>/StructTreeRoot ${OBJ.tree} 0 R/ViewerPreferences<</DisplayDocTitle true>>>>`;
+    o[OBJ.pages] = `<</Type/Pages/Count ${pages.length}/Kids[${ids.map((i) => i.p + ' 0 R').join(' ')}]>>`;
+    o[OBJ.fontReg] = font('Helvetica'); o[OBJ.fontBold] = font('Helvetica-Bold');
+    o[OBJ.info] = `<</Title<${hex16(title)}>/Creator(ArTimeline)>>`;
+    o[OBJ.tree] = `<</Type/StructTreeRoot/K ${OBJ.doc} 0 R/ParentTree<</Nums[${pages.map((p, i) => i + ' [' + p.mc.map((e) => eid[e.i] + ' 0 R').join(' ') + ']').join(' ')}]>>>>`;
+    o[OBJ.doc] = `<</Type/StructElem/S/Document/P ${OBJ.tree} 0 R/K[${eid.map((i) => i + ' 0 R').join(' ')}]>>`;
+    els.forEach((e, i) => { o[eid[i]] = `<</Type/StructElem/S/${e.t}/P ${OBJ.doc} 0 R/Pg ${ids[e.m[0][0]].p} 0 R/K[${e.m.map(([pi, m]) => `<</Type/MCR/Pg ${ids[pi].p} 0 R/MCID ${m}>>`).join('')}]>>`; });
+    pages.forEach((p, i) => {
+      const s = p.ops.join('\n');
+      o[ids[i].c] = `<</Length ${s.length}>>\nstream\n${s}\nendstream`;
+      o[ids[i].p] = `<</Type/Page/Parent ${OBJ.pages} 0 R/MediaBox[0 0 ${PAGE_W} ${PAGE_H}]/Resources<</Font<</F${FONT_REG} ${OBJ.fontReg} 0 R/F${FONT_BOLD} ${OBJ.fontBold} 0 R>>>>/Contents ${ids[i].c} 0 R/StructParents ${i}>>`;
+    });
+    let out = '%PDF-1.7\n%\xE2\xE3\xCF\xD3\n';
+    const off = [];
+    for (let i = 1; i < next; i++) { off[i] = out.length; out += `${i} 0 obj\n${o[i]}\nendobj\n`; }
+    const xr = out.length;
+    out += `xref\n0 ${next}\n0000000000 65535 f \n` + off.slice(1).map((n) => String(n).padStart(OFFSET_PAD, '0') + ' 00000 n \n').join('') + `trailer\n<</Size ${next}/Root ${OBJ.catalog} 0 R/Info ${OBJ.info} 0 R>>\nstartxref\n${xr}\n%%EOF`;
+    return { bytes: Uint8Array.from(out, (c) => c.charCodeAt(0)), title };
+  }
+  $('b-pdf').addEventListener('click', () => {
+    error.replaceChildren();
+    try {
+      const { bytes, title } = buildPdf();
+      const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+      const a = document.createElement('a');
+      a.href = url; a.download = (title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'timeline') + '.pdf';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), REVOKE_DELAY_MS);
+      say(status, 'PDF saved. Letters outside the Western European set show as question marks in the PDF.');
+    } catch { fail(error, 'The PDF could not be made.'); }
+  });
+
+  render();
+})();
+        </script>
+    </body>
+</html>
