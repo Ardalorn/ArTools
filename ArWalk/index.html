@@ -705,13 +705,13 @@ const LOOP_SPEED_MS = 1.3; // First guess at walking speed (metres per second); 
 const LOOP_DETOUR = 1.35; // First guess at how much longer streets are than a straight line.
 const LOOP_SIDES = 3; // The loop is a triangle: the start point and two corners.
 const LOOP_CORNER_DEG = 60; // Angle between the two corners as seen from the start (60 makes an even triangle).
-const LOOP_TRIES = 3; // Directions tried; each one turns by LOOP_BEARING_STEP_DEG.
-const LOOP_BEARING_STEP_DEG = 120; // Turn between one direction tried and the next.
+const LOOP_TRIES = 6; // Directions tried; each one turns by LOOP_BEARING_STEP_DEG.
+const LOOP_BEARING_STEP_DEG = 60; // Turn between one direction tried and the next.
 const LOOP_REFINES = 4; // Times one direction is resized to hit the chosen time.
 const LOOP_TOL = 0.025; // A loop within this share of the chosen time is accepted.
-const LOOP_MAX_OVERLAP = 0.3; // Most of a loop that may walk back over the same street.
-const LOOP_OVERLAP_W = 0.5; // How heavily overlap counts against a loop when the best one is chosen.
+const LOOP_CLEAN_OVERLAP = 0.01; // A loop with no more than this share doubling back counts as having no overlap.
 const LOOP_OVERLAP_MIN_M = 150; // Passing the same spot again after this many metres counts as overlap.
+const LOOP_START_ZONE_M = 30; // Ground this close to the start point never counts as overlap: every loop leaves and returns there.
 const LOOP_CELL_DEG = 0.0002; // Grid size (degrees, about 22 m) used to spot overlap.
 const LOOP_SCALE_MIN = 0.5; // Smallest resize in one step.
 const LOOP_SCALE_MAX = 2; // Largest resize in one step.
@@ -1636,10 +1636,14 @@ function cachedPromise(map, key, loader, hasValue) {
     let shared = 0;
     for (let i = 1; i < rt.pts.length; i++) {
       const key = Math.round(rt.pts[i][0] / LOOP_CELL_DEG) + ',' + Math.round(rt.pts[i][1] / LOOP_CELL_DEG), first = seen.get(key);
-      if (first === undefined) { seen.set(key, rt.cum[i]); } else if (rt.cum[i] - first > LOOP_OVERLAP_MIN_M) { shared += rt.cum[i] - rt.cum[i - 1]; }
+      if (first === undefined) { seen.set(key, rt.cum[i]); } else if (rt.cum[i] - first > LOOP_OVERLAP_MIN_M && hav(rt.pts[i], rt.pts[0]) > LOOP_START_ZONE_M) { shared += rt.cum[i] - rt.cum[i - 1]; }
     }
     return shared / Math.max(1, rt.total);
   }
+  /* A loop with no overlap always beats one with overlap, whatever its time. Among clean loops the closest to your time wins;
+     overlapping loops are only used when no clean loop was found, and then the least overlapping wins. */
+  const isClean = (c) => c.ov <= LOOP_CLEAN_OVERLAP;
+  const better = (a, b) => (!b || (isClean(a) !== isClean(b) ? isClean(a) : isClean(a) ? a.err < b.err : a.ov < b.ov || (a.ov === b.ov && a.err < b.err)));
   /* Resolves to the best loop found, null when none could be planned, or undefined when it was cancelled. */
   async function planLoop(minutes) {
     const my = ++loopSeq, target = minutes * SECONDS_PER_MINUTE, began = performance.now(), b0 = Math.random() * FULL_TURN_DEGREES;
@@ -1654,9 +1658,10 @@ function cachedPromise(map, key, loader, hasValue) {
         try { rt = await fetchRoute([start, offsetPoint(start, r, brg), offsetPoint(start, r, brg + LOOP_CORNER_DEG), start], 'Your start point', { tries: 1, timeout: LOOP_FETCH_TIMEOUT_MS }); } catch { rt = null; }
         if (my !== loopSeq) { done = true; break; }
         if (!rt) { r *= LOOP_FAIL_SHRINK; continue; }
-        const err = Math.abs(rt.dur - target) / target, ov = overlapShare(rt), score = err + ov * LOOP_OVERLAP_W;
-        if (!best || score < best.score) { best = { rt, err, ov, score }; }
-        if (err <= LOOP_TOL) { done = ov <= LOOP_MAX_OVERLAP; break; } /* right length: stop if it is also a proper loop, else try another direction */
+        const cand = { rt, err: Math.abs(rt.dur - target) / target, ov: overlapShare(rt) };
+        if (better(cand, best)) { best = cand; }
+        if (!isClean(cand)) { break; } /* doubles back: resizing will not fix that, so try another direction */
+        if (cand.err <= LOOP_TOL) { done = true; break; }
         r *= Math.max(LOOP_SCALE_MIN, Math.min(LOOP_SCALE_MAX, target / rt.dur));
       }
     }
@@ -1678,7 +1683,7 @@ function cachedPromise(map, key, loader, hasValue) {
     const res = await planLoop(minutes);
     if (res === undefined) { return; }
     if (!res) { showLoopPicker(); fail(er, 'No walk could be planned from your start point. Try a different start point.'); clear(st); return; }
-    route = res.rt; route.loop = true; route.minutes = minutes;
+    route = res.rt; route.loop = true; route.minutes = minutes; route.overlap = res.ov;
     orig = { lat: start.lat, lng: start.lng };
     dest = { lat: start.lat, lng: start.lng, name: startLabel(start) || 'your start point', addr: '' };
     showLoop();
@@ -1686,7 +1691,8 @@ function cachedPromise(map, key, loader, hasValue) {
   function showLoop() {
     sheet.hidden = false;
     const gap = Math.round((route.dur - route.minutes * SECONDS_PER_MINUTE) / SECONDS_PER_MINUTE);
-    const note = Math.abs(gap) > 1 ? ' The closest loop found is ' + Math.abs(gap) + ' min ' + (gap > 0 ? 'longer.' : 'shorter.') : '';
+    const back = route.overlap > LOOP_CLEAN_OVERLAP ? ' No loop without doubling back was found from here, so part of this walk covers the same street twice.' : '';
+    const note = back + (Math.abs(gap) > 1 ? ' The closest loop found is ' + Math.abs(gap) + ' min ' + (gap > 0 ? 'longer.' : 'shorter.') : '');
     sheet.innerHTML = '<h2 id="sheet-h">' + fmtTime(route.dur) + ' <span class="hint">(' + fmtDist(route.dist) + ') round trip</span></h2><p class="hint">Leaves and returns to ' + esc(dest.name) + '. You chose ' + route.minutes + ' min.' + note + '</p>' +
       '<div class="row"><button type="button" data-act="start">Start</button><button type="button" class="secondary" data-act="preview" aria-label="Preview the walk without GPS">Preview</button><button type="button" class="secondary toggle" aria-pressed="false" data-act="steps">Steps</button><button type="button" class="secondary" data-act="again">Another route</button><button type="button" class="secondary" data-act="close">Close</button></div>' +
       '<ol class="steps" aria-label="Walking directions" hidden>' + stepsHtml() + '</ol>';
@@ -1697,7 +1703,7 @@ function cachedPromise(map, key, loader, hasValue) {
   async function getLoopRoute(from) {
     try {
       const left = route.wps.filter((w) => w.at > nav.along + LOOP_WP_PASSED_M), rt = await fetchRoute([from, ...left, start], 'Your location');
-      rt.loop = true; rt.minutes = route.minutes; route = rt;
+      rt.loop = true; rt.minutes = route.minutes; rt.overlap = overlapShare(rt); route = rt;
       return true;
     } catch { return false; }
   }
